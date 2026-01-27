@@ -1,4 +1,4 @@
-# Spring_2026_Mabble_Capstone — Git Rules (Quick)
+# WDP — Git Rules (Quick)
 
 ## 1) Không push trực tiếp `main`
 - Luôn tạo branch → push branch → mở Pull Request  → merge.
