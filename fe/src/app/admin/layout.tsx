@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   TrendingUp,
   LogOut,
@@ -81,27 +82,26 @@ const menuItems = [
 ];
 
 function AdminSidebar() {
+  const pathname = usePathname();
+
   const handleLogout = () => {
-    // Clear authentication tokens or session data here
-    // For example, if using localStorage:
     localStorage.removeItem("authToken");
-    // Redirect to login page
     window.location.href = "/login";
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader>
+    <Sidebar className="border-r bg-white shadow-xl">
+      <SidebarHeader className="border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/marketing/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <TrendingUp className="size-4" />
+              <Link href="/admin/dashboard">
+                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
+                  <TrendingUp className="size-5" />
                 </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Admin</span>
-                  <span className="text-xs">v1.0.0</span>
+                <div className="flex flex-col leading-none">
+                  <span className="font-bold text-lg">Admin Panel</span>
+                  <span className="text-xs opacity-80">Management System</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -109,79 +109,79 @@ function AdminSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="py-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Trang của Admin</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-gray-400 uppercase text-xs tracking-wider px-3">
+            Quản lý hệ thống
+          </SidebarGroupLabel>
+
           <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="space-y-1">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.url;
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      className={`transition-all duration-200 rounded-lg ${
+                        isActive
+                          ? "bg-indigo-100 text-indigo-600 font-semibold"
+                          : "hover:bg-gray-100"
+                      }`}
+                    >
+                      <Link
+                        href={item.url}
+                        className="flex items-center gap-3 px-3 py-2"
+                      >
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <User className="size-4" />
-                  </div>
-                  <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Trang admin</span>
-                    <span className="text-xs text-sidebar-foreground/70">
-                      admin@example.com
-                    </span>
-                  </div>
-                  <ChevronUp className="ml-auto" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
+      <SidebarFooter className="border-t p-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-gray-100 transition">
+              <div className="flex size-8 items-center justify-center rounded-full bg-indigo-500 text-white">
+                <User className="size-4" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="font-medium">Trang admin</span>
+                <span className="text-xs text-gray-500">admin@example.com</span>
+              </div>
+              <ChevronUp className="ml-auto size-4 text-gray-400" />
+            </button>
+          </DropdownMenuTrigger>
 
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="top"
-                align="start"
-                sideOffset={4}
-              >
-                <DropdownMenuItem
-                  onClick={() => (window.location.href = "profile")}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Hồ sơ</span>
-                </DropdownMenuItem>
+          <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
+            <DropdownMenuItem
+              onClick={() => (window.location.href = "profile")}
+            >
+              <User className="mr-2 h-4 w-4" />
+              Hồ sơ
+            </DropdownMenuItem>
 
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Cài đặt</span>
-                </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              Cài đặt
+            </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
 
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Đăng xuất</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
+            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Đăng xuất
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
 
       <SidebarRail />
