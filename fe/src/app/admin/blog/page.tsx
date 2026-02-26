@@ -1,0 +1,322 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AxiosProgressEvent } from "axios";
+import { Eye, Edit, Trash2 } from "lucide-react";
+
+import { api } from "../../../../utils/axios";
+import { useApi } from "../../../../utils/axios";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+
+import BlogForm from "./components/BlogForm";
+import BlogDetail from "./components/BlogDetail";
+import Pagination from "./components/Pagination";
+import { Blog } from "./types";
+
+export default function BlogPage() {
+  const { request } = useApi();
+
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedBlog, setSelectedBlog] = useState<Blog | undefined>();
+
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // =========================
+  // FETCH BLOGS
+  // =========================
+  const fetchBlogs = async () => {
+    try {
+      setLoading(true);
+      const response = await request(() => api.get("/blogs"));
+
+      if (response.success) {
+        setBlogs(response.blogs || []);
+      } else {
+        setError("Không thể tải danh sách blog");
+      }
+    } catch (err: any) {
+      setError(err.message || "Không thể tải danh sách blog");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  // =========================
+  // FILTER
+  // =========================
+  const filteredBlogs = blogs.filter(
+    (blog) =>
+      blog.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      blog.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      blog.tag?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // =========================
+  // ADD BLOG
+  // =========================
+  const handleAddBlog = async (formData: FormData) => {
+    try {
+      const response = await request(() =>
+        api.post("/blogs", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+            if (progressEvent.total) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(progress);
+            }
+          },
+        })
+      );
+
+      if (response.success) {
+        await fetchBlogs();
+        setSuccessMessage("Tạo blog thành công!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        throw new Error(response.message || "Tạo blog thất bại");
+      }
+    } catch (err: any) {
+      setError(err.message || "Tạo blog thất bại");
+      throw err;
+    }
+  };
+
+  // =========================
+  // EDIT BLOG
+  // =========================
+  const handleEditBlog = async (formData: FormData) => {
+    if (!selectedBlog) return;
+
+    try {
+      const response = await request(() =>
+        api.put(`/blogs/${selectedBlog._id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+            if (progressEvent.total) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(progress);
+            }
+          },
+        })
+      );
+
+      if (response.success) {
+        await fetchBlogs();
+        setSuccessMessage("Cập nhật blog thành công!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(response.message || "Cập nhật blog thất bại");
+      }
+    } catch (err: any) {
+      setError(err.message || "Cập nhật blog thất bại");
+    }
+  };
+
+  // =========================
+  // DELETE BLOG
+  // =========================
+  const handleDeleteBlog = async (id: string) => {
+    try {
+      if (!window.confirm("Bạn có chắc muốn xoá blog này?")) return;
+
+      const response = await request(() => api.delete(`/blogs/${id}`));
+
+      if (response.success) {
+        await fetchBlogs();
+        setSuccessMessage("Xoá blog thành công!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError(response.message || "Xoá blog thất bại");
+      }
+    } catch (err: any) {
+      setError(err.message || "Xoá blog thất bại");
+    }
+  };
+
+  // =========================
+  // RENDER
+  // =========================
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Quản lý Blog</CardTitle>
+            <Button
+              onClick={() => {
+                setSelectedBlog(undefined);
+                setIsFormOpen(true);
+              }}
+            >
+              Thêm Blog
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-md">
+              {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-4 p-4 bg-green-50 text-green-600 rounded-md">
+              {successMessage}
+            </div>
+          )}
+
+          <div className="mb-4">
+            <Input
+              placeholder="Tìm kiếm..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center h-32 items-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>STT</TableHead>
+                    <TableHead>Tiêu đề</TableHead>
+                    <TableHead>Mô tả</TableHead>
+                    <TableHead>Tag</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                    <TableHead className="text-right">Hành động</TableHead>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                  {filteredBlogs
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage
+                    )
+                    .map((blog, index) => (
+                      <TableRow key={blog._id}>
+                        <TableCell>
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </TableCell>
+                        <TableCell>{blog.title}</TableCell>
+                        <TableCell className="truncate max-w-xs">
+                          {blog.description}
+                        </TableCell>
+                        <TableCell>
+                          <Badge>{blog.tag}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBlog(blog);
+                                setIsDetailOpen(true);
+                              }}
+                            >
+                              <Eye size={16} />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBlog(blog);
+                                setIsFormOpen(true);
+                              }}
+                            >
+                              <Edit size={16} />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600"
+                              onClick={() => handleDeleteBlog(blog._id)}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+
+              <Pagination
+                filteredBlogs={filteredBlogs}
+                itemsPerPage={itemsPerPage}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <BlogForm
+        blog={selectedBlog}
+        onSubmit={selectedBlog ? handleEditBlog : handleAddBlog}
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedBlog(undefined);
+          setUploadProgress(0);
+        }}
+        uploadProgress={uploadProgress}
+        setUploadProgress={setUploadProgress}
+      />
+
+      {selectedBlog && (
+        <BlogDetail
+          blog={selectedBlog}
+          isOpen={isDetailOpen}
+          onClose={() => {
+            setIsDetailOpen(false);
+            setSelectedBlog(undefined);
+          }}
+        />
+      )}
+    </div>
+  );
+}

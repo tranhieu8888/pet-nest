@@ -1,5 +1,12 @@
-'use client';
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from "react";
+"use client";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  Dispatch,
+  SetStateAction,
+} from "react";
 
 interface LanguageContextType {
   lang: string;
