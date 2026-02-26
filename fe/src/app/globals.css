@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../node_modules/tw-animate-css/dist/tw-animate.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -117,9 +118,10 @@
   padding: 8px 16px;
   background: #fff;
   color: #222;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   transition: border 0.2s, box-shadow 0.2s;
 }
+
 .category-filter-select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px #93c5fd;
@@ -129,8 +131,8 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
-

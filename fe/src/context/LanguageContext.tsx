@@ -13,9 +13,7 @@ interface LanguageContextType {
   setLang: Dispatch<SetStateAction<string>>;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(
-  undefined
-);
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<string>("vi");
