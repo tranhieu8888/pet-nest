@@ -69,7 +69,7 @@ const menuItems = [
     icon: Gift,
   },
   {
-    title: "Chăm Sóc Khách Hàng",
+    title: "Chăm sóc khách hàng",
     url: "/messages",
     icon: MessageCircle,
   },
@@ -189,7 +189,7 @@ function AdminSidebar() {
   );
 }
 
-export default function MarketingLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
