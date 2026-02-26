@@ -49,7 +49,7 @@ export default function LoginPage() {
                     const role = decoded.role;
                     switch (role) {
                         case 0:
-                            router.push('/admin/product');
+                            router.push('/admin/blog');
                             break;
                         case 2:
                             router.push('/staff/dashboard');
@@ -123,7 +123,7 @@ export default function LoginPage() {
                     const role = decoded.role;
                     switch (role) {
                         case 0:
-                            router.push('/admin/product');
+                            router.push('/admin/blog');
                             break;
                         case 2:
                             router.push('/staff/dashboard');

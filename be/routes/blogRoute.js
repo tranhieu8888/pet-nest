@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { upload } = require("../config/cloudinary.js");
+const verifyToken = require("../middleware/auth");
+const authorizeRoles = require("../middleware/authorization");
+const { ROLES } = require("../config/role");
 
 const {
   createBlog,
@@ -16,13 +19,30 @@ router.get("/", getAllBlogs);
 // GET blog by id
 router.get("/:id", getBlog);
 
-// CREATE blog
-router.post("/", upload.array("images", 5), createBlog);
+// CREATE blog (chỉ admin)
+router.post(
+  "/",
+  verifyToken,
+  authorizeRoles(ROLES.ADMIN),
+  upload.array("images", 5),
+  createBlog
+);
 
-// UPDATE blog
-router.put("/:id", upload.array("images", 5), updateBlog);
+// UPDATE blog (chỉ admin)
+router.put(
+  "/:id",
+  verifyToken,
+  authorizeRoles(ROLES.ADMIN),
+  upload.array("images", 5),
+  updateBlog
+);
 
-// DELETE blog
-router.delete("/:id", deleteBlog);
+// DELETE blog (chỉ admin)
+router.delete(
+  "/:id",
+  verifyToken,
+  authorizeRoles(ROLES.ADMIN),
+  deleteBlog
+);
 
 module.exports = router;

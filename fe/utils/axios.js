@@ -17,7 +17,11 @@ const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("token") || sessionStorage.getItem("token")
+        : null;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -53,7 +57,8 @@ axiosInstance.interceptors.response.use(
     // Xử lý lỗi chung
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
         window.location.href = '/login';
       }
     }

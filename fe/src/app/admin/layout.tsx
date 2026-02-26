@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 import { usePathname } from "next/navigation";
 import {
   TrendingUp,
@@ -85,7 +88,8 @@ function AdminSidebar() {
   const pathname = usePathname();
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     window.location.href = "/login";
   };
 
@@ -194,14 +198,30 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const decoded = JSON.parse(atob(token.split(".")[1]));
+
+      if (decoded.role !== 0) {
+        router.push("/");
+      }
+    } catch {
+      router.push("/login");
+    }
+  }, []);
+
   return (
     <SidebarProvider>
       <AdminSidebar />
-
-      <div className="p-2">
-        <SidebarTrigger className="ml-2" />
-      </div>
-
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
