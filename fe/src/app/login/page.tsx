@@ -51,14 +51,8 @@ export default function LoginPage() {
                         case 0:
                             router.push('/admin/product');
                             break;
-                        case 8:
-                            router.push('/adminbusiness/statistics');
-                            break;
                         case 2:
-                            router.push('/ordermanager/dashboard');
-                            break;
-                        case 4:
-                            router.push('/marketing/dashboard');
+                            router.push('/staff/dashboard');
                             break;
                         case 1:
                         default:
@@ -131,14 +125,8 @@ export default function LoginPage() {
                         case 0:
                             router.push('/admin/product');
                             break;
-                        case 8:
-                            router.push('/adminbusiness/statistics');
-                            break;
                         case 2:
-                            router.push('/ordermanager/dashboard');
-                            break;
-                        case 4:
-                            router.push('/marketing/dashboard');
+                            router.push('/staff/dashboard');
                             break;
                         case 1:
                         default:
@@ -298,7 +286,6 @@ export default function LoginPage() {
                                 theme="filled_blue"
                                 text="signin_with"
                                 shape="rectangular"
-                                locale="vi"
                             />
                         </div>
                     </div>
