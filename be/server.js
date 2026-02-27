@@ -6,7 +6,7 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
-const userRoutes = require("./routes/userRoutes");
+const userRoutes = require("./routes/userRoute");
 const authRoutes = require("./routes/authRoute");
 const blogRoute = require("./routes/blogRoute");
 const categoryRoute = require("./routes/categoryRoute");
