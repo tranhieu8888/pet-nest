@@ -12,6 +12,7 @@ import {
   LogOut,
   MessageCircle,
   Trash2,
+  Menu,
 } from "lucide-react"
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
@@ -630,17 +631,112 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
             </div>
           </Link>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-2xl mx-8 hidden md:block">
-            <form className="relative" onSubmit={handleSearch}>
+          {/* Search Bar & Categories */}
+          <div className="flex-1 max-w-3xl mx-8 hidden md:flex items-center gap-3">
+            {/* Hoverable Category Menu */}
+            <div className="relative group/category z-50">
+              <Link href="/category" className="flex items-center gap-2 font-semibold text-gray-700 hover:text-primary hover:bg-primary/5 border border-gray-200 min-w-max hidden lg:flex h-10 px-4 py-2 justify-center rounded-md cursor-pointer transition-colors">
+                <Menu className="w-4 h-4" />
+                {lang === 'vi' ? 'Danh mục' : 'Categories'}
+              </Link>
+
+              {/* Dropdown Content - hidden by default, shown on group hover */}
+              <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover/category:opacity-100 group-hover/category:visible transition-all duration-200 w-[300px]">
+                <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
+                  <div className="font-bold text-xs uppercase px-3 py-2 text-gray-400 tracking-wider">
+                    {loadingCategories ? 'Đang tải...' : (lang === 'vi' ? 'Tất cả danh mục' : 'All Categories')}
+                  </div>
+                  {errorCategories && <div className="text-red-500 text-sm px-2">{errorCategories}</div>}
+                  <div className="flex flex-col gap-1 mt-1 pb-1 relative">
+                    {!loadingCategories && !errorCategories && categories.map((cat) => (
+                      <div key={cat.parent._id} className="group/item relative">
+                        <Link
+                          href={`/category/${cat.parent._id}`}
+                          className="flex items-center w-full cursor-pointer hover:bg-primary/5 hover:text-primary rounded-lg p-2.5 transition-colors"
+                        >
+                          {cat.parent.image && (
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-100 mr-3 shadow-sm group-hover/item:border-primary/30 transition-colors flex-shrink-0">
+                              <img src={cat.parent.image} alt={cat.parent.name} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <span className="flex-1 font-semibold text-sm">{cat.parent.name}</span>
+                          {cat.children && cat.children.length > 0 && (
+                            <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover/item:text-primary transition-colors flex-shrink-0" />
+                          )}
+                        </Link>
+
+                        {/* Sub Menu (Children) */}
+                        {cat.children && cat.children.length > 0 && (
+                          <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 w-[260px] z-50">
+                            <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
+                              <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                                {cat.parent.name}
+                              </div>
+                              <ul className="grid gap-1 pb-1">
+                                {cat.children.map((child) => (
+                                  <li key={child._id} className="group/subitem relative">
+                                    <Link
+                                      href={`/category/${child._id}`}
+                                      className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-md hover:bg-primary/5 text-gray-600 hover:text-primary transition-colors"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {child.image && (
+                                          <img src={child.image} alt={child.name} className="w-6 h-6 rounded object-cover border border-gray-100" />
+                                        )}
+                                        <span className="text-sm font-medium">{child.name}</span>
+                                      </div>
+                                      {child.children && child.children.length > 0 && (
+                                        <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 group-hover/subitem:text-primary transition-colors flex-shrink-0" />
+                                      )}
+                                    </Link>
+
+                                    {/* Grandchildren Menu */}
+                                    {child.children && child.children.length > 0 && (
+                                      <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/subitem:opacity-100 group-hover/subitem:visible transition-all duration-200 w-[240px] z-[60]">
+                                        <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
+                                          <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                                            {child.name}
+                                          </div>
+                                          <ul className="grid gap-1 pb-1">
+                                            {child.children.map((grand) => (
+                                              <li key={grand._id}>
+                                                <Link
+                                                  href={`/category/${grand._id}`}
+                                                  className="cursor-pointer text-sm px-3 py-2 rounded-md text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors flex items-center gap-2"
+                                                >
+                                                  {grand.image && (
+                                                    <img src={grand.image} alt={grand.name} className="w-5 h-5 rounded object-cover border border-gray-100" />
+                                                  )}
+                                                  <span>{grand.name}</span>
+                                                </Link>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <form className="relative flex-1" onSubmit={handleSearch}>
               <Input
                 type="text"
                 placeholder={lang === 'vi' ? pagesConfigVi.header.search.placeholder : pagesConfigEn.header.search.placeholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-4 pr-12 py-2 w-full"
+                className="pl-4 pr-12 py-2.5 w-full rounded-full border-gray-200 focus-visible:ring-primary/20 bg-gray-50 focus:bg-white transition-colors"
               />
-              <Button size="sm" className="absolute right-1 top-1 h-8" type="submit">
+              <Button size="icon" className="absolute right-1.5 top-1.5 h-7 w-7 rounded-full bg-primary text-white hover:bg-primary/90" type="submit">
                 <Search className="h-4 w-4" />
               </Button>
             </form>
@@ -699,74 +795,7 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
           </div>
         </div>
       </div>
-      {/* Thanh menu category cha */}
-      <div className="w-full bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 flex items-center gap-2 min-h-[48px]">
-          {loadingCategories ? (
-            <div className="px-4 py-2 text-sm">Đang tải danh mục...</div>
-          ) : errorCategories ? (
-            <div className="px-4 py-2 text-sm text-red-500">{errorCategories}</div>
-          ) : (
-            categories.map((cat) => (
-              <DropdownMenu key={cat.parent._id}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center space-x-1 font-semibold text-base hover:bg-primary/10 transition-colors rounded-xl px-4 py-2 shadow-sm border border-transparent hover:border-primary/30"
-                  >
-                    {cat.parent.image && (
-                      <img src={cat.parent.image} alt={cat.parent.name} className="w-6 h-6 rounded-full object-cover mr-2" />
-                    )}
-                    <span className="text-primary font-bold">{cat.parent.name}</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  className="rounded-2xl shadow-2xl p-2 min-w-[320px] animate-fade-in bg-white border border-gray-100 mt-2"
-                  style={{ zIndex: 50 }}
-                >
-                  <ul>
-                    {cat.children.map((child) => (
-                      <li key={child._id} className="mb-1">
-                        <div
-                          className="font-medium cursor-pointer hover:underline flex items-center pl-2 py-2 rounded-lg hover:bg-primary/10 transition-colors group"
-                          onClick={() => router.push(`/category/${child._id}`)}
-                        >
-                          {child.image && (
-                            <img src={child.image} alt={child.name} className="w-5 h-5 rounded object-cover mr-2" />
-                          )}
-                          <span className="group-hover:text-primary font-semibold">{child.name}</span>
-                          {child.children && child.children.length > 0 && (
-                            <span className="ml-1 text-gray-400">&gt;</span>
-                          )}
-                        </div>
-                        {child.children && child.children.length > 0 && (
-                          <ul className="ml-7 mt-1">
-                            {child.children.map((grand) => (
-                              <li
-                                key={grand._id}
-                                className="mb-1 hover:underline cursor-pointer text-sm pl-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center"
-                                onClick={() => router.push(`/category/${grand._id}`)}
-                              >
-                                {grand.image && (
-                                  <img src={grand.image} alt={grand.name} className="w-4 h-4 rounded object-cover mr-2" />
-                                )}
-                                <span>{grand.name}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ))
-          )}
-        </div>
-      </div>
+
       <div className="md:hidden border-t p-4">
         <form className="relative" onSubmit={handleSearch}>
           <Input
