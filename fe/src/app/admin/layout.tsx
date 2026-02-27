@@ -8,6 +8,7 @@ import {
   TrendingUp,
   LogOut,
   User,
+  Users,
   ChevronUp,
   Megaphone,
   LifeBuoy,
@@ -51,6 +52,11 @@ const menuItems = [
     title: "Admin Dashboard",
     url: "/admin/dashboard",
     icon: TrendingUp,
+  },
+  {
+    title: "Quản lý người dùng",
+    url: "/admin/users",
+    icon: Users,
   },
   {
     title: "Quản lý bài viết",
@@ -128,11 +134,10 @@ function AdminSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className={`transition-all duration-200 rounded-lg ${
-                        isActive
-                          ? "bg-indigo-100 text-indigo-600 font-semibold"
-                          : "hover:bg-gray-100"
-                      }`}
+                      className={`transition-all duration-200 rounded-lg ${isActive
+                        ? "bg-indigo-100 text-indigo-600 font-semibold"
+                        : "hover:bg-gray-100"
+                        }`}
                     >
                       <Link
                         href={item.url}
