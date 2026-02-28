@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { upload } = require("../config/cloudinary.js");
+const { upload } = require("../config/upload.js");
 const verifyToken = require("../middleware/auth");
 const authorizeRoles = require("../middleware/authorization");
 const { ROLES } = require("../config/role");

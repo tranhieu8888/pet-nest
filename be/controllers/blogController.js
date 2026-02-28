@@ -1,42 +1,71 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 
-const Blog = require('../models/blogModel.js');
-const { cloudinary } = require('../config/cloudinary.js');
+const Blog = require("../models/blogModel.js");
 
-// Create new blog
+/* =========================================
+   CREATE BLOG
+========================================= */
 exports.createBlog = async (req, res) => {
   try {
     const { title, description, tag } = req.body;
+
     if (!title || !description) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Thiếu title/description" });
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu title/description",
+      });
     }
 
     const images = (req.files || []).map((f) => ({
-      url: f.path,
-      public_id: f.filename, // ✅ LƯU LUÔN
+      url: `${req.protocol}://${req.get("host")}/uploads/${f.filename}`,
+      public_id: f.filename,
     }));
 
-    const blog = await Blog.create({ title, description, tag, images });
+    const blog = await Blog.create({
+      title,
+      description,
+      tag,
+      images,
+    });
 
-    res.status(201).json({ success: true, blog });
+    res.status(201).json({
+      success: true,
+      blog,
+    });
   } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
+    console.error("CREATE BLOG ERROR:", e);
+    res.status(500).json({
+      success: false,
+      message: e.message,
+    });
   }
 };
 
-// Get all blogs
+/* =========================================
+   GET ALL BLOGS
+========================================= */
 exports.getAllBlogs = async (req, res) => {
   try {
     const blogs = await Blog.find().sort({ createdAt: -1 });
-    res.json({ success: true, blogs });
+
+    res.json({
+      success: true,
+      blogs,
+    });
   } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
+    console.error("GET ALL BLOG ERROR:", e);
+    res.status(500).json({
+      success: false,
+      message: e.message,
+    });
   }
 };
 
-// Get single blog
+/* =========================================
+   GET SINGLE BLOG
+========================================= */
 exports.getBlog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,7 +77,6 @@ exports.getBlog = async (req, res) => {
       });
     }
 
-    // ✅ Tăng view + lấy blog
     const blog = await Blog.findByIdAndUpdate(
       id,
       { $inc: { views: 1 } },
@@ -62,7 +90,6 @@ exports.getBlog = async (req, res) => {
       });
     }
 
-    // ✅ Lấy bài cùng tag
     const related = await Blog.find({
       _id: { $ne: blog._id },
       tag: blog.tag,
@@ -74,6 +101,7 @@ exports.getBlog = async (req, res) => {
       related,
     });
   } catch (e) {
+    console.error("GET BLOG ERROR:", e);
     res.status(500).json({
       success: false,
       message: e.message,
@@ -81,22 +109,28 @@ exports.getBlog = async (req, res) => {
   }
 };
 
-// Update blog
+/* =========================================
+   UPDATE BLOG
+========================================= */
 exports.updateBlog = async (req, res) => {
   try {
     const { title, description, tag } = req.body;
     const keepImages = req.body.keepImages;
-    // keepImages có thể là string hoặc array
 
     if (!title || !description) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Thiếu title/description" });
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu title/description",
+      });
     }
 
     const blog = await Blog.findById(req.params.id);
-    if (!blog)
-      return res.status(404).json({ success: false, message: "Not found" });
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Not found",
+      });
+    }
 
     const keepIds = Array.isArray(keepImages)
       ? keepImages
@@ -104,68 +138,83 @@ exports.updateBlog = async (req, res) => {
       ? [keepImages]
       : [];
 
-    // ✅ ảnh được giữ lại
     const kept = blog.images.filter((img) => keepIds.includes(img.public_id));
 
-    // ✅ ảnh mới upload
     const uploaded = (req.files || []).map((f) => ({
-      url: f.path,
+      url: `${req.protocol}://${req.get("host")}/uploads/${f.filename}`,
       public_id: f.filename,
     }));
 
-    // ✅ ảnh bị xoá = ảnh cũ - ảnh kept
     const removed = blog.images.filter(
       (img) => !keepIds.includes(img.public_id)
     );
 
-    // ✅ xoá cloudinary theo public_id (chuẩn)
+    // XÓA FILE LOCAL
     for (const img of removed) {
-      try {
-        await cloudinary.uploader.destroy(img.public_id);
-      } catch (err) {
-        console.error("Cloudinary delete fail:", err);
+      const filePath = path.join(__dirname, "../uploads", img.public_id);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
       }
     }
 
-    // ✅ không bao giờ trùng public_id
     const nextImagesMap = new Map();
     [...kept, ...uploaded].forEach((img) =>
       nextImagesMap.set(img.public_id, img)
     );
-    const nextImages = Array.from(nextImagesMap.values());
 
     blog.title = title;
     blog.description = description;
     blog.tag = tag;
-    blog.images = nextImages;
+    blog.images = Array.from(nextImagesMap.values());
 
     await blog.save();
 
-    res.json({ success: true, blog });
+    res.json({
+      success: true,
+      blog,
+    });
   } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
+    console.error("UPDATE BLOG ERROR:", e);
+    res.status(500).json({
+      success: false,
+      message: e.message,
+    });
   }
 };
 
-// Delete blog
+/* =========================================
+   DELETE BLOG
+========================================= */
 exports.deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    if (!blog)
-      return res.status(404).json({ success: false, message: "Not found" });
 
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Not found",
+      });
+    }
+
+    // XÓA FILE LOCAL
     for (const img of blog.images) {
-      try {
-        await cloudinary.uploader.destroy(img.public_id);
-      } catch (err) {
-        console.error("Cloudinary delete fail:", err);
+      const filePath = path.join(__dirname, "../uploads", img.public_id);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
       }
     }
 
     await blog.deleteOne();
 
-    res.json({ success: true, message: "Deleted" });
+    res.json({
+      success: true,
+      message: "Deleted",
+    });
   } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
+    console.error("DELETE BLOG ERROR:", e);
+    res.status(500).json({
+      success: false,
+      message: e.message,
+    });
   }
 };

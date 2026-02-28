@@ -70,7 +70,6 @@ export default function BlogPage() {
   const filteredBlogs = blogs.filter(
     (blog) =>
       blog.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      blog.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       blog.tag?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -195,15 +194,14 @@ export default function BlogPage() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table className="w-full table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>STT</TableHead>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Mô tả</TableHead>
-                    <TableHead>Tag</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
+                    <TableHead className="w-16 text-center">STT</TableHead>
+                    <TableHead className="w-[45%]">Tiêu đề</TableHead>
+                    <TableHead className="w-32 text-center">Tag</TableHead>
+                    <TableHead className="w-40 text-center">Ngày tạo</TableHead>
+                    <TableHead className="w-32 text-right">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -215,20 +213,22 @@ export default function BlogPage() {
                     )
                     .map((blog, index) => (
                       <TableRow key={blog._id}>
-                        <TableCell>
+                        <TableCell className="text-center">
                           {(currentPage - 1) * itemsPerPage + index + 1}
                         </TableCell>
-                        <TableCell>{blog.title}</TableCell>
-                        <TableCell className="truncate max-w-xs">
-                          {blog.description}
+
+                        <TableCell className="text-left truncate">
+                          {blog.title}
                         </TableCell>
-                        <TableCell>
+
+                        <TableCell className="text-center">
                           <Badge>{blog.tag}</Badge>
                         </TableCell>
-                        <TableCell>
+
+                        <TableCell className="text-center">
                           {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
