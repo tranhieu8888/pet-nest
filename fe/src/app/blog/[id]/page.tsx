@@ -144,15 +144,36 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* Featured Image */}
           {post.images.length > 0 && (
-            <div className="relative h-[450px] mb-10 rounded-2xl overflow-hidden shadow-xl">
-              <Image
-                src={post.images[0].url}
-                alt={post.title}
-                fill
-                className="object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+            <div className="mb-10 grid gap-6">
+              {/* Ảnh lớn đầu tiên */}
+              <div className="relative h-[450px] rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src={post.images[0].url}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+
+              {/* Các ảnh còn lại */}
+              {post.images.length > 1 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {post.images.slice(1).map((img, index) => (
+                    <div
+                      key={index}
+                      className="relative h-40 rounded-xl overflow-hidden shadow-md"
+                    >
+                      <Image
+                        src={img.url}
+                        alt={`${post.title}-${index}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

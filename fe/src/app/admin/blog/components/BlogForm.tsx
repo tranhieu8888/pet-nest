@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import TinyEditor from "@/components/editor/TinyEditor";
 
 interface BlogFormProps {
   blog?: Blog;
@@ -132,16 +133,12 @@ export default function BlogForm({
             />
           </div>
 
-          <div>
-            <Label>Mô tả</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              required
-            />
-          </div>
+          <TinyEditor
+            value={formData.description}
+            onChange={(content) =>
+              setFormData({ ...formData, description: content })
+            }
+          />
 
           <div>
             <Label>Tag</Label>

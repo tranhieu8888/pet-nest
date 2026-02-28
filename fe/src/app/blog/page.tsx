@@ -40,14 +40,17 @@ export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string>("");
 
+  // 🔥 PHÂN TRANG
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 6;
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         const response = await api.get("/blogs");
         setPosts(response.data.blogs);
-      } catch (err: unknown) {
-        const error = err as { response?: { data?: { message?: string } } };
-        setError(error.response?.data?.message || "Error loading posts");
+      } catch (err: any) {
+        setError(err?.response?.data?.message || "Error loading posts");
       } finally {
         setLoading(false);
       }
@@ -55,6 +58,11 @@ export default function BlogPage() {
 
     fetchBlogs();
   }, []);
+
+  // Reset về trang 1 khi search hoặc đổi tag
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedTag]);
 
   if (loading) {
     return (
@@ -75,6 +83,21 @@ export default function BlogPage() {
     );
   }
 
+  // 🔥 FILTER
+  const filteredPosts = posts.filter(
+    (post) =>
+      (post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (selectedTag === "" || post.tag === selectedTag)
+  );
+
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+
+  const paginatedPosts = filteredPosts.slice(
+    (currentPage - 1) * postsPerPage,
+    currentPage * postsPerPage
+  );
+
   return (
     <div className="blog-container">
       <Header />
@@ -85,6 +108,7 @@ export default function BlogPage() {
           </Link>
         </div>
 
+        {/* SEARCH */}
         <div className="blog-search">
           <div className="blog-search-container">
             <input
@@ -97,6 +121,7 @@ export default function BlogPage() {
           </div>
         </div>
 
+        {/* TAG FILTER */}
         <div className="blog-tags">
           <div className="blog-tags-container">
             <button
@@ -121,50 +146,89 @@ export default function BlogPage() {
           </div>
         </div>
 
+        {/* BLOG GRID */}
         <div className="blog-grid">
-          {posts
-            .filter(
-              (post) =>
-                (post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  post.description
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())) &&
-                (selectedTag === "" || post.tag === selectedTag)
-            )
-            .map((post) => (
-              <article key={post._id} className="blog-card">
-                <div className="blog-card-image">
+          {paginatedPosts.map((post) => (
+            <article key={post._id} className="blog-card">
+              <div className="blog-card-image">
+                {post.images.length > 0 ? (
+                  <div className="blog-multi-images">
+                    {post.images.slice(0, 3).map((img, index) => (
+                      <div key={index} className="blog-multi-image">
+                        <Image
+                          src={img.url}
+                          alt={post.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                   <Image
-                    src={post.images[0]?.url || "/images/blog/default.jpg"}
+                    src="/images/blog/default.jpg"
                     alt={post.title}
                     fill
                     className="object-cover"
                   />
-                  <div className="blog-card-tag">{post.tag}</div>
+                )}
+
+                <div className="blog-card-tag">{post.tag}</div>
+              </div>
+
+              <div className="blog-card-content">
+                <span className="blog-card-date">
+                  {new Date(post.createdAt).toLocaleDateString("vi-VN")}
+                </span>
+
+                <h2 className="blog-card-title">
+                  <Link href={`/blog/${post._id}`}>{post.title}</Link>
+                </h2>
+
+                <p className="blog-card-description">
+                  {post.description.replace(/<[^>]*>/g, "")}
+                </p>
+
+                <div className="blog-card-footer">
+                  <Link href={`/blog/${post._id}`} className="blog-card-link">
+                    {blogConfig.readMore} →
+                  </Link>
                 </div>
-
-                <div className="blog-card-content">
-                  <span className="blog-card-date">
-                    {new Date(post.createdAt).toLocaleDateString("vi-VN")}
-                  </span>
-
-                  <h2 className="blog-card-title">
-                    <Link href={`/blog/${post._id}`}>{post.title}</Link>
-                  </h2>
-
-                  <p className="blog-card-description">
-                    {post.description.replace(/<[^>]*>/g, "")}
-                  </p>
-
-                  <div className="blog-card-footer">
-                    <Link href={`/blog/${post._id}`} className="blog-card-link">
-                      {blogConfig.readMore} →
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
+              </div>
+            </article>
+          ))}
         </div>
+
+        {/* 🔥 PAGINATION UI */}
+        {totalPages > 1 && (
+          <div className="blog-pagination">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+              className="page-btn"
+            >
+              ← Trước
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`page-btn ${currentPage === i + 1 ? "active" : ""}`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              className="page-btn"
+            >
+              Sau →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

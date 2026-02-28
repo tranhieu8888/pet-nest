@@ -170,3 +170,45 @@
 .blog-card-link:hover {
   color: #92400e;
 }
+
+.blog-multi-images {
+  display: flex;
+  height: 100%;
+}
+
+.blog-multi-image {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.blog-multi-image:not(:last-child) {
+  border-right: 2px solid white;
+}
+
+.blog-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 3rem;
+}
+
+.page-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #fef3c7;
+  color: #b45309;
+  transition: 0.2s;
+}
+
+.page-btn.active {
+  background: #f59e0b;
+  color: white;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
