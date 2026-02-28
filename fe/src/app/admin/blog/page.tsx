@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AxiosProgressEvent } from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
 
 import { api } from "../../../../utils/axios";
@@ -37,8 +36,6 @@ export default function BlogPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | undefined>();
-
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -85,14 +82,6 @@ export default function BlogPage() {
       const response = await request(() =>
         api.post("/blogs", formData, {
           headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-            if (progressEvent.total) {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(progress);
-            }
-          },
         })
       );
 
@@ -119,19 +108,13 @@ export default function BlogPage() {
       const response = await request(() =>
         api.put(`/blogs/${selectedBlog._id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-            if (progressEvent.total) {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(progress);
-            }
-          },
         })
       );
 
       if (response.success) {
         await fetchBlogs();
+        // ✅ Cập nhật selectedBlog với dữ liệu mới từ response
+        setSelectedBlog(response.blog);
         setSuccessMessage("Cập nhật blog thành công!");
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
@@ -175,6 +158,7 @@ export default function BlogPage() {
             <Button
               onClick={() => {
                 setSelectedBlog(undefined);
+                setIsDetailOpen(false); // đảm bảo view đóng
                 setIsFormOpen(true);
               }}
             >
@@ -249,9 +233,14 @@ export default function BlogPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setSelectedBlog(blog);
-                                setIsDetailOpen(true);
+                              onClick={async () => {
+                                const res = await request(() =>
+                                  api.get(`/blogs/${blog._id}`)
+                                );
+                                if (res.success) {
+                                  setSelectedBlog(res.blog);
+                                  setIsDetailOpen(true);
+                                }
                               }}
                             >
                               <Eye size={16} />
@@ -301,10 +290,7 @@ export default function BlogPage() {
         onClose={() => {
           setIsFormOpen(false);
           setSelectedBlog(undefined);
-          setUploadProgress(0);
         }}
-        uploadProgress={uploadProgress}
-        setUploadProgress={setUploadProgress}
       />
 
       {selectedBlog && (
