@@ -164,7 +164,7 @@ function AdminSidebar() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-medium">Trang admin</span>
-                <span className="text-xs text-gray-500">admin@example.com</span>
+                <span className="text-xs text-gray-500">admin@gmail.com</span>
               </div>
               <ChevronUp className="ml-auto size-4 text-gray-400" />
             </button>
