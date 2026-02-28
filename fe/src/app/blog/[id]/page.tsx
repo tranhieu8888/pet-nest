@@ -97,10 +97,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-orange-50 font-sans">
-      
-      
       <Header></Header>
-      
 
       {/* Main Content Area */}
       <div className="container mx-auto px-4 py-12">
@@ -110,8 +107,18 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
             href="/blog"
             className="inline-flex items-center text-orange-700 hover:text-orange-900 transition-colors duration-300"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             {blogDetailConfig.backToBlog}
           </Link>
@@ -119,17 +126,25 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Blog Post Content */}
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-orange-900 mb-4 leading-tight">{post.title}</h2>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-orange-900 mb-6 leading-tight"></h1>
           <div className="flex flex-wrap items-center text-orange-700 text-sm mb-4 gap-4">
             <div className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              <span>{new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>
+                {new Date(post.createdAt).toLocaleDateString("vi-VN")}
+              </span>
             </div>
           </div>
 
           {/* Featured Image */}
           {post.images.length > 0 && (
-            <div className="relative h-[400px] mb-8 rounded-lg overflow-hidden shadow-md">
+            <div className="relative h-[450px] mb-10 rounded-2xl overflow-hidden shadow-xl">
               <Image
                 src={post.images[0].url}
                 alt={post.title}
@@ -137,6 +152,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
                 className="object-cover"
                 priority
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
             </div>
           )}
 
@@ -148,11 +164,13 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
           {/* Related Blogs Section */}
           {relatedPosts.length > 0 && (
             <div className="mt-16">
-              <h3 className="text-2xl font-bold text-orange-900 mb-8">{blogDetailConfig.suggestedReading}</h3>
+              <h3 className="text-2xl font-bold text-orange-900 mb-8">
+                {blogDetailConfig.suggestedReading}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {relatedPosts.map((relatedPost) => (
-                  <Link 
-                    href={`/blog/${relatedPost._id}`} 
+                  <Link
+                    href={`/blog/${relatedPost._id}`}
                     key={relatedPost._id}
                     className="group"
                   >
@@ -168,12 +186,14 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
                         </div>
                       )}
                       <div className="p-4">
-                        <div className="text-sm text-orange-600 mb-2">{relatedPost.tag}</div>
+                        <div className="text-sm text-orange-600 mb-2">
+                          {relatedPost.tag}
+                        </div>
                         <h4 className="text-lg font-semibold text-orange-900 mb-2 group-hover:text-orange-700">
                           {relatedPost.title}
                         </h4>
                         <p className="text-orange-700 text-sm line-clamp-2">
-                          {relatedPost.description.replace(/<[^>]*>/g, '')}
+                          {relatedPost.description.replace(/<[^>]*>/g, "")}
                         </p>
                       </div>
                     </div>
