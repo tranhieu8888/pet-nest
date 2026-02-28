@@ -48,11 +48,11 @@ import Link from "next/link";
 
 // Menu items
 const menuItems = [
-  {
-    title: "Admin Dashboard",
-    url: "/admin/dashboard",
-    icon: TrendingUp,
-  },
+  // {
+  //   title: "Admin Dashboard",
+  //   url: "/admin/dashboard",
+  //   icon: TrendingUp,
+  // },
   {
     title: "Quản lý người dùng",
     url: "/admin/users",
@@ -63,31 +63,31 @@ const menuItems = [
     url: "/admin/blog",
     icon: Megaphone,
   },
-  {
-    title: "Quản lý banner",
-    url: "/admin/banner",
-    icon: Image,
-  },
-  {
-    title: "Quản lý đánh giá",
-    url: "/admin/review",
-    icon: Star,
-  },
-  {
-    title: "Quản lý voucher",
-    url: "/admin/voucher",
-    icon: Gift,
-  },
-  {
-    title: "Chăm sóc khách hàng",
-    url: "/messages",
-    icon: MessageCircle,
-  },
-  {
-    title: "Yêu cầu hỗ trợ",
-    url: "/admin/supportrequest",
-    icon: LifeBuoy,
-  },
+  // {
+  //   title: "Quản lý banner",
+  //   url: "/admin/banner",
+  //   icon: Image,
+  // },
+  // {
+  //   title: "Quản lý đánh giá",
+  //   url: "/admin/review",
+  //   icon: Star,
+  // },
+  // {
+  //   title: "Quản lý voucher",
+  //   url: "/admin/voucher",
+  //   icon: Gift,
+  // },
+  // {
+  //   title: "Chăm sóc khách hàng",
+  //   url: "/messages",
+  //   icon: MessageCircle,
+  // },
+  // {
+  //   title: "Yêu cầu hỗ trợ",
+  //   url: "/admin/supportrequest",
+  //   icon: LifeBuoy,
+  // },
 ];
 
 function AdminSidebar() {
