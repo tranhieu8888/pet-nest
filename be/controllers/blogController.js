@@ -39,18 +39,45 @@ exports.getAllBlogs = async (req, res) => {
 // Get single blog
 exports.getBlog = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid blog ID",
+      });
+    }
+
+    // ✅ Tăng view + lấy blog
     const blog = await Blog.findByIdAndUpdate(
-      req.params.id,
+      id,
       { $inc: { views: 1 } },
       { new: true }
     );
 
-    if (!blog)
-      return res.status(404).json({ success: false, message: "Not found" });
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Not found",
+      });
+    }
 
-    res.json({ success: true, blog });
+    // ✅ Lấy bài cùng tag
+    const related = await Blog.find({
+      _id: { $ne: blog._id },
+      tag: blog.tag,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      blog,
+      related,
+    });
   } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
+    res.status(500).json({
+      success: false,
+      message: e.message,
+    });
   }
 };
 
