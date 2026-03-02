@@ -63,6 +63,11 @@ const menuItems = [
     url: "/admin/blog",
     icon: Megaphone,
   },
+  {
+    title: "Quản lý sản phẩm",
+    url: "/admin/product",
+    icon: Gift, 
+  },
   // {
   //   title: "Quản lý banner",
   //   url: "/admin/banner",
