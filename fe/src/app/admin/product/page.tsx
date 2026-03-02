@@ -2552,7 +2552,7 @@ export default function ProductPage() {
           )}
         </CardContent>
       </Card>
-          <ChatBot/>
+          
       {selectedProduct && (
         <EditProductModal
           product={selectedProduct}

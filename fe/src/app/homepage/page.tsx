@@ -728,7 +728,8 @@ export default function HomePage() {
 
       {/* Newsletter Section */}
 
-      <ChatBot />
+      {/* <ChatBot /> */}
+      <Footer />
     </div>
   );
 }

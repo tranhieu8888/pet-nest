@@ -9,6 +9,7 @@ import Header from "@/components/layout/Header";
 import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../utils/petPagesConfig.vi";
 import enConfig from "../../../utils/petPagesConfig.en";
+import Footer from "@/components/layout/Footer";
 
 interface BlogImage {
   url: string;
@@ -40,7 +41,7 @@ export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string>("");
 
-  // 🔥 PHÂN TRANG
+  // PHÂN TRANG
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
 
@@ -83,7 +84,7 @@ export default function BlogPage() {
     );
   }
 
-  // 🔥 FILTER
+  // FILTER
   const filteredPosts = posts.filter(
     (post) =>
       (post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -199,7 +200,7 @@ export default function BlogPage() {
           ))}
         </div>
 
-        {/* 🔥 PAGINATION UI */}
+        {/* PAGINATION UI */}
         {totalPages > 1 && (
           <div className="blog-pagination">
             <button
@@ -230,6 +231,7 @@ export default function BlogPage() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
