@@ -23,6 +23,7 @@ import BlogForm from "./components/BlogForm";
 import BlogDetail from "./components/BlogDetail";
 import Pagination from "./components/Pagination";
 import { Blog } from "./types";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function BlogPage() {
   const { request } = useApi();
@@ -86,13 +87,12 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        setSuccessMessage("Tạo blog thành công!");
-        setTimeout(() => setSuccessMessage(null), 3000);
+        toast.success("Tạo blog thành công!");
       } else {
         throw new Error(response.message || "Tạo blog thất bại");
       }
     } catch (err: any) {
-      setError(err.message || "Tạo blog thất bại");
+      toast.error(err.message || "Tạo blog thất bại");
       throw err;
     }
   };
@@ -114,13 +114,13 @@ export default function BlogPage() {
         await fetchBlogs();
         // ✅ Cập nhật selectedBlog với dữ liệu mới từ response
         setSelectedBlog(response.blog);
-        setSuccessMessage("Cập nhật blog thành công!");
+        toast.success("Cập nhật blog thành công!");
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(response.message || "Cập nhật blog thất bại");
+        toast.error(response.message || "Cập nhật blog thất bại");
       }
     } catch (err: any) {
-      setError(err.message || "Cập nhật blog thất bại");
+      toast.error(err.message || "Cập nhật blog thất bại");
     }
   };
 
@@ -135,13 +135,13 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        setSuccessMessage("Xoá blog thành công!");
+        toast.success("Xoá blog thành công!");
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(response.message || "Xoá blog thất bại");
       }
     } catch (err: any) {
-      setError(err.message || "Xoá blog thất bại");
+      toast.error(err.message || "Xoá blog thất bại!");
     }
   };
 
@@ -167,18 +167,6 @@ export default function BlogPage() {
         </CardHeader>
 
         <CardContent>
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-md">
-              {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 text-green-600 rounded-md">
-              {successMessage}
-            </div>
-          )}
-
           <div className="mb-4">
             <Input
               placeholder="Tìm kiếm..."
