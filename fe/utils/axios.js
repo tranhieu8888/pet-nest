@@ -57,9 +57,14 @@ axiosInstance.interceptors.response.use(
     // Xử lý lỗi chung
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
+        // Chỉ redirect khi user đã từng đăng nhập (có token) => token hết hạn
+        // Không redirect nếu user là khách (chưa đăng nhập)
+        const hadToken = localStorage.getItem("token") || sessionStorage.getItem("token");
         localStorage.removeItem("token");
         sessionStorage.removeItem("token");
-        window.location.href = '/login';
+        if (hadToken) {
+          window.location.href = '/login';
+        }
       }
     }
     if (error.response?.status === 403) {
