@@ -116,8 +116,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setError(
             err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching categories",
+            err.message ||
+            "An error occurred while fetching categories",
           );
         } else if (err instanceof Error) {
           setError(err.message);
@@ -150,8 +150,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setParentError(
             err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching parent categories",
+            err.message ||
+            "An error occurred while fetching parent categories",
           );
         } else if (err instanceof Error) {
           setParentError(err.message);
@@ -185,8 +185,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setBannerError(
             err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching banners",
+            err.message ||
+            "An error occurred while fetching banners",
           );
         } else if (err instanceof Error) {
           setBannerError(err.message);
@@ -222,8 +222,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setTopSellingError(
             err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching top selling products",
+            err.message ||
+            "An error occurred while fetching top selling products",
           );
         } else if (err instanceof Error) {
           setTopSellingError(err.message);
@@ -292,7 +292,7 @@ export default function HomePage() {
                           priority={index === 0}
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent">
-                          <div className="container mx-auto px-4 h-full flex items-center">
+                          <div className="container mx-auto px-16 md:px-24 h-full flex items-center">
                             <motion.div
                               initial={{ opacity: 0, x: -50 }}
                               animate={{ opacity: 1, x: 0 }}
@@ -378,11 +378,10 @@ export default function HomePage() {
                   <button
                     key={index}
                     onClick={() => setCurrentBannerIndex(index)}
-                    className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${
-                      currentBannerIndex === index
-                        ? "bg-pink-600 scale-110 shadow-lg shadow-pink-600/50"
-                        : "bg-white/50 hover:bg-white/80"
-                    }`}
+                    className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${currentBannerIndex === index
+                      ? "bg-pink-600 scale-110 shadow-lg shadow-pink-600/50"
+                      : "bg-white/50 hover:bg-white/80"
+                      }`}
                     aria-label={`Go to slide ${index + 1}`}
                   />
                 ))}
@@ -494,7 +493,7 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.isArray(popularCategories) &&
-              popularCategories.length > 0 ? (
+                popularCategories.length > 0 ? (
                 popularCategories.map((category) => (
                   <motion.div
                     key={category._id}
@@ -605,12 +604,12 @@ export default function HomePage() {
                       // Lấy variant có giá thấp nhất và có ảnh
                       const minPriceVariant =
                         Array.isArray(product.variants) &&
-                        product.variants.length > 0
+                          product.variants.length > 0
                           ? product.variants.reduce(
-                              (min, v) =>
-                                v.sellPrice < min.sellPrice ? v : min,
-                              product.variants[0],
-                            )
+                            (min, v) =>
+                              v.sellPrice < min.sellPrice ? v : min,
+                            product.variants[0],
+                          )
                           : null;
 
                       let firstImage = "/placeholder.svg";
@@ -630,10 +629,10 @@ export default function HomePage() {
 
                       const isOutOfStock =
                         Array.isArray(product.variants) &&
-                        product.variants.length > 0
+                          product.variants.length > 0
                           ? product.variants.every(
-                              (v) => v.availableQuantity <= 0,
-                            )
+                            (v) => v.availableQuantity <= 0,
+                          )
                           : false;
 
                       return (
@@ -671,11 +670,11 @@ export default function HomePage() {
                             <div className="mt-auto flex items-end">
                               <span className="text-xl font-extrabold text-red-600">
                                 {minPriceVariant &&
-                                minPriceVariant.sellPrice !== undefined &&
-                                minPriceVariant.sellPrice !== null
+                                  minPriceVariant.sellPrice !== undefined &&
+                                  minPriceVariant.sellPrice !== null
                                   ? minPriceVariant.sellPrice.toLocaleString(
-                                      "vi-VN",
-                                    )
+                                    "vi-VN",
+                                  )
                                   : "0"}
                                 <span className="text-sm font-normal text-gray-500 ml-1">
                                   đ
