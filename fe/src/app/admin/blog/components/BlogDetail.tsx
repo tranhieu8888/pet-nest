@@ -29,9 +29,13 @@ export default function BlogDetail({ blog, isOpen, onClose }: Props) {
           <p>
             <strong>Tiêu đề:</strong> {blog.title}
           </p>
-          <p>
-            <strong>Mô tả:</strong> {blog.description}
-          </p>
+          <div>
+            <strong>Mô tả:</strong>
+            <div
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: blog.description }}
+            />
+          </div>
           <Badge>{blog.tag}</Badge>
 
           <div className="grid grid-cols-2 gap-2">

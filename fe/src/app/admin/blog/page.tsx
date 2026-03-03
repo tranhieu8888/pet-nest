@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AxiosProgressEvent } from "axios";
 import { Eye, Edit, Trash2 } from "lucide-react";
 
 import { api } from "../../../../utils/axios";
@@ -24,6 +23,7 @@ import BlogForm from "./components/BlogForm";
 import BlogDetail from "./components/BlogDetail";
 import Pagination from "./components/Pagination";
 import { Blog } from "./types";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function BlogPage() {
   const { request } = useApi();
@@ -37,8 +37,6 @@ export default function BlogPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | undefined>();
-
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -73,7 +71,6 @@ export default function BlogPage() {
   const filteredBlogs = blogs.filter(
     (blog) =>
       blog.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      blog.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       blog.tag?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -85,26 +82,17 @@ export default function BlogPage() {
       const response = await request(() =>
         api.post("/blogs", formData, {
           headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-            if (progressEvent.total) {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(progress);
-            }
-          },
         })
       );
 
       if (response.success) {
         await fetchBlogs();
-        setSuccessMessage("Tạo blog thành công!");
-        setTimeout(() => setSuccessMessage(null), 3000);
+        toast.success("Tạo blog thành công!");
       } else {
         throw new Error(response.message || "Tạo blog thất bại");
       }
     } catch (err: any) {
-      setError(err.message || "Tạo blog thất bại");
+      toast.error(err.message || "Tạo blog thất bại");
       throw err;
     }
   };
@@ -119,26 +107,20 @@ export default function BlogPage() {
       const response = await request(() =>
         api.put(`/blogs/${selectedBlog._id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-            if (progressEvent.total) {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(progress);
-            }
-          },
         })
       );
 
       if (response.success) {
         await fetchBlogs();
-        setSuccessMessage("Cập nhật blog thành công!");
+        // ✅ Cập nhật selectedBlog với dữ liệu mới từ response
+        setSelectedBlog(response.blog);
+        toast.success("Cập nhật blog thành công!");
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(response.message || "Cập nhật blog thất bại");
+        toast.error(response.message || "Cập nhật blog thất bại");
       }
     } catch (err: any) {
-      setError(err.message || "Cập nhật blog thất bại");
+      toast.error(err.message || "Cập nhật blog thất bại");
     }
   };
 
@@ -153,13 +135,13 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        setSuccessMessage("Xoá blog thành công!");
+        toast.success("Xoá blog thành công!");
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(response.message || "Xoá blog thất bại");
       }
     } catch (err: any) {
-      setError(err.message || "Xoá blog thất bại");
+      toast.error(err.message || "Xoá blog thất bại!");
     }
   };
 
@@ -175,6 +157,7 @@ export default function BlogPage() {
             <Button
               onClick={() => {
                 setSelectedBlog(undefined);
+                setIsDetailOpen(false); // đảm bảo view đóng
                 setIsFormOpen(true);
               }}
             >
@@ -184,18 +167,6 @@ export default function BlogPage() {
         </CardHeader>
 
         <CardContent>
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-md">
-              {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 text-green-600 rounded-md">
-              {successMessage}
-            </div>
-          )}
-
           <div className="mb-4">
             <Input
               placeholder="Tìm kiếm..."
@@ -211,15 +182,14 @@ export default function BlogPage() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table className="w-full table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>STT</TableHead>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Mô tả</TableHead>
-                    <TableHead>Tag</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
+                    <TableHead className="w-16 text-center">STT</TableHead>
+                    <TableHead className="w-[45%]">Tiêu đề</TableHead>
+                    <TableHead className="w-32 text-center">Tag</TableHead>
+                    <TableHead className="w-40 text-center">Ngày tạo</TableHead>
+                    <TableHead className="w-32 text-right">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -231,27 +201,34 @@ export default function BlogPage() {
                     )
                     .map((blog, index) => (
                       <TableRow key={blog._id}>
-                        <TableCell>
+                        <TableCell className="text-center">
                           {(currentPage - 1) * itemsPerPage + index + 1}
                         </TableCell>
-                        <TableCell>{blog.title}</TableCell>
-                        <TableCell className="truncate max-w-xs">
-                          {blog.description}
+
+                        <TableCell className="text-left truncate">
+                          {blog.title}
                         </TableCell>
-                        <TableCell>
+
+                        <TableCell className="text-center">
                           <Badge>{blog.tag}</Badge>
                         </TableCell>
-                        <TableCell>
+
+                        <TableCell className="text-center">
                           {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setSelectedBlog(blog);
-                                setIsDetailOpen(true);
+                              onClick={async () => {
+                                const res = await request(() =>
+                                  api.get(`/blogs/${blog._id}`)
+                                );
+                                if (res.success) {
+                                  setSelectedBlog(res.blog);
+                                  setIsDetailOpen(true);
+                                }
                               }}
                             >
                               <Eye size={16} />
@@ -301,10 +278,7 @@ export default function BlogPage() {
         onClose={() => {
           setIsFormOpen(false);
           setSelectedBlog(undefined);
-          setUploadProgress(0);
         }}
-        uploadProgress={uploadProgress}
-        setUploadProgress={setUploadProgress}
       />
 
       {selectedBlog && (

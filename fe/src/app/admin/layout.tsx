@@ -48,11 +48,11 @@ import Link from "next/link";
 
 // Menu items
 const menuItems = [
-  {
-    title: "Admin Dashboard",
-    url: "/admin/dashboard",
-    icon: TrendingUp,
-  },
+  // {
+  //   title: "Admin Dashboard",
+  //   url: "/admin/dashboard",
+  //   icon: TrendingUp,
+  // },
   {
     title: "Quản lý người dùng",
     url: "/admin/users",
@@ -64,30 +64,35 @@ const menuItems = [
     icon: Megaphone,
   },
   {
-    title: "Quản lý banner",
-    url: "/admin/banner",
-    icon: Image,
+    title: "Quản lý sản phẩm",
+    url: "/admin/product",
+    icon: Gift, 
   },
-  {
-    title: "Quản lý đánh giá",
-    url: "/admin/review",
-    icon: Star,
-  },
-  {
-    title: "Quản lý voucher",
-    url: "/admin/voucher",
-    icon: Gift,
-  },
-  {
-    title: "Chăm sóc khách hàng",
-    url: "/messages",
-    icon: MessageCircle,
-  },
-  {
-    title: "Yêu cầu hỗ trợ",
-    url: "/admin/supportrequest",
-    icon: LifeBuoy,
-  },
+  // {
+  //   title: "Quản lý banner",
+  //   url: "/admin/banner",
+  //   icon: Image,
+  // },
+  // {
+  //   title: "Quản lý đánh giá",
+  //   url: "/admin/review",
+  //   icon: Star,
+  // },
+  // {
+  //   title: "Quản lý voucher",
+  //   url: "/admin/voucher",
+  //   icon: Gift,
+  // },
+  // {
+  //   title: "Chăm sóc khách hàng",
+  //   url: "/messages",
+  //   icon: MessageCircle,
+  // },
+  // {
+  //   title: "Yêu cầu hỗ trợ",
+  //   url: "/admin/supportrequest",
+  //   icon: LifeBuoy,
+  // },
 ];
 
 function AdminSidebar() {
@@ -96,7 +101,7 @@ function AdminSidebar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     sessionStorage.removeItem("token");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
@@ -164,7 +169,7 @@ function AdminSidebar() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-medium">Trang admin</span>
-                <span className="text-xs text-gray-500">admin@example.com</span>
+                <span className="text-xs text-gray-500">admin@gmail.com</span>
               </div>
               <ChevronUp className="ml-auto size-4 text-gray-400" />
             </button>
