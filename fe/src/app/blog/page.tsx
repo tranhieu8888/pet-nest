@@ -3,13 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "../../../utils/axios";
 import "./blog.css";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../utils/petPagesConfig.vi";
 import enConfig from "../../../utils/petPagesConfig.en";
-import Footer from "@/components/layout/Footer";
+
+function decodeHTML(html: string) {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+}
+
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>/g, "");
+}
 
 interface BlogImage {
   url: string;
@@ -35,16 +46,20 @@ export default function BlogPage() {
   const pagesConfig = lang === "vi" ? viConfig : enConfig;
   const blogConfig = pagesConfig.blog;
 
+  const searchParams = useSearchParams();
+  const blogId = searchParams.get("id");
+
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTag, setSelectedTag] = useState<string>("");
 
-  // PHÂN TRANG
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
 
+  // ================= FETCH ALL BLOGS (luôn fetch để dùng cho related) =================
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -60,7 +75,25 @@ export default function BlogPage() {
     fetchBlogs();
   }, []);
 
-  // Reset về trang 1 khi search hoặc đổi tag
+  // ================= FETCH DETAIL =================
+  useEffect(() => {
+    if (!blogId) {
+      setSelectedPost(null);
+      return;
+    }
+
+    const fetchBlogDetail = async () => {
+      try {
+        const response = await api.get(`/blogs/${blogId}`);
+        setSelectedPost(response.data.blog);
+      } catch (err) {
+        setError("Error loading blog detail");
+      }
+    };
+
+    fetchBlogDetail();
+  }, [blogId]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedTag]);
@@ -84,7 +117,136 @@ export default function BlogPage() {
     );
   }
 
-  // FILTER
+  // ================= DETAIL VIEW =================
+  if (blogId && selectedPost) {
+    const relatedPosts = posts.filter(
+      (post) => post.tag === selectedPost.tag && post._id !== selectedPost._id
+    );
+
+    return (
+      <div className="blog-container">
+        <Header />
+
+        <div className="blog-content">
+          <div className="blog-back-button">
+            <Link href="/blog" className="back-link">
+              ← {blogConfig.backToHome}
+            </Link>
+          </div>
+
+          <h1 className="blog-card-title">{selectedPost.title}</h1>
+
+          <p style={{ marginBottom: "1rem", color: "#6b7280" }}>
+            {new Date(selectedPost.createdAt).toLocaleDateString("vi-VN")}
+          </p>
+
+          {/* Multi images detail */}
+          {selectedPost.images.length > 0 && (
+            <div style={{ marginBottom: "2rem" }}>
+              <div className="blog-card-image" style={{ height: "400px" }}>
+                <Image
+                  src={selectedPost.images[0].url}
+                  alt={selectedPost.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              {selectedPost.images.length > 1 && (
+                <div className="blog-multi-images" style={{ height: "200px" }}>
+                  {selectedPost.images.slice(1).map((img, index) => (
+                    <div key={index} className="blog-multi-image">
+                      <Image
+                        src={img.url}
+                        alt={selectedPost.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div
+            dangerouslySetInnerHTML={{
+              __html: selectedPost.description,
+            }}
+          />
+
+          {/* RELATED POSTS */}
+          {relatedPosts.length > 0 && (
+            <div style={{ marginTop: "3rem" }}>
+              <h3
+                style={{
+                  marginBottom: "1.5rem",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                }}
+              >
+                Bài viết liên quan
+              </h3>
+
+              <div className="blog-grid">
+                {relatedPosts.slice(0, 3).map((post) => (
+                  <article key={post._id} className="blog-card">
+                    <div className="blog-card-image">
+                      {post.images.length > 0 ? (
+                        <div className="blog-multi-images">
+                          {post.images.slice(0, 3).map((img, index) => (
+                            <div key={index} className="blog-multi-image">
+                              <Image
+                                src={img.url}
+                                alt={post.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Image
+                          src="/images/blog/default.jpg"
+                          alt={post.title}
+                          fill
+                          className="object-cover"
+                        />
+                      )}
+
+                      <div className="blog-card-tag">{post.tag}</div>
+                    </div>
+
+                    <div className="blog-card-content">
+                      <h2 className="blog-card-title">
+                        <Link href={`/blog?id=${post._id}`}>{post.title}</Link>
+                      </h2>
+
+                      <p className="blog-card-description">
+                        {decodeHTML(stripHtml(post.description))}
+                      </p>
+
+                      <Link
+                        href={`/blog?id=${post._id}`}
+                        className="blog-card-link"
+                      >
+                        Đọc thêm →
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  // ================= LIST VIEW =================
+
   const filteredPosts = posts.filter(
     (post) =>
       (post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,13 +264,8 @@ export default function BlogPage() {
   return (
     <div className="blog-container">
       <Header />
-      <div className="blog-content">
-        <div className="blog-back-button">
-          <Link href="/homepage" className="back-link">
-            ← {blogConfig.backToHome}
-          </Link>
-        </div>
 
+      <div className="blog-content">
         {/* SEARCH */}
         <div className="blog-search">
           <div className="blog-search-container">
@@ -123,28 +280,25 @@ export default function BlogPage() {
         </div>
 
         {/* TAG FILTER */}
-        <div className="blog-tags">
-          <div className="blog-tags-container">
+        <div className="blog-tags-container">
+          <button
+            onClick={() => setSelectedTag("")}
+            className={`blog-tag-button ${selectedTag === "" ? "active" : ""}`}
+          >
+            All
+          </button>
+
+          {Array.from(new Set(posts.map((post) => post.tag))).map((tag) => (
             <button
-              onClick={() => setSelectedTag("")}
+              key={tag}
+              onClick={() => setSelectedTag(tag)}
               className={`blog-tag-button ${
-                selectedTag === "" ? "active" : ""
+                selectedTag === tag ? "active" : ""
               }`}
             >
-              All
+              {tag}
             </button>
-            {Array.from(new Set(posts.map((post) => post.tag))).map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setSelectedTag(tag)}
-                className={`blog-tag-button ${
-                  selectedTag === tag ? "active" : ""
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
 
         {/* BLOG GRID */}
@@ -178,29 +332,23 @@ export default function BlogPage() {
               </div>
 
               <div className="blog-card-content">
-                <span className="blog-card-date">
-                  {new Date(post.createdAt).toLocaleDateString("vi-VN")}
-                </span>
-
                 <h2 className="blog-card-title">
-                  <Link href={`/blog/${post._id}`}>{post.title}</Link>
+                  <Link href={`/blog?id=${post._id}`}>{post.title}</Link>
                 </h2>
 
                 <p className="blog-card-description">
-                  {post.description.replace(/<[^>]*>/g, "")}
+                  {decodeHTML(stripHtml(post.description))}
                 </p>
 
-                <div className="blog-card-footer">
-                  <Link href={`/blog/${post._id}`} className="blog-card-link">
-                    {blogConfig.readMore} →
-                  </Link>
-                </div>
+                <Link href={`/blog?id=${post._id}`} className="blog-card-link">
+                  {blogConfig.readMore} →
+                </Link>
               </div>
             </article>
           ))}
         </div>
 
-        {/* PAGINATION UI */}
+        {/* PAGINATION */}
         {totalPages > 1 && (
           <div className="blog-pagination">
             <button
@@ -231,6 +379,7 @@ export default function BlogPage() {
           </div>
         )}
       </div>
+
       <Footer />
     </div>
   );

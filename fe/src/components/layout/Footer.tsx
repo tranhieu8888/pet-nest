@@ -18,7 +18,7 @@ const Footer = () => {
         <div>
           <Link href="/" className="flex items-center gap-2 mb-4">
             <PawPrint className="text-primary" />
-            <span className="font-bold text-xl">PetCare Hub</span>
+            <span className="font-bold text-xl">PetNest</span>
           </Link>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Không chỉ là cửa hàng thú cưng. Chúng tôi mang đến sản phẩm chất
