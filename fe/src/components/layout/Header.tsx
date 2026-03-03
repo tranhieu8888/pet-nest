@@ -102,45 +102,45 @@ function CartDropdown() {
   const { lang } = useLanguage();
   const config = lang === 'vi' ? pagesConfigVi.header : pagesConfigEn.header;
 
-  useEffect(() => {
-    const fetchCartData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get('/cart/getcart');
-        if (response.data.success && response.data.data) {
-          const items = response.data.data.cartItems || [];
-          setCartItems((items as any[]).map((item: any) => ({
-            _id: item._id || '',
-            variantId: item.product.selectedVariant?._id || '',
-            name: item.product.name || 'Unknown Product',
-            price: item.product.selectedVariant?.price || 0,
-            quantity: item.quantity || 1,
-            image: item.product.selectedVariant?.images?.[0]?.url || "/placeholder.svg"
-          })));
-          setCartCount(items.length);
-        } else {
-          setCartItems([]);
-          setCartCount(0);
-        }
-      } catch (error) {
-        console.error("Failed to fetch cart data:", error);
-        setCartItems([]);
-        setCartCount(0);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchCartData = async () => {
+  //     try {
+  //       setIsLoading(true);
+  //       const response = await api.get('/cart/getcart');
+  //       if (response.data.success && response.data.data) {
+  //         const items = response.data.data.cartItems || [];
+  //         setCartItems((items as any[]).map((item: any) => ({
+  //           _id: item._id || '',
+  //           variantId: item.product.selectedVariant?._id || '',
+  //           name: item.product.name || 'Unknown Product',
+  //           price: item.product.selectedVariant?.price || 0,
+  //           quantity: item.quantity || 1,
+  //           image: item.product.selectedVariant?.images?.[0]?.url || "/placeholder.svg"
+  //         })));
+  //         setCartCount(items.length);
+  //       } else {
+  //         setCartItems([]);
+  //         setCartCount(0);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch cart data:", error);
+  //       setCartItems([]);
+  //       setCartCount(0);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
 
-    fetchCartData();
+  //   fetchCartData();
 
-    const handleCartUpdate = () => {
-      fetchCartData();
-    };
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    return () => {
-      window.removeEventListener('cartUpdated', handleCartUpdate);
-    };
-  }, []);
+  //   const handleCartUpdate = () => {
+  //     fetchCartData();
+  //   };
+  //   window.addEventListener('cartUpdated', handleCartUpdate);
+  //   return () => {
+  //     window.removeEventListener('cartUpdated', handleCartUpdate);
+  //   };
+  // }, []);
 
   // Get the latest added product (last in the array)
   const latestItem = cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
@@ -635,10 +635,10 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
           <div className="flex-1 max-w-3xl mx-8 hidden md:flex items-center gap-3">
             {/* Hoverable Category Menu */}
             <div className="relative group/category z-50">
-              <Link href="/category" className="flex items-center gap-2 font-semibold text-gray-700 hover:text-primary hover:bg-primary/5 border border-gray-200 min-w-max hidden lg:flex h-10 px-4 py-2 justify-center rounded-md cursor-pointer transition-colors">
+              <div className="flex items-center gap-2 font-semibold text-gray-700 hover:text-primary hover:bg-primary/5 border border-gray-200 min-w-max hidden lg:flex h-10 px-4 py-2 justify-center rounded-md cursor-pointer transition-colors">
                 <Menu className="w-4 h-4" />
                 {lang === 'vi' ? 'Danh mục' : 'Categories'}
-              </Link>
+              </div>
 
               {/* Dropdown Content - hidden by default, shown on group hover */}
               <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover/category:opacity-100 group-hover/category:visible transition-all duration-200 w-[300px]">
@@ -736,7 +736,7 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-4 pr-12 py-2.5 w-full rounded-full border-gray-200 focus-visible:ring-primary/20 bg-gray-50 focus:bg-white transition-colors"
               />
-              <Button size="icon" className="absolute right-1.5 top-1.5 h-7 w-7 rounded-full bg-primary text-white hover:bg-primary/90" type="submit">
+              <Button size="icon" className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-primary text-white hover:bg-primary/90" type="submit">
                 <Search className="h-4 w-4" />
               </Button>
             </form>
