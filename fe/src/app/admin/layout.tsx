@@ -15,6 +15,7 @@ import {
   Star,
   Gift,
   Image,
+  ListTree,
   Settings,
   MessageCircle,
 } from "lucide-react";
@@ -66,7 +67,12 @@ const menuItems = [
   {
     title: "Quản lý sản phẩm",
     url: "/admin/product",
-    icon: Gift, 
+    icon: Gift,
+  },
+  {
+    title: "Quản lý danh mục",
+    url: "/admin/category",
+    icon: ListTree,
   },
   // {
   //   title: "Quản lý banner",
