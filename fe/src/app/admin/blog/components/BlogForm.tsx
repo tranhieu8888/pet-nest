@@ -221,7 +221,7 @@ export default function BlogForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {blog ? "Chỉnh sửa bài viết" : "Thêm bài viết"}
@@ -245,6 +245,10 @@ export default function BlogForm({
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
             )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Tiêu đề tối thiểu 10 ký tự. Hiện tại:{" "}
+              {formData.title.trim().length} / 10
+            </p>
           </div>
 
           <div>
@@ -274,6 +278,14 @@ export default function BlogForm({
               Ví dụ hợp lệ: #pet, #dog, #cat (ít nhất 2 ký tự sau #)
             </p>
           </div>
+
+          {/* chỉ hiện khi edit */}
+          {blog && (
+            <div>
+              <Label>Lượt xem</Label>
+              <Input value={String(blog.views ?? 0)} readOnly disabled />
+            </div>
+          )}
 
           {/* ẢNH */}
           <div>

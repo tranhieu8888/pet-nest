@@ -187,6 +187,7 @@ export default function BlogPage() {
                   <TableRow>
                     <TableHead className="w-16 text-center">STT</TableHead>
                     <TableHead className="w-[45%]">Tiêu đề</TableHead>
+                    <TableHead className="w-24 text-center">Lượt xem</TableHead>
                     <TableHead className="w-32 text-center">Tag</TableHead>
                     <TableHead className="w-40 text-center">Ngày tạo</TableHead>
                     <TableHead className="w-32 text-right">Hành động</TableHead>
@@ -207,6 +208,10 @@ export default function BlogPage() {
 
                         <TableCell className="text-left truncate">
                           {blog.title}
+                        </TableCell>
+
+                        <TableCell className="text-center">
+                          {blog.views ?? 0}
                         </TableCell>
 
                         <TableCell className="text-center">
