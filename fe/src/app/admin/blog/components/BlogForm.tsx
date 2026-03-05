@@ -8,14 +8,13 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import TinyEditor from "@/components/editor/TinyEditor";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import TinyEditor from "@/components/editor/TinyEditor";
 
 interface BlogFormProps {
   blog?: Blog;
@@ -36,62 +35,51 @@ export default function BlogForm({
     tag: "",
   });
 
-  const [imagePreview, setImagePreview] = useState<string[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [existingImages, setExistingImages] = useState<
-    {
-      url: string;
-      public_id: string;
-    }[]
-  >([]);
+  const [existingImage, setExistingImage] = useState<{
+    url: string;
+    public_id: string;
+  } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
     if (blog) {
-      // EDIT MODE
       setFormData({
         title: blog.title,
         description: blog.description,
         tag: blog.tag,
       });
 
-      setExistingImages(blog.images || []);
-      setSelectedFiles([]);
-      setImagePreview([]);
+      setExistingImage(blog.image?.url ? blog.image : null);
+      setSelectedFile(null);
+      setImagePreview("");
     } else {
-      // ADD MODE
-      setFormData({
-        title: "",
-        description: "",
-        tag: "",
-      });
-
-      setExistingImages([]);
-      setSelectedFiles([]);
-      setImagePreview([]);
+      setFormData({ title: "", description: "", tag: "" });
+      setExistingImage(null);
+      setSelectedFile(null);
+      setImagePreview("");
     }
   }, [isOpen, blog]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles((prev) => [...prev, ...files]);
-    setImagePreview((prev) => [
-      ...prev,
-      ...files.map((f) => URL.createObjectURL(f)),
-    ]);
+    const file = (e.target.files || [])[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
-  const removeExistingImage = (public_id: string) => {
-    setExistingImages((prev) =>
-      prev.filter((img) => img.public_id !== public_id)
-    );
+  const removeExistingImage = () => {
+    setExistingImage(null);
   };
 
-  const removeNewImage = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setImagePreview((prev) => prev.filter((_, i) => i !== index));
+  const removeNewImage = () => {
+    setSelectedFile(null);
+    setImagePreview("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,8 +91,15 @@ export default function BlogForm({
     form.append("description", formData.description);
     form.append("tag", formData.tag);
 
-    existingImages.forEach((img) => form.append("keepImages", img.public_id));
-    selectedFiles.forEach((file) => form.append("images", file));
+    // nếu đã xoá ảnh cũ và không upload ảnh mới => removeImage=true
+    if (!existingImage && !selectedFile && blog?.image?.url) {
+      form.append("removeImage", "true");
+    }
+
+    // upload ảnh mới (1 file)
+    if (selectedFile) {
+      form.append("image", selectedFile);
+    }
 
     await onSubmit(form);
 
@@ -151,56 +146,44 @@ export default function BlogForm({
             />
           </div>
 
-          <Input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageChange}
-          />
+          {/* chọn 1 ảnh */}
+          <Input type="file" accept="image/*" onChange={handleImageChange} />
 
           {/* ẢNH CŨ */}
-          {existingImages.length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
-              {existingImages.map((img) => (
-                <div key={img.public_id} className="relative h-32">
-                  <NextImage
-                    src={img.url}
-                    alt=""
-                    fill
-                    className="object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeExistingImage(img.public_id)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
+          {existingImage?.url && (
+            <div className="relative h-40 w-full">
+              <NextImage
+                src={existingImage.url}
+                alt=""
+                fill
+                className="object-cover rounded"
+              />
+              <button
+                type="button"
+                onClick={removeExistingImage}
+                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           )}
 
-          {/* ẢNH MỚI */}
-          {imagePreview.length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
-              {imagePreview.map((url, i) => (
-                <div key={i} className="relative h-32">
-                  <NextImage
-                    src={url}
-                    alt=""
-                    fill
-                    className="object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeNewImage(i)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
+          {/* ẢNH MỚI PREVIEW */}
+          {imagePreview && (
+            <div className="relative h-40 w-full">
+              <NextImage
+                src={imagePreview}
+                alt=""
+                fill
+                className="object-cover rounded"
+              />
+              <button
+                type="button"
+                onClick={removeNewImage}
+                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           )}
 

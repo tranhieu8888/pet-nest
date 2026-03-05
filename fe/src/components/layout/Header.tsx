@@ -764,9 +764,9 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
 
 
             {/* Language Switcher */}
-            <Button variant="outline" size="sm" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>
+            {/* <Button variant="outline" size="sm" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>
               {lang === 'vi' ? pagesConfigVi.header.language.vi : pagesConfigEn.header.language.en}
-            </Button>
+            </Button> */}
             {/* Nút Chatbot, Notification, Cart chỉ hiển thị nếu đã đăng nhập */}
             {isLoggedIn && userRole === 1 && (
               <Button

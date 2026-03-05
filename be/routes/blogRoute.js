@@ -9,12 +9,16 @@ const {
   createBlog,
   getAllBlogs,
   getBlog,
+  getBlogBySlug,
   updateBlog,
   deleteBlog,
 } = require("../controllers/blogController.js");
 
 // GET all blogs
 router.get("/", getAllBlogs);
+
+// GET blog by slug
+router.get("/slug/:slug", getBlogBySlug);
 
 // GET blog by id
 router.get("/:id", getBlog);
@@ -24,7 +28,7 @@ router.post(
   "/",
   verifyToken,
   authorizeRoles(ROLES.ADMIN),
-  upload.array("images", 5),
+  upload.single("image"),
   createBlog
 );
 
@@ -33,16 +37,11 @@ router.put(
   "/:id",
   verifyToken,
   authorizeRoles(ROLES.ADMIN),
-  upload.array("images", 5),
+  upload.single("image"),
   updateBlog
 );
 
 // DELETE blog (chỉ admin)
-router.delete(
-  "/:id",
-  verifyToken,
-  authorizeRoles(ROLES.ADMIN),
-  deleteBlog
-);
+router.delete("/:id", verifyToken, authorizeRoles(ROLES.ADMIN), deleteBlog);
 
 module.exports = router;

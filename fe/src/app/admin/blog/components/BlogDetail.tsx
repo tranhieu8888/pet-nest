@@ -29,6 +29,11 @@ export default function BlogDetail({ blog, isOpen, onClose }: Props) {
           <p>
             <strong>Tiêu đề:</strong> {blog.title}
           </p>
+
+          <p>
+            <strong>Slug:</strong> {blog.slug}
+          </p>
+
           <div>
             <strong>Mô tả:</strong>
             <div
@@ -36,20 +41,22 @@ export default function BlogDetail({ blog, isOpen, onClose }: Props) {
               dangerouslySetInnerHTML={{ __html: blog.description }}
             />
           </div>
+
           <Badge>{blog.tag}</Badge>
 
-          <div className="grid grid-cols-2 gap-2">
-            {blog.images.map((img, i) => (
-              <div key={i} className="relative h-32">
-                <NextImage
-                  src={img.url}
-                  alt=""
-                  fill
-                  className="object-cover rounded"
-                />
-              </div>
-            ))}
-          </div>
+          {/* 1 ảnh */}
+          {blog.image?.url ? (
+            <div className="relative h-48 w-full">
+              <NextImage
+                src={blog.image.url}
+                alt=""
+                fill
+                className="object-cover rounded"
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có ảnh</p>
+          )}
 
           <div className="flex justify-end">
             <Button onClick={onClose}>Đóng</Button>
