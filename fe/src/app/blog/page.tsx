@@ -34,10 +34,10 @@ interface Author {
 interface BlogPost {
   _id: string;
   title: string;
-  slug: string; // ✅ dùng slug để đi detail
+  slug: string; // dùng slug để đi detail
   description: string;
   tag: string;
-  image?: BlogImage; // ✅ 1 ảnh
+  image?: BlogImage;
   author: Author | null;
   createdAt: string;
 }

@@ -112,7 +112,7 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        // ✅ Cập nhật selectedBlog với dữ liệu mới từ response
+        // Cập nhật selectedBlog với dữ liệu mới từ response
         setSelectedBlog(response.blog);
         toast.success("Cập nhật blog thành công!");
         setTimeout(() => setSuccessMessage(null), 3000);

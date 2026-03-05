@@ -20,7 +20,7 @@ interface BlogPost {
   slug: string;
   description: string;
   tag: string;
-  image?: BlogImage; // ✅ 1 ảnh
+  image?: BlogImage;
   createdAt: string;
 }
 
@@ -36,14 +36,14 @@ function stripHtml(html: string) {
 
 export default function BlogDetailPage() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : ""; // ✅ lấy slug
+  const slug = typeof params?.slug === "string" ? params.slug : ""; // lấy slug
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch detail theo slug
+  // Fetch detail theo slug
   useEffect(() => {
     if (!slug) return;
 
@@ -63,9 +63,9 @@ export default function BlogDetailPage() {
     };
 
     fetchDetail();
-  }, [slug]); // ✅ KHÔNG dùng params.slug
+  }, [slug]); // KHÔNG dùng params.slug
 
-  // ✅ Fetch all blogs để related theo tag
+  // Fetch all blogs để related theo tag
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -128,10 +128,10 @@ export default function BlogDetailPage() {
           {new Date(post.createdAt).toLocaleDateString("vi-VN")}
         </p>
 
-        {/* ✅ 1 ảnh */}
+        {/* 1 ảnh */}
         {post.image?.url ? (
           <div style={{ marginBottom: "2rem" }}>
-            <div className="blog-card-image" style={{ height: "400px" }}>
+            <div className="blog-card-image" style={{ height: "500px" }}>
               <Image
                 src={post.image.url}
                 alt={post.title}
@@ -144,7 +144,7 @@ export default function BlogDetailPage() {
 
         <div dangerouslySetInnerHTML={{ __html: post.description }} />
 
-        {/* ✅ Related */}
+        {/* Related */}
         {relatedPosts.length > 0 && (
           <div style={{ marginTop: "3rem" }}>
             <h3
