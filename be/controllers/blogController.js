@@ -189,7 +189,7 @@ exports.getBlog = async (req, res) => {
    - upload ảnh mới => xoá ảnh cũ, thay ảnh
    - removeImage=true => xoá ảnh cũ
    - không gửi gì => giữ ảnh cũ
-   -không cho bài viết rơi vào trạng thái "không có ảnh"
+   - không cho bài viết rơi vào trạng thái "không có ảnh"
 ========================================= */
 exports.updateBlog = async (req, res) => {
   try {

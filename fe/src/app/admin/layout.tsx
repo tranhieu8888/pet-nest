@@ -78,11 +78,11 @@ const menuItems = [
   //   url: "/admin/review",
   //   icon: Star,
   // },
-  // {
-  //   title: "Quản lý voucher",
-  //   url: "/admin/voucher",
-  //   icon: Gift,
-  // },
+  {
+    title: "Quản lý mã giảm giá",
+    url: "/admin/voucher",
+    icon: Gift,
+  },
   // {
   //   title: "Chăm sóc khách hàng",
   //   url: "/messages",
