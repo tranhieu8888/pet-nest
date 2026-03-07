@@ -14,17 +14,17 @@ type FormDataType = {
   code: string;
   discountAmount: string;
   discountPercent: string;
+  minOrderValue: string;
   validFrom: string;
   validTo: string;
   usageLimit: string;
-  isActive: boolean;
 };
 
 interface Props {
   open: boolean;
   onClose: () => void;
   formData: FormDataType;
-  setFormData: (field: keyof FormDataType, value: string | boolean) => void;
+  setFormData: (field: keyof FormDataType, value: string) => void;
   discountType: "amount" | "percent";
   setDiscountType: (v: "amount" | "percent") => void;
   handleSubmit: (e: React.FormEvent) => void;
@@ -60,8 +60,8 @@ export default function VoucherDialogs({
         <form onSubmit={handleSubmit} className="space-y-4">
           {voucherUsed && (
             <div className="rounded border border-yellow-300 bg-yellow-50 p-2 text-sm text-yellow-700">
-              Voucher đã được sử dụng. Chỉ có thể sửa ngày kết thúc, số lượt
-              dùng và trạng thái kích hoạt.
+              Voucher đã được sử dụng. Chỉ có thể sửa ngày kết thúc và số lượt
+              dùng.
             </div>
           )}
 
@@ -100,6 +100,7 @@ export default function VoucherDialogs({
                 Giảm %
               </label>
             </div>
+            <FieldError message={errors.discountType} />
           </div>
 
           {discountType === "amount" && (
@@ -130,6 +131,18 @@ export default function VoucherDialogs({
               <FieldError message={errors.discountPercent} />
             </div>
           )}
+
+          <div>
+            <Label>Đơn tối thiểu</Label>
+            <Input
+              type="number"
+              min={0}
+              disabled={voucherUsed}
+              value={formData.minOrderValue}
+              onChange={(e) => setFormData("minOrderValue", e.target.value)}
+            />
+            <FieldError message={errors.minOrderValue} />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -165,22 +178,10 @@ export default function VoucherDialogs({
             <FieldError message={errors.usageLimit} />
           </div>
 
-          <div>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) => setFormData("isActive", e.target.checked)}
-              />
-              Kích hoạt voucher
-            </label>
-          </div>
-
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Hủy
             </Button>
-
             <Button type="submit">Lưu</Button>
           </div>
         </form>

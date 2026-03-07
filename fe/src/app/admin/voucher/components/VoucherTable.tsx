@@ -37,9 +37,9 @@ export default function VoucherTable({
           <TableHead>STT</TableHead>
           <TableHead>Mã</TableHead>
           <TableHead>Giảm giá</TableHead>
+          <TableHead>Đơn tối thiểu</TableHead>
           <TableHead>Thời gian</TableHead>
           <TableHead>Hiệu lực</TableHead>
-          <TableHead>Kích hoạt</TableHead>
           <TableHead>Lượt dùng</TableHead>
           <TableHead className="text-right">Hành động</TableHead>
         </TableRow>
@@ -70,9 +70,13 @@ export default function VoucherTable({
                 </TableCell>
 
                 <TableCell>
-                  {v.discountAmount
+                  {v.discountAmount > 0
                     ? `${v.discountAmount.toLocaleString("vi-VN")}đ`
-                    : `${v.discountPercent || 0}%`}
+                    : `${v.discountPercent}%`}
+                </TableCell>
+
+                <TableCell>
+                  {Number(v.minOrderValue || 0).toLocaleString("vi-VN")}đ
                 </TableCell>
 
                 <TableCell className="text-sm">
@@ -91,12 +95,6 @@ export default function VoucherTable({
                 <TableCell>
                   <Badge variant={isExpired ? "destructive" : "default"}>
                     {isExpired ? "Hết hạn" : "Còn hạn"}
-                  </Badge>
-                </TableCell>
-
-                <TableCell>
-                  <Badge variant={v.isActive ? "default" : "secondary"}>
-                    {v.isActive ? "Kích hoạt" : "Không kích hoạt"}
                   </Badge>
                 </TableCell>
 

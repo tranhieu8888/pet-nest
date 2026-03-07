@@ -150,10 +150,11 @@ export default function BlogPage() {
   // =========================
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
+      <Toaster position="top-center" />
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Quản lý Blog</CardTitle>
+            <CardTitle>Quản lý Bài viết</CardTitle>
             <Button
               onClick={() => {
                 setSelectedBlog(undefined);
@@ -161,7 +162,7 @@ export default function BlogPage() {
                 setIsFormOpen(true);
               }}
             >
-              Thêm Blog
+              Thêm Mới
             </Button>
           </div>
         </CardHeader>

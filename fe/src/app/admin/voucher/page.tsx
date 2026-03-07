@@ -16,16 +16,16 @@ import VoucherDialogs from "./components/VoucherDialogs";
 import { Voucher } from "./types";
 
 type DiscountType = "amount" | "percent";
-type StatusFilter = "all" | "active" | "expired" | "enabled" | "disabled";
+type StatusFilter = "all" | "active" | "expired";
 
 type FormDataType = {
   code: string;
   discountAmount: string;
   discountPercent: string;
+  minOrderValue: string;
   validFrom: string;
   validTo: string;
   usageLimit: string;
-  isActive: boolean;
 };
 
 export default function VoucherPage() {
@@ -45,10 +45,10 @@ export default function VoucherPage() {
     code: "",
     discountAmount: "",
     discountPercent: "",
+    minOrderValue: "",
     validFrom: "",
     validTo: "",
     usageLimit: "",
-    isActive: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,8 +75,6 @@ export default function VoucherPage() {
       let matchStatus = true;
       if (statusFilter === "active") matchStatus = validTo >= now;
       if (statusFilter === "expired") matchStatus = validTo < now;
-      if (statusFilter === "enabled") matchStatus = v.isActive === true;
-      if (statusFilter === "disabled") matchStatus = v.isActive === false;
 
       return matchSearch && matchStatus;
     });
@@ -84,35 +82,53 @@ export default function VoucherPage() {
 
   const validateField = (
     name: keyof FormDataType,
-    value: string | boolean,
+    value: string,
     currentFormData: FormDataType = formData,
     currentDiscountType: DiscountType = discountType
   ) => {
+    const voucherUsed = Number(selectedVoucher?.usedCount || 0) > 0;
+
     switch (name) {
       case "code":
+        if (voucherUsed) return "";
         if (!String(value).trim()) return "Mã voucher không được để trống";
         return "";
 
       case "discountAmount":
-        if (currentDiscountType !== "amount") return "";
+        if (voucherUsed || currentDiscountType !== "amount") return "";
         if (value === "") return "Số tiền giảm không được để trống";
         if (Number(value) < 0 || Number.isNaN(Number(value))) {
           return "Số tiền giảm phải là số dương hoặc bằng 0";
         }
+        if (Number(value) === 0) {
+          return "Số tiền giảm phải lớn hơn 0";
+        }
         return "";
 
       case "discountPercent":
-        if (currentDiscountType !== "percent") return "";
+        if (voucherUsed || currentDiscountType !== "percent") return "";
         if (value === "") return "Phần trăm giảm không được để trống";
         if (Number(value) < 0 || Number.isNaN(Number(value))) {
           return "Phần trăm giảm phải là số dương hoặc bằng 0";
+        }
+        if (Number(value) === 0) {
+          return "Phần trăm giảm phải lớn hơn 0";
         }
         if (Number(value) > 100) {
           return "Phần trăm giảm không được lớn hơn 100";
         }
         return "";
 
-      case "validFrom": {
+      case "minOrderValue":
+        if (voucherUsed) return "";
+        if (value === "") return "Đơn tối thiểu không được để trống";
+        if (Number(value) < 0 || Number.isNaN(Number(value))) {
+          return "Đơn tối thiểu phải là số dương hoặc bằng 0";
+        }
+        return "";
+
+      case "validFrom":
+        if (voucherUsed) return "";
         if (!value) return "Thời gian bắt đầu không được để trống";
         if (currentFormData.validTo) {
           const start = new Date(String(value));
@@ -122,19 +138,22 @@ export default function VoucherPage() {
           }
         }
         return "";
-      }
 
-      case "validTo": {
+      case "validTo":
         if (!value) return "Thời gian kết thúc không được để trống";
-        if (currentFormData.validFrom) {
-          const start = new Date(currentFormData.validFrom);
-          const end = new Date(String(value));
-          if (start >= end) {
-            return "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
-          }
+        const compareStart = voucherUsed
+          ? new Date(selectedVoucher?.validFrom || "")
+          : new Date(currentFormData.validFrom);
+
+        const compareEnd = new Date(String(value));
+
+        if (
+          !Number.isNaN(compareStart.getTime()) &&
+          compareStart >= compareEnd
+        ) {
+          return "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
         }
         return "";
-      }
 
       case "usageLimit":
         if (value === "") return "Số lượt sử dụng không được để trống";
@@ -143,7 +162,6 @@ export default function VoucherPage() {
         }
         if (
           selectedVoucher &&
-          selectedVoucher.usedCount > 0 &&
           Number(value) < Number(selectedVoucher.usedCount)
         ) {
           return `Số lượt sử dụng phải lớn hơn hoặc bằng ${selectedVoucher.usedCount}`;
@@ -160,28 +178,23 @@ export default function VoucherPage() {
     const voucherUsed = Number(selectedVoucher?.usedCount || 0) > 0;
 
     if (!voucherUsed) {
-      const codeError = validateField("code", formData.code);
-      if (codeError) newErrors.code = codeError;
-
-      const validFromError = validateField("validFrom", formData.validFrom);
-      if (validFromError) newErrors.validFrom = validFromError;
+      for (const field of [
+        "code",
+        "minOrderValue",
+        "validFrom",
+      ] as (keyof FormDataType)[]) {
+        const error = validateField(field, formData[field]);
+        if (error) newErrors[field] = error;
+      }
 
       if (discountType === "amount") {
-        const discountAmountError = validateField(
-          "discountAmount",
-          formData.discountAmount
-        );
-        if (discountAmountError) newErrors.discountAmount = discountAmountError;
+        const err = validateField("discountAmount", formData.discountAmount);
+        if (err) newErrors.discountAmount = err;
       }
 
       if (discountType === "percent") {
-        const discountPercentError = validateField(
-          "discountPercent",
-          formData.discountPercent
-        );
-        if (discountPercentError) {
-          newErrors.discountPercent = discountPercentError;
-        }
+        const err = validateField("discountPercent", formData.discountPercent);
+        if (err) newErrors.discountPercent = err;
       }
     }
 
@@ -195,18 +208,9 @@ export default function VoucherPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleFormChange = (
-    field: keyof FormDataType,
-    value: string | boolean
-  ) => {
-    const updatedFormData = {
-      ...formData,
-      [field]: value,
-    };
-
+  const handleFormChange = (field: keyof FormDataType, value: string) => {
+    const updatedFormData = { ...formData, [field]: value };
     setFormData(updatedFormData);
-
-    if (field === "isActive") return;
 
     setErrors((prev) => ({
       ...prev,
@@ -245,9 +249,10 @@ export default function VoucherPage() {
 
     setErrors((prev) => {
       const newErrors = { ...prev };
+      delete newErrors.discountAmount;
+      delete newErrors.discountPercent;
 
       if (type === "amount") {
-        delete newErrors.discountPercent;
         newErrors.discountAmount = validateField(
           "discountAmount",
           nextFormData.discountAmount,
@@ -255,7 +260,6 @@ export default function VoucherPage() {
           type
         );
       } else {
-        delete newErrors.discountAmount;
         newErrors.discountPercent = validateField(
           "discountPercent",
           nextFormData.discountPercent,
@@ -273,10 +277,10 @@ export default function VoucherPage() {
       code: "",
       discountAmount: "",
       discountPercent: "",
+      minOrderValue: "",
       validFrom: "",
       validTo: "",
       usageLimit: "",
-      isActive: true,
     });
     setDiscountType("amount");
     setErrors({});
@@ -295,10 +299,10 @@ export default function VoucherPage() {
       code: voucher.code,
       discountAmount: voucher.discountAmount?.toString() || "",
       discountPercent: voucher.discountPercent?.toString() || "",
+      minOrderValue: voucher.minOrderValue?.toString() || "",
       validFrom: format(new Date(voucher.validFrom), "yyyy-MM-dd'T'HH:mm"),
       validTo: format(new Date(voucher.validTo), "yyyy-MM-dd'T'HH:mm"),
       usageLimit: voucher.usageLimit.toString(),
-      isActive: voucher.isActive,
     });
 
     setIsEditDialogOpen(true);
@@ -319,7 +323,6 @@ export default function VoucherPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     try {
@@ -328,7 +331,7 @@ export default function VoucherPage() {
         validFrom: formData.validFrom,
         validTo: formData.validTo,
         usageLimit: Number(formData.usageLimit),
-        isActive: formData.isActive,
+        minOrderValue: Number(formData.minOrderValue),
         discountAmount:
           discountType === "amount" ? Number(formData.discountAmount) : 0,
         discountPercent:
@@ -353,21 +356,28 @@ export default function VoucherPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVoucher) return;
-
     if (!validateForm()) return;
 
     try {
-      const payload = {
-        code: formData.code.trim().toUpperCase(),
-        validFrom: formData.validFrom,
-        validTo: formData.validTo,
-        usageLimit: Number(formData.usageLimit),
-        isActive: formData.isActive,
-        discountAmount:
-          discountType === "amount" ? Number(formData.discountAmount) : 0,
-        discountPercent:
-          discountType === "percent" ? Number(formData.discountPercent) : 0,
-      };
+      const payload =
+        Number(selectedVoucher.usedCount || 0) > 0
+          ? {
+              validTo: formData.validTo,
+              usageLimit: Number(formData.usageLimit),
+            }
+          : {
+              code: formData.code.trim().toUpperCase(),
+              validFrom: formData.validFrom,
+              validTo: formData.validTo,
+              usageLimit: Number(formData.usageLimit),
+              minOrderValue: Number(formData.minOrderValue),
+              discountAmount:
+                discountType === "amount" ? Number(formData.discountAmount) : 0,
+              discountPercent:
+                discountType === "percent"
+                  ? Number(formData.discountPercent)
+                  : 0,
+            };
 
       await api.put(`/vouchers/${selectedVoucher._id}`, payload);
       toast.success("Cập nhật voucher thành công!");
@@ -388,12 +398,11 @@ export default function VoucherPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <Toaster position="top-right" />
-
+      <Toaster position="top-center" />
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Quản lý Voucher</CardTitle>
+            <CardTitle>Quản lý mã giảm giá</CardTitle>
 
             <Button
               onClick={() => {
@@ -402,7 +411,7 @@ export default function VoucherPage() {
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Thêm voucher
+              Thêm Mới
             </Button>
           </div>
         </CardHeader>
@@ -422,14 +431,7 @@ export default function VoucherPage() {
             <select
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(
-                  e.target.value as
-                    | "all"
-                    | "active"
-                    | "expired"
-                    | "enabled"
-                    | "disabled"
-                );
+                setStatusFilter(e.target.value as StatusFilter);
                 setCurrentPage(1);
               }}
               className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -437,8 +439,6 @@ export default function VoucherPage() {
               <option value="all">Tất cả</option>
               <option value="active">Còn hạn</option>
               <option value="expired">Hết hạn</option>
-              <option value="enabled">Kích hoạt</option>
-              <option value="disabled">Không kích hoạt</option>
             </select>
           </div>
 

@@ -4,7 +4,7 @@ const voucherSchema = new mongoose.Schema(
   {
     code: {
       type: String,
-      required: true,
+      required: [true, "Mã voucher không được để trống"],
       unique: true,
       trim: true,
       uppercase: true,
@@ -12,40 +12,40 @@ const voucherSchema = new mongoose.Schema(
     discountAmount: {
       type: Number,
       default: 0,
-      min: 0,
+      min: [0, "Số tiền giảm phải lớn hơn hoặc bằng 0"],
     },
     discountPercent: {
       type: Number,
       default: 0,
-      min: 0,
-      max: 100,
+      min: [0, "Phần trăm giảm phải lớn hơn hoặc bằng 0"],
+      max: [100, "Phần trăm giảm không được lớn hơn 100"],
+    },
+    minOrderValue: {
+      type: Number,
+      required: [true, "Giá trị đơn hàng tối thiểu không được để trống"],
+      min: [0, "Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 0"],
     },
     validFrom: {
       type: Date,
-      required: true,
+      required: [true, "Thời gian bắt đầu không được để trống"],
     },
     validTo: {
       type: Date,
-      required: true,
+      required: [true, "Thời gian kết thúc không được để trống"],
     },
     usageLimit: {
       type: Number,
-      default: 0,
-      min: 0,
+      required: [true, "Số lượt sử dụng không được để trống"],
+      min: [0, "Số lượt sử dụng phải lớn hơn hoặc bằng 0"],
     },
     usedCount: {
       type: Number,
       default: 0,
-      min: 0,
+      min: [0, "Số lượt đã dùng phải lớn hơn hoặc bằng 0"],
     },
-    minOrderValue: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    isActive: {
+    isDelete: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   },
   {
