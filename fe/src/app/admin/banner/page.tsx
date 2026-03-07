@@ -244,7 +244,7 @@ export default function BannerPage() {
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </TableCell>
 
-                      <TableCell className="font-medium">
+                      <TableCell>
                         {banner.title}
                       </TableCell>
 
