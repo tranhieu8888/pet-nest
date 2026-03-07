@@ -45,7 +45,7 @@ export default function BannerPage() {
   const [selectedBanner, setSelectedBanner] = useState<Banner | undefined>();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchBanners();
@@ -233,6 +233,7 @@ export default function BannerPage() {
                     <TableHead>Mô tả</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Ngày bắt đầu</TableHead>
+                    <TableHead>Ngày kết thúc</TableHead>
                     <TableHead className="text-right">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -244,9 +245,7 @@ export default function BannerPage() {
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </TableCell>
 
-                      <TableCell>
-                        {banner.title}
-                      </TableCell>
+                      <TableCell>{banner.title}</TableCell>
 
                       <TableCell className="max-w-[280px] truncate">
                         {banner.description || "N/A"}
@@ -267,6 +266,12 @@ export default function BannerPage() {
                           ? new Date(banner.startDate).toLocaleDateString(
                               "vi-VN"
                             )
+                          : "N/A"}
+                      </TableCell>
+
+                      <TableCell>
+                        {banner.endDate
+                          ? new Date(banner.endDate).toLocaleDateString("vi-VN")
                           : "N/A"}
                       </TableCell>
 
@@ -316,9 +321,7 @@ export default function BannerPage() {
 
               <Pagination
                 totalItems={filteredBanners.length}
-                itemsPerPage={itemsPerPage}
                 currentPage={currentPage}
-                setItemsPerPage={setItemsPerPage}
                 setCurrentPage={setCurrentPage}
               />
             </>
