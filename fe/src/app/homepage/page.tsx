@@ -87,7 +87,7 @@ export default function HomePage() {
   const homepageConfig = pagesConfig.homepage;
   const [popularCategories, setPopularCategories] = useState<Category[]>([]);
   const [parentCategories, setParentCategories] = useState<ParentCategory[]>(
-    [],
+    []
   );
   const [banners, setBanners] = useState<Banner[]>([]);
   const [topSellingProducts, setTopSellingProducts] = useState<
@@ -102,6 +102,7 @@ export default function HomePage() {
   const [parentError, setParentError] = useState<string | null>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [topSellingError, setTopSellingError] = useState<string | null>(null);
+  const now = new Date();
 
   useEffect(() => {
     const fetchPopularCategories = async () => {
@@ -116,8 +117,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setError(
             err.response?.data?.message ||
-            err.message ||
-            "An error occurred while fetching categories",
+              err.message ||
+              "An error occurred while fetching categories"
           );
         } else if (err instanceof Error) {
           setError(err.message);
@@ -150,8 +151,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setParentError(
             err.response?.data?.message ||
-            err.message ||
-            "An error occurred while fetching parent categories",
+              err.message ||
+              "An error occurred while fetching parent categories"
           );
         } else if (err instanceof Error) {
           setParentError(err.message);
@@ -175,9 +176,14 @@ export default function HomePage() {
         const response = await api.get("/banners");
         // Ensure response.data is an array
         const bannersData = Array.isArray(response.data) ? response.data : [];
-        // Filter active banners based on status
+        // Filter active banners based on status and start date - end date
         const activeBanners = bannersData.filter((banner) => {
-          return banner.status === "active";
+          if (banner.status !== "active") return false;
+
+          const start = new Date(banner.startDate);
+          const end = new Date(banner.endDate);
+
+          return start <= now && end >= now;
         });
         setBanners(activeBanners);
       } catch (err: unknown) {
@@ -185,8 +191,8 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setBannerError(
             err.response?.data?.message ||
-            err.message ||
-            "An error occurred while fetching banners",
+              err.message ||
+              "An error occurred while fetching banners"
           );
         } else if (err instanceof Error) {
           setBannerError(err.message);
@@ -222,14 +228,14 @@ export default function HomePage() {
         if (err instanceof AxiosError) {
           setTopSellingError(
             err.response?.data?.message ||
-            err.message ||
-            "An error occurred while fetching top selling products",
+              err.message ||
+              "An error occurred while fetching top selling products"
           );
         } else if (err instanceof Error) {
           setTopSellingError(err.message);
         } else {
           setTopSellingError(
-            "An error occurred while fetching top selling products",
+            "An error occurred while fetching top selling products"
           );
         }
         // Set empty array on error to prevent map errors
@@ -350,7 +356,7 @@ export default function HomePage() {
               <button
                 onClick={() =>
                   setCurrentBannerIndex((prev) =>
-                    prev === 0 ? banners.length - 1 : prev - 1,
+                    prev === 0 ? banners.length - 1 : prev - 1
                   )
                 }
                 className="bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-xl backdrop-blur-sm"
@@ -361,7 +367,7 @@ export default function HomePage() {
               <button
                 onClick={() =>
                   setCurrentBannerIndex((prev) =>
-                    prev === banners.length - 1 ? 0 : prev + 1,
+                    prev === banners.length - 1 ? 0 : prev + 1
                   )
                 }
                 className="bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-xl backdrop-blur-sm"
@@ -378,10 +384,11 @@ export default function HomePage() {
                   <button
                     key={index}
                     onClick={() => setCurrentBannerIndex(index)}
-                    className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${currentBannerIndex === index
-                      ? "bg-pink-600 scale-110 shadow-lg shadow-pink-600/50"
-                      : "bg-white/50 hover:bg-white/80"
-                      }`}
+                    className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${
+                      currentBannerIndex === index
+                        ? "bg-pink-600 scale-110 shadow-lg shadow-pink-600/50"
+                        : "bg-white/50 hover:bg-white/80"
+                    }`}
                     aria-label={`Go to slide ${index + 1}`}
                   />
                 ))}
@@ -396,7 +403,7 @@ export default function HomePage() {
                 transition={{ duration: 5, ease: "linear" }}
                 onAnimationComplete={() => {
                   setCurrentBannerIndex((prev) =>
-                    prev === banners.length - 1 ? 0 : prev + 1,
+                    prev === banners.length - 1 ? 0 : prev + 1
                   );
                 }}
                 key={currentBannerIndex}
@@ -493,7 +500,7 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.isArray(popularCategories) &&
-                popularCategories.length > 0 ? (
+              popularCategories.length > 0 ? (
                 popularCategories.map((category) => (
                   <motion.div
                     key={category._id}
@@ -604,12 +611,12 @@ export default function HomePage() {
                       // Lấy variant có giá thấp nhất và có ảnh
                       const minPriceVariant =
                         Array.isArray(product.variants) &&
-                          product.variants.length > 0
+                        product.variants.length > 0
                           ? product.variants.reduce(
-                            (min, v) =>
-                              v.sellPrice < min.sellPrice ? v : min,
-                            product.variants[0],
-                          )
+                              (min, v) =>
+                                v.sellPrice < min.sellPrice ? v : min,
+                              product.variants[0]
+                            )
                           : null;
 
                       let firstImage = "/placeholder.svg";
@@ -629,10 +636,10 @@ export default function HomePage() {
 
                       const isOutOfStock =
                         Array.isArray(product.variants) &&
-                          product.variants.length > 0
+                        product.variants.length > 0
                           ? product.variants.every(
-                            (v) => v.availableQuantity <= 0,
-                          )
+                              (v) => v.availableQuantity <= 0
+                            )
                           : false;
 
                       return (
@@ -650,7 +657,7 @@ export default function HomePage() {
                             <Image
                               src={getValidImageUrl(
                                 firstImage,
-                                "/placeholder.svg",
+                                "/placeholder.svg"
                               )}
                               alt={product.name}
                               fill
@@ -670,11 +677,11 @@ export default function HomePage() {
                             <div className="mt-auto flex items-end">
                               <span className="text-xl font-extrabold text-red-600">
                                 {minPriceVariant &&
-                                  minPriceVariant.sellPrice !== undefined &&
-                                  minPriceVariant.sellPrice !== null
+                                minPriceVariant.sellPrice !== undefined &&
+                                minPriceVariant.sellPrice !== null
                                   ? minPriceVariant.sellPrice.toLocaleString(
-                                    "vi-VN",
-                                  )
+                                      "vi-VN"
+                                    )
                                   : "0"}
                                 <span className="text-sm font-normal text-gray-500 ml-1">
                                   đ

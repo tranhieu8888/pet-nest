@@ -1,20 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const bannerController = require("../controllers/bannerController");
+const { upload } = require("../config/upload");
 
-// Create a new banner
-router.post("/", bannerController.createBanner);
-
-// Get all banners
+router.post("/", upload.single("image"), bannerController.createBanner);
 router.get("/", bannerController.getAllBanners);
-
-// Get a single banner by ID
 router.get("/:id", bannerController.getBannerById);
-
-// Update a banner
-router.put("/:id", bannerController.updateBanner);
-
-// Delete a banner
+router.put("/:id", upload.single("image"), bannerController.updateBanner);
 router.delete("/:id", bannerController.deleteBanner);
 
 module.exports = router;

@@ -1,5 +1,5 @@
 const Voucher = require("../models/voucherModel");
-const VoucherUser = require("../models/voucherUserModal");
+const VoucherUser = require("../models/voucherUserModal"); // getVouchersByUserId
 
 const normalizeCode = (code = "") => String(code).trim().toUpperCase();
 

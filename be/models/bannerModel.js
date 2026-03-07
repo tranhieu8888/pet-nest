@@ -5,25 +5,42 @@ const bannerSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
-    description: String,
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     imageUrl: {
       type: String,
-      default: "https://via.placeholder.com/150",
+      required: true,
+      trim: true,
     },
     status: {
       type: String,
       default: "active",
       enum: ["active", "inactive"],
+      required: true,
     },
-    startDate: Date,
-    endDate: Date,
-    link: String,
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
+    link: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,
     collection: "banners",
-  },
+  }
 );
 
 module.exports = mongoose.model("Banner", bannerSchema);

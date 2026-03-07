@@ -170,7 +170,7 @@ export default function BlogPage() {
         <CardContent>
           <div className="mb-4">
             <Input
-              placeholder="Tìm kiếm..."
+              placeholder="Tìm kiếm theo tiêu đề hoặc tag..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-sm"
@@ -196,73 +196,87 @@ export default function BlogPage() {
                 </TableHeader>
 
                 <TableBody>
-                  {filteredBlogs
-                    .slice(
-                      (currentPage - 1) * itemsPerPage,
-                      currentPage * itemsPerPage
-                    )
-                    .map((blog, index) => (
-                      <TableRow key={blog._id}>
-                        <TableCell className="text-center">
-                          {(currentPage - 1) * itemsPerPage + index + 1}
-                        </TableCell>
+                  {filteredBlogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-6 text-gray-500"
+                      >
+                        Không có bài viết phù hợp!
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredBlogs
+                      .slice(
+                        (currentPage - 1) * itemsPerPage,
+                        currentPage * itemsPerPage
+                      )
+                      .map((blog, index) => (
+                        <TableRow key={blog._id}>
+                          <TableCell className="text-center">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
+                          </TableCell>
 
-                        <TableCell className="text-left truncate">
-                          {blog.title}
-                        </TableCell>
+                          <TableCell className="text-left truncate">
+                            {blog.title}
+                          </TableCell>
 
-                        <TableCell className="text-center">
-                          {blog.views ?? 0}
-                        </TableCell>
+                          <TableCell className="text-center">
+                            {blog.views ?? 0}
+                          </TableCell>
 
-                        <TableCell className="text-center">
-                          <Badge>{blog.tag}</Badge>
-                        </TableCell>
+                          <TableCell className="text-center">
+                            <Badge>{blog.tag}</Badge>
+                          </TableCell>
 
-                        <TableCell className="text-center">
-                          {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                const res = await request(() =>
-                                  api.get(`/blogs/${blog._id}`)
-                                );
-                                if (res.success) {
-                                  setSelectedBlog(res.blog);
-                                  setIsDetailOpen(true);
-                                }
-                              }}
-                            >
-                              <Eye size={16} />
-                            </Button>
+                          <TableCell className="text-center">
+                            {new Date(blog.createdAt).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                          </TableCell>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedBlog(blog);
-                                setIsFormOpen(true);
-                              }}
-                            >
-                              <Edit size={16} />
-                            </Button>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  const res = await request(() =>
+                                    api.get(`/blogs/${blog._id}`)
+                                  );
+                                  if (res.success) {
+                                    setSelectedBlog(res.blog);
+                                    setIsDetailOpen(true);
+                                  }
+                                }}
+                              >
+                                <Eye size={16} />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                              onClick={() => handleDeleteBlog(blog._id)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedBlog(blog);
+                                  setIsFormOpen(true);
+                                }}
+                              >
+                                <Edit size={16} />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600"
+                                onClick={() => handleDeleteBlog(blog._id)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
                 </TableBody>
               </Table>
 

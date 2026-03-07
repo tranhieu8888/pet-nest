@@ -17,6 +17,7 @@ import {
   Image,
   Settings,
   MessageCircle,
+  TicketPercent,
 } from "lucide-react";
 
 import {
@@ -66,13 +67,13 @@ const menuItems = [
   {
     title: "Quản lý sản phẩm",
     url: "/admin/product",
-    icon: Gift, 
+    icon: Gift,
   },
-  // {
-  //   title: "Quản lý banner",
-  //   url: "/admin/banner",
-  //   icon: Image,
-  // },
+  {
+    title: "Quản lý quảng cáo",
+    url: "/admin/banner",
+    icon: Image,
+  },
   // {
   //   title: "Quản lý đánh giá",
   //   url: "/admin/review",
@@ -81,7 +82,7 @@ const menuItems = [
   {
     title: "Quản lý mã giảm giá",
     url: "/admin/voucher",
-    icon: Gift,
+    icon: TicketPercent,
   },
   // {
   //   title: "Chăm sóc khách hàng",
