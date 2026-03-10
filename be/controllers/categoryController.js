@@ -3,6 +3,9 @@ const Order = require("../models/order");
 const OrderItem = require("../models/orderItem");
 const Product = require("../models/product");
 const Attribute = require("../models/attribute");
+const { cloudinary } = require("../config/cloudinary");
+const fs = require("fs");
+const path = require("path");
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -97,7 +100,7 @@ const getParentCategories = async (req, res) => {
  * Trả về top 5 danh mục phổ biến nhất dựa trên số lượng đơn hàng.
  * Fallback: nếu không có đơn hàng, trả về 5 category con đầu tiên.
  */
-const getPopularCategories = async (req, res) => {
+const getAllCategoriesPopular = async (req, res) => {
   try {
     const parentCategories = await Category.find({
       parentCategory: null,
@@ -259,10 +262,316 @@ const getAttributesByCategoryId = async (req, res) => {
   }
 };
 
+const getChildCategoriesByParentId = async (req, res) => {
+  try {
+    const parentId = req.params.parentId;
+
+    if (!parentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Parent ID is required",
+      });
+    }
+
+    const childCategories = await Category.find({
+      parentCategory: parentId,
+    }).select("_id name description image");
+
+    res.status(200).json({
+      success: true,
+      data: childCategories,
+    });
+  } catch (error) {
+    console.error("Error getting child categories:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error getting child categories",
+      error: error.message,
+    });
+  }
+};
+
+const createCategory = async (req, res) => {
+  try {
+    const { name, description, parentCategory } = req.body;
+    let imageUrl = null;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Category name is required",
+      });
+    }
+
+    if (parentCategory) {
+      const parentExists = await Category.findById(parentCategory);
+      if (!parentExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Parent category not found",
+        });
+      }
+    }
+
+    if (req.file) {
+      try {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: "categories",
+        });
+        imageUrl = result.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Error uploading image",
+        });
+      }
+    }
+
+    const newCategory = new Category({
+      name,
+      description: description || "",
+      image: imageUrl,
+      parentCategory: parentCategory || null,
+    });
+
+    const savedCategory = await newCategory.save();
+
+    res.status(201).json({
+      success: true,
+      data: savedCategory,
+    });
+  } catch (error) {
+    console.error("Error creating category:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const createChildCategory = async (req, res) => {
+  try {
+    const { parentId } = req.params;
+    const { name, description } = req.body;
+    let imageUrl = null;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Category name is required",
+      });
+    }
+
+    if (!parentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Parent category ID is required",
+      });
+    }
+
+    const parentCategory = await Category.findById(parentId);
+    if (!parentCategory) {
+      return res.status(404).json({
+        success: false,
+        message: "Parent category not found",
+      });
+    }
+
+    if (req.file) {
+      try {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: "categories",
+        });
+        imageUrl = result.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Error uploading image",
+        });
+      }
+    }
+
+    const newCategory = new Category({
+      name,
+      description: description || "",
+      image: imageUrl,
+      parentCategory: parentId,
+    });
+
+    const savedCategory = await newCategory.save();
+
+    res.status(201).json({
+      success: true,
+      data: savedCategory,
+    });
+  } catch (error) {
+    console.error("Error creating child category:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const updateCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { name, description, parentCategory } = req.body;
+    let imageUrl;
+
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "Category ID is required",
+      });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Category name is required",
+      });
+    }
+
+    if (req.file) {
+      if (category.image) {
+        try {
+          const urlParts = category.image.split("/");
+          const filename = urlParts[urlParts.length - 1];
+          const publicId = filename.split(".")[0];
+          await cloudinary.uploader.destroy(publicId);
+        } catch (error) {
+          console.log("Error deleting old image from Cloudinary:", error);
+        }
+      }
+
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "categories",
+      });
+      imageUrl = result.secure_url;
+    }
+
+    category.name = name;
+    category.description = description || "";
+    if (parentCategory !== undefined) {
+      category.parentCategory = parentCategory || null;
+    }
+
+    if (imageUrl) {
+      category.image = imageUrl;
+    }
+
+    category.updateAt = Date.now();
+
+    const updatedCategory = await category.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Category updated successfully",
+      data: updatedCategory,
+    });
+  } catch (error) {
+    console.error("Error updating category:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const deleteCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "Category ID is required",
+      });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    const hasChildren = await Category.exists({ parentCategory: categoryId });
+    if (hasChildren) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete category with child categories. Please delete child categories first.",
+      });
+    }
+
+    if (category.image) {
+      try {
+        const urlParts = category.image.split("/");
+        const filename = urlParts[urlParts.length - 1];
+        const publicId = filename.split(".")[0];
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        console.log("Error deleting image from Cloudinary:", error);
+      }
+    }
+
+    await Category.findByIdAndDelete(categoryId);
+
+    res.status(200).json({
+      success: true,
+      message: "Category deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const exportAllCategoriesToJson = async (req, res) => {
+  try {
+    const categories = await Category.find().lean();
+    const filePath = path.join(__dirname, "../categories.json");
+    fs.writeFileSync(filePath, JSON.stringify(categories, null, 2), "utf-8");
+    res.status(200).json({
+      success: true,
+      message: "Exported all categories to categories.json",
+      filePath,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error exporting categories",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getChildCategories,
   getParentCategories,
-  getPopularCategories,
+  getAllCategoriesPopular,
   getCategoryChildrenById,
   getAttributesByCategoryId,
+  getChildCategoriesByParentId,
+  createCategory,
+  createChildCategory,
+  updateCategory,
+  deleteCategory,
+  exportAllCategoriesToJson,
 };
