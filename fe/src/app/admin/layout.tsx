@@ -18,6 +18,7 @@ import {
   ListTree,
   Settings,
   MessageCircle,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import {
@@ -73,6 +74,11 @@ const menuItems = [
     title: "Quản lý danh mục",
     url: "/admin/category",
     icon: ListTree,
+  },
+    {
+    title: "Quản lý thuộc tính",
+    url: "/admin/attribute",
+    icon: SlidersHorizontal,
   },
   // {
   //   title: "Quản lý banner",
