@@ -87,7 +87,6 @@ export default function BannerPage() {
 
     const matchSearch =
       banner.title?.toLowerCase().includes(keyword) ||
-      banner.description?.toLowerCase().includes(keyword) ||
       banner.buttonText?.toLowerCase().includes(keyword);
 
     const bannerTimeStatus = getBannerTimeStatus(banner);
@@ -236,7 +235,7 @@ export default function BannerPage() {
         <CardContent>
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:flex-wrap">
             <Input
-              placeholder="Tìm theo tiêu đề, mô tả hoặc text nút..."
+              placeholder="Tìm theo tiêu đề, text nút..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-md"
@@ -275,7 +274,6 @@ export default function BannerPage() {
                   <TableRow>
                     <TableHead>STT</TableHead>
                     <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Mô tả</TableHead>
                     <TableHead>Text nút</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Thời hạn</TableHead>
@@ -294,10 +292,6 @@ export default function BannerPage() {
 
                       <TableCell className="max-w-[220px] truncate">
                         {banner.title}
-                      </TableCell>
-
-                      <TableCell className="max-w-[280px] truncate">
-                        {banner.description || "N/A"}
                       </TableCell>
 
                       <TableCell>{banner.buttonText || "Xem ngay"}</TableCell>

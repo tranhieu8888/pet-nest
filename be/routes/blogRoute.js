@@ -12,6 +12,7 @@ const {
   getBlogBySlug,
   updateBlog,
   deleteBlog,
+  suggestBlog,
 } = require("../controllers/blogController.js");
 
 // GET all blogs
@@ -43,5 +44,13 @@ router.put(
 
 // DELETE blog (chỉ admin)
 router.delete("/:id", verifyToken, authorizeRoles(ROLES.ADMIN), deleteBlog);
+
+// AI suggest blog
+router.post(
+  "/suggest",
+  verifyToken,
+  authorizeRoles(ROLES.ADMIN),
+  suggestBlog
+);
 
 module.exports = router;

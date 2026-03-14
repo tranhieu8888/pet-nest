@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const Blog = require("../models/blogModel.js");
+const { suggestBlogContent } = require("../services/geminiService");
 
 /* =========================
    HELPERS
@@ -61,6 +62,7 @@ function deleteLocalFileIfExists(public_id) {
 
 /* =========================================
    CREATE BLOG (1 image + slug) + VALIDATE
+   ko check trùng title, slug tự động thêm 1 khi trùng
 ========================================= */
 exports.createBlog = async (req, res) => {
   try {
@@ -333,5 +335,41 @@ exports.getBlogBySlug = async (req, res) => {
   } catch (e) {
     console.error("GET BLOG BY SLUG ERROR:", e);
     res.status(500).json({ success: false, message: e.message });
+  }
+};
+
+exports.suggestBlog = async (req, res) => {
+  try {
+    const { title } = req.body;
+
+    const cleanTitle = (title || "").trim();
+
+    if (!cleanTitle) {
+      return res.status(400).json({
+        success: false,
+        message: "Tiêu đề không được để trống",
+      });
+    }
+
+    if (cleanTitle.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Tiêu đề quá ngắn để AI gợi ý",
+      });
+    }
+
+    const result = await suggestBlogContent(cleanTitle);
+
+    return res.json({
+      success: true,
+      description: result.description,
+      tag: result.tag,
+    });
+  } catch (e) {
+    console.error("SUGGEST BLOG ERROR:", e);
+    return res.status(500).json({
+      success: false,
+      message: e.message || "Không thể gợi ý nội dung bằng AI",
+    });
   }
 };
