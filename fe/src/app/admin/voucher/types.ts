@@ -1,8 +1,8 @@
 export interface Voucher {
   _id: string;
   code: string;
-  discountAmount: number;
   discountPercent: number;
+  maxDiscountAmount: number;
   minOrderValue: number;
   validFrom: string;
   validTo: string;

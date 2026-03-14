@@ -9,16 +9,16 @@ const voucherSchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
-    discountAmount: {
-      type: Number,
-      default: 0,
-      min: [0, "Số tiền giảm phải lớn hơn hoặc bằng 0"],
-    },
     discountPercent: {
       type: Number,
       default: 0,
       min: [0, "Phần trăm giảm phải lớn hơn hoặc bằng 0"],
       max: [100, "Phần trăm giảm không được lớn hơn 100"],
+    },
+    maxDiscountAmount: {
+      type: Number,
+      required: [true, "Giảm tối đa không được để trống"],
+      min: [0, "Giảm tối đa phải lớn hơn hoặc bằng 0"],
     },
     minOrderValue: {
       type: Number,

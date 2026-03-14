@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 
 type FormDataType = {
   code: string;
-  discountAmount: string;
   discountPercent: string;
+  maxDiscountAmount: string;
   minOrderValue: string;
   validFrom: string;
   validTo: string;
@@ -25,8 +25,6 @@ interface Props {
   onClose: () => void;
   formData: FormDataType;
   setFormData: (field: keyof FormDataType, value: string) => void;
-  discountType: "amount" | "percent";
-  setDiscountType: (v: "amount" | "percent") => void;
   handleSubmit: (e: React.FormEvent) => void;
   errors: Record<string, string>;
   voucherUsed: boolean;
@@ -43,8 +41,6 @@ export default function VoucherDialogs({
   onClose,
   formData,
   setFormData,
-  discountType,
-  setDiscountType,
   handleSubmit,
   errors,
   voucherUsed,
@@ -60,12 +56,11 @@ export default function VoucherDialogs({
         <form onSubmit={handleSubmit} className="space-y-4">
           {voucherUsed && (
             <div className="rounded border border-yellow-300 bg-yellow-50 p-2 text-sm text-yellow-700">
-              Voucher đã được sử dụng. Chỉ có thể sửa ngày kết thúc và số lượt
-              dùng.
+              Voucher đã được sử dụng. Chỉ có thể sửa ngày kết thúc.
             </div>
           )}
 
-          <div>
+          <div className="space-y-2">
             <Label>Mã voucher</Label>
             <Input
               disabled={voucherUsed}
@@ -77,62 +72,32 @@ export default function VoucherDialogs({
             <FieldError message={errors.code} />
           </div>
 
-          <div>
-            <Label>Loại giảm giá</Label>
-            <div className="mt-2 flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={discountType === "amount"}
-                  disabled={voucherUsed}
-                  onChange={() => setDiscountType("amount")}
-                />
-                Giảm tiền
-              </label>
-
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={discountType === "percent"}
-                  disabled={voucherUsed}
-                  onChange={() => setDiscountType("percent")}
-                />
-                Giảm %
-              </label>
-            </div>
-            <FieldError message={errors.discountType} />
+          <div className="space-y-2">
+            <Label>% giảm</Label>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              disabled={voucherUsed}
+              value={formData.discountPercent}
+              onChange={(e) => setFormData("discountPercent", e.target.value)}
+            />
+            <FieldError message={errors.discountPercent} />
           </div>
 
-          {discountType === "amount" && (
-            <div>
-              <Label>Số tiền giảm</Label>
-              <Input
-                type="number"
-                min={0}
-                disabled={voucherUsed}
-                value={formData.discountAmount}
-                onChange={(e) => setFormData("discountAmount", e.target.value)}
-              />
-              <FieldError message={errors.discountAmount} />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Giảm tối đa</Label>
+            <Input
+              type="number"
+              min={0}
+              disabled={voucherUsed}
+              value={formData.maxDiscountAmount}
+              onChange={(e) => setFormData("maxDiscountAmount", e.target.value)}
+            />
+            <FieldError message={errors.maxDiscountAmount} />
+          </div>
 
-          {discountType === "percent" && (
-            <div>
-              <Label>% giảm</Label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                disabled={voucherUsed}
-                value={formData.discountPercent}
-                onChange={(e) => setFormData("discountPercent", e.target.value)}
-              />
-              <FieldError message={errors.discountPercent} />
-            </div>
-          )}
-
-          <div>
+          <div className="space-y-2">
             <Label>Đơn tối thiểu</Label>
             <Input
               type="number"
@@ -145,7 +110,7 @@ export default function VoucherDialogs({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label>Thời gian bắt đầu</Label>
               <Input
                 disabled={voucherUsed}
@@ -156,7 +121,7 @@ export default function VoucherDialogs({
               <FieldError message={errors.validFrom} />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label>Thời gian kết thúc</Label>
               <Input
                 type="datetime-local"
@@ -167,11 +132,12 @@ export default function VoucherDialogs({
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label>Số lượt dùng</Label>
             <Input
               type="number"
               min={0}
+              disabled={voucherUsed}
               value={formData.usageLimit}
               onChange={(e) => setFormData("usageLimit", e.target.value)}
             />

@@ -37,6 +37,7 @@ export default function VoucherTable({
           <TableHead>STT</TableHead>
           <TableHead>Mã</TableHead>
           <TableHead>Giảm giá</TableHead>
+          <TableHead>Giảm tối đa</TableHead>
           <TableHead>Đơn tối thiểu</TableHead>
           <TableHead>Thời gian</TableHead>
           <TableHead>Hiệu lực</TableHead>
@@ -49,7 +50,7 @@ export default function VoucherTable({
         {vouchers.length === 0 ? (
           <TableRow>
             <TableCell
-              colSpan={8}
+              colSpan={9}
               className="py-6 text-center text-muted-foreground"
             >
               Không có voucher phù hợp!
@@ -57,7 +58,14 @@ export default function VoucherTable({
           </TableRow>
         ) : (
           vouchers.map((v, index) => {
-            const isExpired = new Date(v.validTo) < new Date();
+
+            const now = new Date();
+            const validFrom = new Date(v.validFrom);
+            const validTo = new Date(v.validTo);
+
+            const isUpcoming = validFrom > now;
+            const isExpired = validTo < now;
+            const isActive = validFrom <= now && validTo >= now;
 
             return (
               <TableRow key={v._id}>
@@ -69,10 +77,10 @@ export default function VoucherTable({
                   <Badge variant="secondary">{v.code}</Badge>
                 </TableCell>
 
+                <TableCell>{v.discountPercent}%</TableCell>
+
                 <TableCell>
-                  {v.discountAmount > 0
-                    ? `${v.discountAmount.toLocaleString("vi-VN")}đ`
-                    : `${v.discountPercent}%`}
+                  {Number(v.maxDiscountAmount || 0).toLocaleString("vi-VN")}đ
                 </TableCell>
 
                 <TableCell>
@@ -93,8 +101,20 @@ export default function VoucherTable({
                 </TableCell>
 
                 <TableCell>
-                  <Badge variant={isExpired ? "destructive" : "default"}>
-                    {isExpired ? "Hết hạn" : "Còn hạn"}
+                  <Badge
+                    variant={
+                      isExpired
+                        ? "destructive"
+                        : isUpcoming
+                        ? "secondary"
+                        : "default"
+                    }
+                  >
+                    {isUpcoming
+                      ? "Chưa diễn ra"
+                      : isExpired
+                      ? "Hết hạn"
+                      : "Đang diễn ra"}
                   </Badge>
                 </TableCell>
 

@@ -1,5 +1,5 @@
 const Voucher = require("../models/voucherModel");
-const VoucherUser = require("../models/voucherUserModal"); // getVouchersByUserId
+const VoucherUser = require("../models/voucherUserModal");
 
 const normalizeCode = (code = "") => String(code).trim().toUpperCase();
 
@@ -9,8 +9,8 @@ const buildDeletedCode = (code) => {
 
 const validateVoucherPayload = async ({
   code,
-  discountAmount,
   discountPercent,
+  maxDiscountAmount,
   minOrderValue,
   validFrom,
   validTo,
@@ -37,6 +37,38 @@ const validateVoucherPayload = async ({
     }
 
     if (
+      discountPercent === "" ||
+      discountPercent === undefined ||
+      discountPercent === null
+    ) {
+      errors.discountPercent = "Phần trăm giảm không được để trống";
+    } else {
+      const percent = Number(discountPercent);
+
+      if (Number.isNaN(percent) || percent < 0) {
+        errors.discountPercent =
+          "Phần trăm giảm phải là số lớn hơn hoặc bằng 0";
+      } else if (percent === 0) {
+        errors.discountPercent = "Phần trăm giảm phải lớn hơn 0";
+      } else if (percent > 100) {
+        errors.discountPercent = "Phần trăm giảm không được lớn hơn 100";
+      }
+    }
+
+    if (
+      maxDiscountAmount === "" ||
+      maxDiscountAmount === undefined ||
+      maxDiscountAmount === null
+    ) {
+      errors.maxDiscountAmount = "Giảm tối đa không được để trống";
+    } else if (
+      Number(maxDiscountAmount) < 0 ||
+      Number.isNaN(Number(maxDiscountAmount))
+    ) {
+      errors.maxDiscountAmount = "Giảm tối đa phải là số lớn hơn hoặc bằng 0";
+    }
+
+    if (
       minOrderValue === "" ||
       minOrderValue === undefined ||
       minOrderValue === null
@@ -48,46 +80,6 @@ const validateVoucherPayload = async ({
     ) {
       errors.minOrderValue =
         "Giá trị đơn hàng tối thiểu phải là số lớn hơn hoặc bằng 0";
-    }
-
-    if (
-      discountAmount === "" ||
-      discountAmount === undefined ||
-      discountAmount === null
-    ) {
-      errors.discountAmount = "Số tiền giảm không được để trống";
-    }
-
-    if (
-      discountPercent === "" ||
-      discountPercent === undefined ||
-      discountPercent === null
-    ) {
-      errors.discountPercent = "Phần trăm giảm không được để trống";
-    }
-
-    const amount = Number(discountAmount);
-    const percent = Number(discountPercent);
-
-    if (Number.isNaN(amount) || amount < 0) {
-      errors.discountAmount = "Số tiền giảm phải là số lớn hơn hoặc bằng 0";
-    }
-
-    if (Number.isNaN(percent) || percent < 0) {
-      errors.discountPercent = "Phần trăm giảm phải là số lớn hơn hoặc bằng 0";
-    } else if (percent > 100) {
-      errors.discountPercent = "Phần trăm giảm không được lớn hơn 100";
-    }
-
-    const hasAmount = amount > 0;
-    const hasPercent = percent > 0;
-
-    if (!hasAmount && !hasPercent) {
-      errors.discountType = "Phải nhập số tiền giảm hoặc phần trăm giảm";
-    }
-
-    if (hasAmount && hasPercent) {
-      errors.discountType = "Chỉ được chọn một loại giảm giá";
     }
   }
 
@@ -102,17 +94,20 @@ const validateVoucherPayload = async ({
   if (!isUpdateUsedVoucher && validFrom && validTo) {
     const start = new Date(validFrom);
     const end = new Date(validTo);
+
     if (start >= end) {
       errors.validTo = "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
     }
   }
 
-  if (usageLimit === "" || usageLimit === undefined || usageLimit === null) {
-    errors.usageLimit = "Số lượt sử dụng không được để trống";
-  } else if (Number(usageLimit) < 0 || Number.isNaN(Number(usageLimit))) {
-    errors.usageLimit = "Số lượt sử dụng phải là số lớn hơn hoặc bằng 0";
-  } else if (Number(usageLimit) < Number(usedCount || 0)) {
-    errors.usageLimit = `Số lượt sử dụng phải lớn hơn hoặc bằng ${usedCount}`;
+  if (!isUpdateUsedVoucher) {
+    if (usageLimit === "" || usageLimit === undefined || usageLimit === null) {
+      errors.usageLimit = "Số lượt sử dụng không được để trống";
+    } else if (Number(usageLimit) < 0 || Number.isNaN(Number(usageLimit))) {
+      errors.usageLimit = "Số lượt sử dụng phải là số lớn hơn hoặc bằng 0";
+    } else if (Number(usageLimit) < Number(usedCount || 0)) {
+      errors.usageLimit = `Số lượt sử dụng phải lớn hơn hoặc bằng ${usedCount}`;
+    }
   }
 
   return errors;
@@ -123,8 +118,8 @@ const createVoucher = async (req, res) => {
   try {
     const {
       code,
-      discountAmount,
       discountPercent,
+      maxDiscountAmount,
       minOrderValue,
       validFrom,
       validTo,
@@ -133,8 +128,8 @@ const createVoucher = async (req, res) => {
 
     const errors = await validateVoucherPayload({
       code,
-      discountAmount,
       discountPercent,
+      maxDiscountAmount,
       minOrderValue,
       validFrom,
       validTo,
@@ -145,13 +140,10 @@ const createVoucher = async (req, res) => {
       return res.status(400).json({ errors });
     }
 
-    const amount = Number(discountAmount);
-    const percent = Number(discountPercent);
-
     const voucher = new Voucher({
       code: normalizeCode(code),
-      discountAmount: amount > 0 ? amount : 0,
-      discountPercent: percent > 0 ? percent : 0,
+      discountPercent: Number(discountPercent),
+      maxDiscountAmount: Number(maxDiscountAmount),
       minOrderValue: Number(minOrderValue),
       validFrom,
       validTo,
@@ -202,8 +194,8 @@ const updateVoucher = async (req, res) => {
   try {
     const {
       code,
-      discountAmount,
       discountPercent,
+      maxDiscountAmount,
       minOrderValue,
       validFrom,
       validTo,
@@ -220,12 +212,12 @@ const updateVoucher = async (req, res) => {
     if (isUsed) {
       const errors = await validateVoucherPayload({
         code: voucher.code,
-        discountAmount: voucher.discountAmount,
         discountPercent: voucher.discountPercent,
+        maxDiscountAmount: voucher.maxDiscountAmount,
         minOrderValue: voucher.minOrderValue,
         validFrom: voucher.validFrom,
         validTo,
-        usageLimit,
+        usageLimit: voucher.usageLimit,
         excludeId: voucher._id,
         isUpdateUsedVoucher: true,
         usedCount: voucher.usedCount,
@@ -236,7 +228,6 @@ const updateVoucher = async (req, res) => {
       }
 
       voucher.validTo = validTo ?? voucher.validTo;
-      voucher.usageLimit = Number(usageLimit);
 
       const updatedVoucher = await voucher.save();
       return res.status(200).json(updatedVoucher);
@@ -244,8 +235,8 @@ const updateVoucher = async (req, res) => {
 
     const errors = await validateVoucherPayload({
       code,
-      discountAmount,
       discountPercent,
+      maxDiscountAmount,
       minOrderValue,
       validFrom,
       validTo,
@@ -258,12 +249,9 @@ const updateVoucher = async (req, res) => {
       return res.status(400).json({ errors });
     }
 
-    const amount = Number(discountAmount);
-    const percent = Number(discountPercent);
-
     voucher.code = normalizeCode(code);
-    voucher.discountAmount = amount > 0 ? amount : 0;
-    voucher.discountPercent = percent > 0 ? percent : 0;
+    voucher.discountPercent = Number(discountPercent);
+    voucher.maxDiscountAmount = Number(maxDiscountAmount);
     voucher.minOrderValue = Number(minOrderValue);
     voucher.validFrom = validFrom;
     voucher.validTo = validTo;
@@ -340,14 +328,23 @@ const validateVoucher = async (req, res) => {
       });
     }
 
+    const rawDiscount =
+      (Number(orderValue || 0) * Number(voucher.discountPercent || 0)) / 100;
+
+    const finalDiscount = Math.min(
+      rawDiscount,
+      Number(voucher.maxDiscountAmount || 0)
+    );
+
     res.status(200).json({
       message: "Voucher hợp lệ",
       voucher: {
         id: voucher._id,
         code: voucher.code,
-        discountAmount: voucher.discountAmount,
         discountPercent: voucher.discountPercent,
+        maxDiscountAmount: voucher.maxDiscountAmount,
         minOrderValue: voucher.minOrderValue,
+        discountValue: finalDiscount,
       },
     });
   } catch (error) {
