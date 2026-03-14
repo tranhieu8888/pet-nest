@@ -18,6 +18,7 @@ import {
   Settings,
   MessageCircle,
   TicketPercent,
+  Mail,
 } from "lucide-react";
 
 import {
@@ -58,6 +59,11 @@ const menuItems = [
     title: "Quản lý người dùng",
     url: "/admin/users",
     icon: Users,
+  },
+  {
+    title: "Quản lý email đăng ký",
+    url: "/admin/subscribers",
+    icon: Mail,
   },
   {
     title: "Quản lý bài viết",

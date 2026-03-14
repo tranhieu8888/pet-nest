@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Facebook,
@@ -9,12 +11,44 @@ import {
   PawPrint,
   Heart,
 } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "../../../utils/axios";
 
 const Footer = () => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      toast.error("Vui lòng nhập email");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await api.post("/subscribers", { email });
+
+      if (response.data.success) {
+        toast.success(response.data.message || "Đăng ký thành công");
+        setEmail("");
+      } else {
+        toast.error(response.data.message || "Đăng ký thất bại");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Có lỗi xảy ra khi đăng ký email"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-background border-t mt-16">
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-10">
-        {/* Brand */}
         <div>
           <Link href="/" className="flex items-center gap-2 mb-4">
             <PawPrint className="text-primary" />
@@ -27,7 +61,6 @@ const Footer = () => {
           </p>
         </div>
 
-        {/* Services */}
         <div>
           <h4 className="font-semibold mb-4">Dịch vụ của chúng tôi</h4>
           <ul className="space-y-2 text-sm">
@@ -49,7 +82,6 @@ const Footer = () => {
           </ul>
         </div>
 
-        {/* Support */}
         <div>
           <h4 className="font-semibold mb-4">Hỗ trợ khách hàng</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
@@ -68,10 +100,32 @@ const Footer = () => {
           </ul>
         </div>
 
-        {/* Social */}
         <div>
-          <h4 className="font-semibold mb-4">Theo dõi chúng tôi</h4>
-          <div className="flex gap-4">
+          <h4 className="font-semibold mb-4">Đăng ký nhận tin</h4>
+
+          <form onSubmit={handleSubscribe} className="space-y-3">
+            <input
+              type="email"
+              placeholder="Nhập email của bạn"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-primary text-white px-4 py-2 text-sm hover:opacity-90 transition disabled:opacity-50"
+            >
+              {loading ? "Đang đăng ký..." : "Đăng ký"}
+            </button>
+          </form>
+
+          <p className="text-xs text-muted-foreground mt-3">
+            Sau khi đăng ký, bạn sẽ nhận email xác nhận.
+          </p>
+
+          <div className="flex gap-4 mt-5">
             <a
               href="https://facebook.com"
               target="_blank"
@@ -84,9 +138,6 @@ const Footer = () => {
               <Instagram />
             </a>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Cập nhật ưu đãi và mẹo chăm sóc thú cưng mỗi tuần.
-          </p>
         </div>
       </div>
 

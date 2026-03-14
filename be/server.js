@@ -15,6 +15,7 @@ const wishlistRoute = require("./routes/wishlistRoute");
 const reviewRoute = require("./routes/reviewRoute");
 const bannerRoute = require("./routes/bannerRoute");
 const voucherRoute = require("./routes/voucherRoute");
+const subscriberRoutes = require("./routes/subscriberRoute");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +36,7 @@ app.use("/api/reviews", reviewRoute);
 app.use("/api/banners", bannerRoute);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/vouchers", voucherRoute);
+app.use("/api/subscribers", subscriberRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
