@@ -41,6 +41,7 @@ interface Banner {
   endDate: string;
   link: string;
   status: string;
+  buttonText: string;
 }
 
 interface ProductVariant {
@@ -327,7 +328,7 @@ export default function HomePage() {
                                 transition={{ delay: 0.6, duration: 0.5 }}
                               >
                                 <button className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-4 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-lg font-semibold flex items-center gap-2 group">
-                                  Xem ngay
+                                  {banner.buttonText || "Xem ngay"}
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-5 w-5 transform group-hover:translate-x-1 transition-transform"

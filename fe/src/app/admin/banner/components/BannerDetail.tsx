@@ -72,6 +72,15 @@ export default function BannerDetail({
             )}
           </div>
 
+          <div className="rounded-xl border bg-white p-4 shadow-sm">
+            <Label className="text-sm font-semibold text-gray-500">
+              Text nút
+            </Label>
+            <p className="mt-2 text-sm text-gray-700">
+              {banner.buttonText || "Xem ngay"}
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-xl border bg-white p-4 shadow-sm">
               <Label className="text-sm font-semibold text-gray-500">

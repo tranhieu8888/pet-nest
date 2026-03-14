@@ -7,6 +7,7 @@ export interface Banner {
   startDate: string;
   endDate?: string;
   link?: string;
+  buttonText: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -19,4 +20,5 @@ export interface BannerSubmitData {
   startDate: string;
   endDate?: string;
   link?: string;
+  buttonText: string;
 }

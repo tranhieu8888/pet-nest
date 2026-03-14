@@ -17,12 +17,6 @@ const bannerSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    status: {
-      type: String,
-      default: "active",
-      enum: ["active", "inactive"],
-      required: true,
-    },
     startDate: {
       type: Date,
       required: true,
@@ -36,11 +30,19 @@ const bannerSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "inactive",
+    },
+    buttonText: {
+      type: String,
+      required: true,
+      trim: true,
+      default: "Xem ngay",
+    },
   },
-  {
-    timestamps: true,
-    collection: "banners",
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Banner", bannerSchema);

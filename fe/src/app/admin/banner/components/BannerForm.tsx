@@ -38,6 +38,7 @@ type FormErrors = {
   startDate?: string;
   endDate?: string;
   link?: string;
+  buttonText?: string;
   form?: string;
 };
 
@@ -54,6 +55,7 @@ export default function BannerForm({
     startDate: "",
     endDate: "",
     link: "",
+    buttonText: "",
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -74,6 +76,7 @@ export default function BannerForm({
           ? new Date(banner.endDate).toISOString().split("T")[0]
           : "",
         link: banner.link || "",
+        buttonText: banner.buttonText || "Xem ngay",
       });
 
       setImagePreview(banner.imageUrl || null);
@@ -87,6 +90,7 @@ export default function BannerForm({
         startDate: "",
         endDate: "",
         link: "",
+        buttonText: "Xem ngay",
       });
       setSelectedFile(null);
       setImagePreview(null);
@@ -121,6 +125,14 @@ export default function BannerForm({
       newErrors.link = "Link không được để trống";
     }
 
+    if (!formData.buttonText.trim()) {
+      newErrors.buttonText = "Text nút không được để trống";
+    } else if (formData.buttonText.trim().length < 2) {
+      newErrors.buttonText = "Text nút phải từ 2 ký tự trở lên";
+    } else if (formData.buttonText.trim().length > 30) {
+      newErrors.buttonText = "Text nút tối đa 30 ký tự";
+    }
+
     if (!selectedFile && !banner?.imageUrl) {
       newErrors.image = "Ảnh không được để trống";
     }
@@ -143,7 +155,7 @@ export default function BannerForm({
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +172,9 @@ export default function BannerForm({
     e.preventDefault();
     setSubmitting(true);
 
-    if (!validateForm()) {
+    const validationErrors = validateForm();
+
+    if (Object.keys(validationErrors).length > 0) {
       setSubmitting(false);
       return;
     }
@@ -173,6 +187,7 @@ export default function BannerForm({
         startDate: formData.startDate,
         endDate: formData.endDate,
         link: formData.link.trim(),
+        buttonText: formData.buttonText.trim(),
         image: selectedFile || undefined,
       };
 
@@ -183,13 +198,22 @@ export default function BannerForm({
 
       if (msg.toLowerCase().includes("tiêu đề")) {
         setErrors((prev) => ({ ...prev, title: msg }));
+      } else if (msg.toLowerCase().includes("mô tả")) {
+        setErrors((prev) => ({ ...prev, description: msg }));
+      } else if (msg.toLowerCase().includes("ngày bắt đầu")) {
+        setErrors((prev) => ({ ...prev, startDate: msg }));
       } else if (msg.toLowerCase().includes("ngày kết thúc")) {
         setErrors((prev) => ({ ...prev, endDate: msg }));
       } else if (msg.toLowerCase().includes("link")) {
         setErrors((prev) => ({ ...prev, link: msg }));
+      } else if (msg.toLowerCase().includes("text nút")) {
+        setErrors((prev) => ({ ...prev, buttonText: msg }));
+      } else if (msg.toLowerCase().includes("ảnh")) {
+        setErrors((prev) => ({ ...prev, image: msg }));
       } else {
         setErrors((prev) => ({ ...prev, form: msg }));
       }
+
     } finally {
       setSubmitting(false);
     }
@@ -395,6 +419,31 @@ export default function BannerForm({
               {errors.form}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="buttonText">
+              Text nút <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="buttonText"
+              value={formData.buttonText}
+              onChange={(e) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  buttonText: e.target.value,
+                }));
+                setErrors((prev) => ({
+                  ...prev,
+                  buttonText: undefined,
+                  form: undefined,
+                }));
+              }}
+              placeholder="Ví dụ: Xem ngay"
+            />
+            {errors.buttonText && (
+              <p className="text-sm text-red-600">{errors.buttonText}</p>
+            )}
+          </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>

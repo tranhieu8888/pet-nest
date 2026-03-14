@@ -4,8 +4,6 @@ const getImageUrl = (req, filename) => {
   return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
 };
 
-const normalizeTitle = (title = "") => title.trim().toLowerCase();
-
 const validateBannerInput = async ({
   req,
   isUpdate = false,
@@ -19,6 +17,7 @@ const validateBannerInput = async ({
   const startDate = req.body.startDate;
   const endDate = req.body.endDate;
   const link = req.body.link?.trim();
+  const buttonText = req.body.buttonText?.trim();
 
   if (!title) {
     errors.title = "Tiêu đề không được để trống";
@@ -50,6 +49,14 @@ const validateBannerInput = async ({
     } catch {
       errors.link = "Link không hợp lệ";
     }
+  }
+
+  if (!buttonText) {
+    errors.buttonText = "Text nút không được để trống";
+  } else if (buttonText.length < 2) {
+    errors.buttonText = "Text nút phải từ 2 ký tự trở lên";
+  } else if (buttonText.length > 30) {
+    errors.buttonText = "Text nút tối đa 30 ký tự";
   }
 
   if (!isUpdate && !req.file) {
@@ -115,6 +122,7 @@ exports.createBanner = async (req, res) => {
       startDate: req.body.startDate,
       endDate: req.body.endDate,
       link: req.body.link.trim(),
+      buttonText: req.body.buttonText.trim(),
     };
 
     const banner = new Banner(bannerData);
@@ -183,6 +191,7 @@ exports.updateBanner = async (req, res) => {
     banner.startDate = req.body.startDate;
     banner.endDate = req.body.endDate;
     banner.link = req.body.link.trim();
+    banner.buttonText = req.body.buttonText.trim();
 
     if (req.file) {
       banner.imageUrl = getImageUrl(req, req.file.filename);

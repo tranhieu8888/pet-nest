@@ -29,6 +29,9 @@ import BannerForm from "./components/BannerForm";
 import BannerDetail from "./components/BannerDetail";
 import Pagination from "./components/Pagination";
 import { Banner, BannerSubmitData } from "./types";
+import { toast } from "sonner";
+
+type TimeFilter = "all" | "activeNow" | "expired" | "upcoming";
 
 export default function BannerPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -36,9 +39,8 @@ export default function BannerPage() {
   const [error, setError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -65,30 +67,47 @@ export default function BannerPage() {
     }
   };
 
+  const getBannerTimeStatus = (banner: Banner): TimeFilter | "unknown" => {
+    const now = new Date();
+    const start = banner.startDate ? new Date(banner.startDate) : null;
+    const end = banner.endDate ? new Date(banner.endDate) : null;
+
+    if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return "unknown";
+    }
+
+    if (start > now) return "upcoming";
+    if (end < now) return "expired";
+    return "activeNow";
+  };
+
   const filteredBanners = useMemo(() => {
-    return banners.filter((banner) => {
-      const keyword = searchQuery.trim().toLowerCase();
+  return banners.filter((banner) => {
+    const keyword = searchQuery.trim().toLowerCase();
 
-      const matchSearch =
-        banner.title?.toLowerCase().includes(keyword) ||
-        banner.description?.toLowerCase().includes(keyword);
+    const matchSearch =
+      banner.title?.toLowerCase().includes(keyword) ||
+      banner.description?.toLowerCase().includes(keyword) ||
+      banner.buttonText?.toLowerCase().includes(keyword);
 
-      const matchStatus =
-        statusFilter === "all" ? true : banner.status === statusFilter;
+    const bannerTimeStatus = getBannerTimeStatus(banner);
 
-      return matchSearch && matchStatus;
-    });
-  }, [banners, searchQuery, statusFilter]);
+    const matchTime =
+      timeFilter === "all" ? true : bannerTimeStatus === timeFilter;
+
+    return matchSearch && matchTime;
+  });
+}, [banners, searchQuery, timeFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, timeFilter]);
 
   const paginatedBanners = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     const end = currentPage * itemsPerPage;
     return filteredBanners.slice(start, end);
-  }, [filteredBanners, currentPage, itemsPerPage]);
+  }, [filteredBanners, currentPage]);
 
   const handleAddBanner = async (data: BannerSubmitData) => {
     try {
@@ -99,6 +118,7 @@ export default function BannerPage() {
       formData.append("startDate", data.startDate);
       formData.append("endDate", data.endDate || "");
       formData.append("link", data.link || "");
+      formData.append("buttonText", data.buttonText || "");
       if (data.image) formData.append("image", data.image);
 
       await api.post("/banners", formData, {
@@ -110,6 +130,8 @@ export default function BannerPage() {
       await fetchBanners();
       setIsFormOpen(false);
       setSelectedBanner(undefined);
+
+      toast.success("Tạo banner thành công");
     } catch (err: any) {
       throw new Error(
         err.response?.data?.message || err.message || "Thêm thất bại"
@@ -128,6 +150,7 @@ export default function BannerPage() {
       formData.append("startDate", data.startDate);
       formData.append("endDate", data.endDate || "");
       formData.append("link", data.link || "");
+      formData.append("buttonText", data.buttonText || "");
       if (data.image) formData.append("image", data.image);
 
       const response = await api.put(
@@ -148,6 +171,8 @@ export default function BannerPage() {
 
       setIsFormOpen(false);
       setSelectedBanner(undefined);
+
+      toast.success("Cập nhật banner thành công");
     } catch (err: any) {
       throw new Error(
         err.response?.data?.message || err.message || "Cập nhật thất bại"
@@ -162,11 +187,32 @@ export default function BannerPage() {
     if (!confirmed) return;
 
     try {
-      await api.delete(`/banners/${id}`);
+      const response = await api.delete(`/banners/${id}`);
+
       setBanners((prev) => prev.filter((item) => item._id !== id));
+
+      toast.success(response.data?.message || "Xóa banner thành công");
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Xóa thất bại");
     }
+  };
+
+  const renderTimeBadge = (banner: Banner) => {
+    const timeStatus = getBannerTimeStatus(banner);
+
+    if (timeStatus === "activeNow") {
+      return <Badge className="bg-green-100 text-green-700">Còn hạn</Badge>;
+    }
+
+    if (timeStatus === "expired") {
+      return <Badge variant="destructive">Hết hạn</Badge>;
+    }
+
+    if (timeStatus === "upcoming") {
+      return <Badge className="bg-blue-100 text-blue-700">Chưa bắt đầu</Badge>;
+    }
+
+    return <Badge variant="outline">Không xác định</Badge>;
   };
 
   return (
@@ -188,27 +234,26 @@ export default function BannerPage() {
         </CardHeader>
 
         <CardContent>
-          <div className="mb-4 flex flex-col gap-4 md:flex-row">
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:flex-wrap">
             <Input
-              placeholder="Tìm kiếm theo tiêu đề hoặc mô tả..."
+              placeholder="Tìm theo tiêu đề, mô tả hoặc text nút..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-md"
             />
 
             <Select
-              value={statusFilter}
-              onValueChange={(value: "all" | "active" | "inactive") =>
-                setStatusFilter(value)
-              }
+              value={timeFilter}
+              onValueChange={(value: TimeFilter) => setTimeFilter(value)}
             >
               <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Lọc theo trạng thái" />
+                <SelectValue placeholder="Lọc theo thời hạn" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="active">Kích hoạt</SelectItem>
-                <SelectItem value="inactive">Tắt</SelectItem>
+                <SelectItem value="all">Tất cả thời hạn</SelectItem>
+                <SelectItem value="activeNow">Còn hạn</SelectItem>
+                <SelectItem value="expired">Hết hạn</SelectItem>
+                <SelectItem value="upcoming">Chưa bắt đầu</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -231,7 +276,9 @@ export default function BannerPage() {
                     <TableHead>STT</TableHead>
                     <TableHead>Tiêu đề</TableHead>
                     <TableHead>Mô tả</TableHead>
+                    <TableHead>Text nút</TableHead>
                     <TableHead>Trạng thái</TableHead>
+                    <TableHead>Thời hạn</TableHead>
                     <TableHead>Ngày bắt đầu</TableHead>
                     <TableHead>Ngày kết thúc</TableHead>
                     <TableHead className="text-right">Thao tác</TableHead>
@@ -245,11 +292,15 @@ export default function BannerPage() {
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </TableCell>
 
-                      <TableCell>{banner.title}</TableCell>
+                      <TableCell className="max-w-[220px] truncate">
+                        {banner.title}
+                      </TableCell>
 
                       <TableCell className="max-w-[280px] truncate">
                         {banner.description || "N/A"}
                       </TableCell>
+
+                      <TableCell>{banner.buttonText || "Xem ngay"}</TableCell>
 
                       <TableCell>
                         <Badge
@@ -260,6 +311,8 @@ export default function BannerPage() {
                           {banner.status === "active" ? "Kích hoạt" : "Tắt"}
                         </Badge>
                       </TableCell>
+
+                      <TableCell>{renderTimeBadge(banner)}</TableCell>
 
                       <TableCell>
                         {banner.startDate

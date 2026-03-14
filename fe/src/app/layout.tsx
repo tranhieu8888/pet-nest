@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "sonner";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { CartProvider } from "@/context/CartContext";
 
@@ -36,7 +36,12 @@ export default function RootLayout({
         <GoogleOAuthProvider clientId={clientId}>
           <LanguageProvider>
             <CartProvider>{children}</CartProvider>
-            <Toaster />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              duration={3000}
+            />
           </LanguageProvider>
         </GoogleOAuthProvider>
       </body>
