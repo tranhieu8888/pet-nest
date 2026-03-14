@@ -52,7 +52,7 @@ export default function LoginPage() {
                             router.push('/admin/blog');
                             break;
                         case 2:
-                            router.push('/staff/dashboard');
+                            router.push('/staff/schedule');
                             break;
                         case 1:
                         default:

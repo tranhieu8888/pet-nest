@@ -36,7 +36,7 @@ export default function SubscribersPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
 
   const fetchSubscribers = async () => {
     try {

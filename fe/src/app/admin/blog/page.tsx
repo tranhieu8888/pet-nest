@@ -37,7 +37,7 @@ export default function BlogPage() {
   const [selectedBlog, setSelectedBlog] = useState<Blog | undefined>();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
 
   const fetchBlogs = async () => {
     try {

@@ -47,7 +47,7 @@ export default function BannerPage() {
   const [selectedBanner, setSelectedBanner] = useState<Banner | undefined>();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
 
   useEffect(() => {
     fetchBanners();
