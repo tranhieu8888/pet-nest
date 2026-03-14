@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const Subscriber = require("../models/subscriberModel");
 const { sendSubscribeEmail } = require("../utils/mailer");
+const User = require("../models/userModel");
+const { sendNotification } = require("../utils/sendNotification");
 
 // POST /api/subscribers
 exports.createSubscriber = async (req, res) => {
@@ -25,6 +27,7 @@ exports.createSubscriber = async (req, res) => {
     }
 
     let subscriber = await Subscriber.findOne({ email: normalizedEmail });
+    let isNewSubscriber = false;
 
     if (subscriber) {
       if (subscriber.status === "active") {
@@ -36,37 +39,46 @@ exports.createSubscriber = async (req, res) => {
 
       subscriber.status = "active";
       await subscriber.save();
-
-      try {
-        await sendSubscribeEmail(subscriber.email);
-      } catch (mailError) {
-        console.error("Lỗi gửi email:", mailError.message);
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: "Đăng ký lại thành công, vui lòng kiểm tra email",
-        data: subscriber,
+    } else {
+      subscriber = new Subscriber({
+        email: normalizedEmail,
+        status: "active",
       });
+      await subscriber.save();
+      isNewSubscriber = true;
     }
 
-    subscriber = new Subscriber({
-      email: normalizedEmail,
-      status: "active",
-    });
-
-    const saved = await subscriber.save();
-
     try {
-      await sendSubscribeEmail(saved.email);
+      await sendSubscribeEmail(subscriber.email);
     } catch (mailError) {
       console.error("Lỗi gửi email:", mailError.message);
     }
 
-    return res.status(201).json({
+    try {
+      const admin = await User.findOne({ role: 0 }).select("_id");
+
+      if (admin) {
+        await sendNotification({
+          userId: admin._id.toString(),
+          title: "Đăng ký email mới",
+          description: isNewSubscriber
+            ? `Email ${subscriber.email} vừa đăng ký nhận tin.`
+            : `Email ${subscriber.email} đã kích hoạt lại đăng ký nhận tin.`,
+          type: "subscriber",
+        });
+      } else {
+        console.warn("Không tìm thấy admin để gửi notification");
+      }
+    } catch (notifyError) {
+      console.error("Lỗi tạo notification cho admin:", notifyError.message);
+    }
+
+    return res.status(isNewSubscriber ? 201 : 200).json({
       success: true,
-      message: "Đăng ký thành công, vui lòng kiểm tra email",
-      data: saved,
+      message: isNewSubscriber
+        ? "Đăng ký thành công, vui lòng kiểm tra email"
+        : "Đăng ký lại thành công, vui lòng kiểm tra email",
+      data: subscriber,
     });
   } catch (error) {
     return res.status(500).json({
@@ -216,7 +228,6 @@ exports.unsubscribeByEmail = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-
     const subscriber = await Subscriber.findOne({ email: normalizedEmail });
 
     if (!subscriber) {

@@ -1,11 +1,13 @@
 const dotenv = require("dotenv");
 const path = require("path");
+const http = require("http");
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+
 const userRoutes = require("./routes/userRoute");
 const authRoutes = require("./routes/authRoute");
 const blogRoute = require("./routes/blogRoute");
@@ -16,6 +18,9 @@ const reviewRoute = require("./routes/reviewRoute");
 const bannerRoute = require("./routes/bannerRoute");
 const voucherRoute = require("./routes/voucherRoute");
 const subscriberRoutes = require("./routes/subscriberRoute");
+const notificationRoute = require("./routes/notificationRoute");
+
+const { setupSocket, getIO } = require("./config/socket.io");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +30,17 @@ connectDB();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+const server = http.createServer(app);
+
+// Khởi tạo socket.io đúng trên server HTTP
+setupSocket(server);
+
+// Middleware để dùng io trong req nếu cần
+app.use((req, res, next) => {
+  req.io = getIO();
+  next();
+});
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
@@ -37,6 +53,7 @@ app.use("/api/banners", bannerRoute);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/vouchers", voucherRoute);
 app.use("/api/subscribers", subscriberRoutes);
+app.use("/api/notifications", notificationRoute);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
@@ -49,6 +66,7 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
+// Phải dùng server.listen thay vì app.listen để socket hoạt động realtime
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
