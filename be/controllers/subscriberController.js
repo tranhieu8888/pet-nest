@@ -243,11 +243,97 @@ exports.unsubscribeByEmail = async (req, res) => {
     await subscriber.save();
 
     return res.status(200).send(`
-      <div style="font-family: Arial, sans-serif; padding: 24px;">
-        <h2>Bạn đã hủy đăng ký thành công</h2>
-        <p>Email <strong>${normalizedEmail}</strong> sẽ không nhận email marketing nữa.</p>
-      </div>
-    `);
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hủy đăng ký thành công</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family: system-ui, -apple-system, Arial;
+}
+
+body{
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: linear-gradient(135deg,#667eea,#764ba2);
+}
+
+.card{
+  background:white;
+  padding:50px;
+  border-radius:16px;
+  text-align:center;
+  max-width:420px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.15);
+}
+
+.icon{
+  font-size:70px;
+  margin-bottom:15px;
+}
+
+h2{
+  font-size:26px;
+  margin-bottom:10px;
+  color:#222;
+}
+
+p{
+  color:#555;
+  line-height:1.6;
+}
+
+.email{
+  font-weight:600;
+  color:#111;
+}
+
+.btn{
+  display:inline-block;
+  margin-top:25px;
+  padding:12px 24px;
+  background:#667eea;
+  color:white;
+  text-decoration:none;
+  border-radius:8px;
+  font-weight:600;
+  transition:0.2s;
+}
+
+.btn:hover{
+  background:#5a67d8;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<div class="icon">✅</div>
+
+<h2>Bạn đã hủy đăng ký</h2>
+
+<p>
+Email <span class="email">${normalizedEmail}</span><br>
+sẽ không nhận email marketing nữa.
+</p>
+
+<a class="btn" href="http://localhost:3000/homepage">Quay lại trang chủ</a>
+
+</div>
+
+</body>
+</html>
+`);
   } catch (error) {
     return res.status(500).send(`
       <div style="font-family: Arial, sans-serif; padding: 24px;">

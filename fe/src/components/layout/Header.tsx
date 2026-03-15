@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   Search,
   ShoppingCart,
@@ -13,28 +13,29 @@ import {
   MessageCircle,
   Trash2,
   Menu,
-} from "lucide-react"
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+  Scissors,
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Separator } from "@/components/ui/separator"
-import { api } from "../../../utils/axios"
-import { useRouter, usePathname } from "next/navigation"
-import { useState, useEffect, useRef } from "react"
-import { useLanguage } from '@/context/LanguageContext';
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import { api } from "../../../utils/axios";
+import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 import { io, Socket } from "socket.io-client";
-import axios from 'axios'
-import pagesConfigEn from '../../../utils/petPagesConfig.en.js';
-import pagesConfigVi from '../../../utils/petPagesConfig.vi.js';
-import { jwtDecode } from 'jwt-decode';
+import axios from "axios";
+import pagesConfigEn from "../../../utils/petPagesConfig.en.js";
+import pagesConfigVi from "../../../utils/petPagesConfig.vi.js";
+import { jwtDecode } from "jwt-decode";
 
 declare global {
   interface Window {
@@ -83,24 +84,21 @@ interface ParentCategoryMenu {
 
 // Sample cart items
 
-
 let socket: Socket | null = null;
 
 export function getSocket() {
   if (!socket) {
-    socket = io("http://localhost:5000", {
-    });
+    socket = io("http://localhost:5000", {});
   }
   return socket;
 }
-
 
 function CartDropdown() {
   const [isLoading, setIsLoading] = useState(true);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const { lang } = useLanguage();
-  const config = lang === 'vi' ? pagesConfigVi.header : pagesConfigEn.header;
+  const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
   // useEffect(() => {
   //   const fetchCartData = async () => {
@@ -143,7 +141,8 @@ function CartDropdown() {
   // }, []);
 
   // Get the latest added product (last in the array)
-  const latestItem = cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
+  const latestItem =
+    cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
 
   return (
     <DropdownMenu>
@@ -171,16 +170,23 @@ function CartDropdown() {
           ) : (
             <>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                <div key={`${latestItem._id}-${latestItem.variantId}`} className="flex items-center space-x-3">
+                <div
+                  key={`${latestItem._id}-${latestItem.variantId}`}
+                  className="flex items-center space-x-3"
+                >
                   <img
                     src={latestItem.image || "/placeholder.svg"}
                     alt={latestItem.name}
                     className="w-12 h-12 rounded-md object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{latestItem.name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {latestItem.name}
+                    </p>
                     <div className="flex items-center space-x-2">
-                      <span className="text-red-500 font-semibold">{latestItem.price.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-red-500 font-semibold">
+                        {latestItem.price.toLocaleString("vi-VN")}₫
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -212,8 +218,8 @@ function NotificationDropdown() {
       setError(null);
       try {
         const token = sessionStorage.getItem("token");
-        const res = await api.get('/notification', {
-          headers: { Authorization: `Bearer ${token}` }
+        const res = await api.get("/notifications", {
+          headers: { Authorization: `Bearer ${token}` },
         });
         setNotifications(res.data || []);
       } catch {
@@ -239,7 +245,11 @@ function NotificationDropdown() {
       socket.emit("join", userId);
     }
     socket.on("notification", (notification: Notification) => {
-      setNotifications(prev => [notification, ...prev]);
+      setNotifications((prev) => {
+        const exists = prev.some((n) => n._id === notification._id);
+        if (exists) return prev;
+        return [notification, ...prev];
+      });
     });
     return () => {
       socket.off("notification");
@@ -253,39 +263,58 @@ function NotificationDropdown() {
     if (!notification.isRead) {
       try {
         const token = sessionStorage.getItem("token");
-        await api.patch(`/notification/${notification._id}`, { isRead: true }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setNotifications(prev =>
-          prev.map(n => n._id === notification._id ? { ...n, isRead: true } : n)
+        await api.patch(
+          `/notification/${notification._id}`,
+          { isRead: true },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n._id === notification._id ? { ...n, isRead: true } : n
+          )
         );
       } catch {
         // Có thể hiện toast lỗi ở đây
       }
     }
-    console.log('notification:', notification);
+    console.log("notification:", notification);
     if (notification.orderId) {
       // router.push(`/myorder/${notification.orderId}`); // Removed as per edit hint
     }
-    if (notification.type === 'ticket' && notification.ticketId) {
+    if (notification.type === "ticket" && notification.ticketId) {
       // router.push(`/requestsupport/${notification.ticketId}`); // Removed as per edit hint
     }
   };
 
-  // Xóa notification theo id
+  // Xóa notification theo id -> xóa 1
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       const token = sessionStorage.getItem("token");
-      await api.delete(`/notification/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      await api.delete(`/notifications/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setNotifications(prev => prev.filter(n => n._id !== id));
-    } catch {
-      // Có thể hiện toast lỗi ở đây
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    } catch (err: any) {
+      console.log("DELETE STATUS:", err?.response?.status);
+      console.log("DELETE DATA:", err?.response?.data);
+      console.log("DELETE MESSAGE:", err?.message);
     } finally {
       setDeletingId(null);
     }
+  };
+
+  //xóa all
+  const handleDeleteAll = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      await api.delete("/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications([]);
+    } catch {}
   };
 
   return (
@@ -314,15 +343,30 @@ function NotificationDropdown() {
               notifications.map((notification) => (
                 <div
                   key={notification._id}
-                  className={`p-3 rounded-lg border ${!notification.isRead ? "bg-blue-50 border-blue-200" : "bg-gray-50"} cursor-pointer flex justify-between items-start gap-2`}
+                  className={`p-3 rounded-lg border ${
+                    !notification.isRead
+                      ? "bg-blue-50 border-blue-200"
+                      : "bg-gray-50"
+                  } cursor-pointer flex justify-between items-start gap-2`}
                 >
-                  <div className="flex-1" onClick={() => handleMarkAsRead(notification)}>
+                  <div
+                    className="flex-1"
+                    onClick={() => handleMarkAsRead(notification)}
+                  >
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-medium">{notification.title}</h4>
-                      {!notification.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                      <h4 className="text-sm font-medium">
+                        {notification.title}
+                      </h4>
+                      {!notification.isRead && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">{notification.description}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(notification.createdAt).toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {notification.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </p>
                   </div>
                   <Button
                     variant="ghost"
@@ -342,37 +386,50 @@ function NotificationDropdown() {
             )}
           </div>
           <Separator className="my-3" />
-          <Button variant="outline" size="sm" className="w-full" onClick={() => { }}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleDeleteAll}
+          >
             Xóa tất cả thông báo
           </Button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
-function UserDropdown({ isLoggedIn, user, userRole }: { isLoggedIn: boolean, user: { name: string, email: string } | null, userRole: number | null }) {
+function UserDropdown({
+  isLoggedIn,
+  user,
+  userRole,
+}: {
+  isLoggedIn: boolean;
+  user: { name: string; email: string } | null;
+  userRole: number | null;
+}) {
   const { lang } = useLanguage();
-  const config = lang === 'vi' ? pagesConfigVi.header : pagesConfigEn.header;
+  const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
   const handleLogout = () => {
     try {
-      sessionStorage.removeItem('token');
-      if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+      sessionStorage.removeItem("token");
+      if (typeof window !== "undefined" && window.google?.accounts?.id) {
         try {
           window.google.accounts.id.disableAutoSelect();
         } catch (error) {
-          console.error('Error disabling Google auto select:', error);
+          console.error("Error disabling Google auto select:", error);
         }
       }
       // Cập nhật trạng thái
       // Reload lại trang để cập nhật UI
       window.location.reload();
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error("Error during logout:", error);
       window.location.reload();
     }
-  }
+  };
 
   if (!isLoggedIn) {
     return (
@@ -384,13 +441,17 @@ function UserDropdown({ isLoggedIn, user, userRole }: { isLoggedIn: boolean, use
           <Link href="/register">{config.user.signup}</Link>
         </Button>
       </div>
-    )
+    );
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center space-x-2"
+        >
           <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
             <User className="h-4 w-4" />
           </div>
@@ -437,16 +498,83 @@ function UserDropdown({ isLoggedIn, user, userRole }: { isLoggedIn: boolean, use
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
-export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?: string }) {
-  const [searchQuery, setSearchQuery] = React.useState(initialSearchTerm)
+function SpaServicesDropdown() {
+  const spaServices = [
+    {
+      label: "Spa Thú Cưng",
+      href: "/services/pet-spa",
+    },
+    {
+      label: "Vệ Sinh Tai Móng",
+      href: "/services/ear-nail-cleaning",
+    },
+    {
+      label: "Cắt Tỉa Lông Thú Cưng",
+      href: "/services/pet-grooming",
+    },
+    {
+      label: "Nhuộm Lông Thú Cưng",
+      href: "/services/pet-coloring",
+    },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1 text-sm font-semibold text-red-600 hover:text-primary transition-colors">
+          <Scissors className="h-4 w-4" />
+          DỊCH VỤ SPA
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="start"
+        className="w-72 rounded-none border border-gray-200 bg-white p-4 shadow-lg"
+      >
+        <div className="space-y-1">
+          {spaServices.map((service, index) => (
+            <React.Fragment key={service.href}>
+              <DropdownMenuItem
+                asChild
+                className="cursor-pointer px-0 py-3 focus:bg-transparent"
+              >
+                <Link
+                  href={service.href}
+                  className="w-full tex
+                t-[18px] text-gray-600 hover:text-primary"
+                >
+                  {service.label}
+                </Link>
+              </DropdownMenuItem>
+
+              {index !== spaServices.length - 1 && (
+                <div className="border-b border-gray-200" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export default function Header({
+  initialSearchTerm = "",
+}: {
+  initialSearchTerm?: string;
+}) {
+  const [searchQuery, setSearchQuery] = React.useState(initialSearchTerm);
   const { lang, setLang } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<{ name: string, email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(
+    null
+  );
   const [userRole, setUserRole] = useState<number | null>(null);
   const [categories, setCategories] = useState<ParentCategoryMenu[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -465,7 +593,7 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
           const decoded = jwtDecode<{ id?: string; _id?: string }>(token);
           id = decoded.id || decoded._id || "";
           if (id) sessionStorage.setItem("userId", id);
-        } catch { }
+        } catch {}
       }
       return id && id !== "" ? id : null;
     };
@@ -492,33 +620,36 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = sessionStorage.getItem('token');
+        const token = sessionStorage.getItem("token");
         if (!token) {
           setIsLoggedIn(false);
           setUser(null);
           return;
         }
         const axiosInstance = axios.create({
-          baseURL: 'http://localhost:5000',
+          baseURL: "http://localhost:5000",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
-        const response = await axiosInstance.get('/api/auth/myprofile');
+        const response = await axiosInstance.get("/api/auth/myprofile");
         if (response.data.success) {
           setUser(response.data.user);
           setIsLoggedIn(true);
         } else {
-          sessionStorage.removeItem('token');
+          sessionStorage.removeItem("token");
           setIsLoggedIn(false);
           setUser(null);
         }
       } catch (error) {
-        console.error('Error checking auth:', error);
+        console.error("Error checking auth:", error);
         if (axios.isAxiosError(error)) {
-          if (error.response?.status === 401 || error.response?.status === 403) {
-            sessionStorage.removeItem('token');
+          if (
+            error.response?.status === 401 ||
+            error.response?.status === 403
+          ) {
+            sessionStorage.removeItem("token");
           }
         }
         setIsLoggedIn(false);
@@ -529,7 +660,7 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
   }, []);
 
   React.useEffect(() => {
-    const token = sessionStorage.getItem('token');
+    const token = sessionStorage.getItem("token");
     if (token) {
       try {
         const decoded = jwtDecode<{ role?: number }>(token);
@@ -544,13 +675,14 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
   // Fetch categories for menu
   useEffect(() => {
     setLoadingCategories(true);
-    api.get('/categories/childCategories')
+    api
+      .get("/categories/childCategories")
       .then((res) => {
         setCategories(res.data);
         setLoadingCategories(false);
       })
       .catch((err) => {
-        setErrorCategories(err.message || 'Lỗi lấy danh mục');
+        setErrorCategories(err.message || "Lỗi lấy danh mục");
         setLoadingCategories(false);
       });
   }, []);
@@ -622,12 +754,20 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
       {/* Main header */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link href='/homepage'>
+          <Link href="/homepage">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">{lang === 'vi' ? pagesConfigVi.header.brand.short : pagesConfigEn.header.brand.short}</span>
+                <span className="text-primary-foreground font-bold text-lg">
+                  {lang === "vi"
+                    ? pagesConfigVi.header.brand.short
+                    : pagesConfigEn.header.brand.short}
+                </span>
               </div>
-              <span className="text-xl font-bold">{lang === 'vi' ? pagesConfigVi.header.brand.full : pagesConfigEn.header.brand.full}</span>
+              <span className="text-xl font-bold">
+                {lang === "vi"
+                  ? pagesConfigVi.header.brand.full
+                  : pagesConfigEn.header.brand.full}
+              </span>
             </div>
           </Link>
 
@@ -637,92 +777,126 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
             <div className="relative group/category z-50">
               <div className="flex items-center gap-2 font-semibold text-gray-700 hover:text-primary hover:bg-primary/5 border border-gray-200 min-w-max hidden lg:flex h-10 px-4 py-2 justify-center rounded-md cursor-pointer transition-colors">
                 <Menu className="w-4 h-4" />
-                {lang === 'vi' ? 'Danh mục' : 'Categories'}
+                {lang === "vi" ? "Danh mục" : "Categories"}
               </div>
 
               {/* Dropdown Content - hidden by default, shown on group hover */}
               <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover/category:opacity-100 group-hover/category:visible transition-all duration-200 w-[300px]">
                 <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
                   <div className="font-bold text-xs uppercase px-3 py-2 text-gray-400 tracking-wider">
-                    {loadingCategories ? 'Đang tải...' : (lang === 'vi' ? 'Tất cả danh mục' : 'All Categories')}
+                    {loadingCategories
+                      ? "Đang tải..."
+                      : lang === "vi"
+                      ? "Tất cả danh mục"
+                      : "All Categories"}
                   </div>
-                  {errorCategories && <div className="text-red-500 text-sm px-2">{errorCategories}</div>}
+                  {errorCategories && (
+                    <div className="text-red-500 text-sm px-2">
+                      {errorCategories}
+                    </div>
+                  )}
                   <div className="flex flex-col gap-1 mt-1 pb-1 relative">
-                    {!loadingCategories && !errorCategories && categories.map((cat) => (
-                      <div key={cat.parent._id} className="group/item relative">
-                        <Link
-                          href={`/category/${cat.parent._id}`}
-                          className="flex items-center w-full cursor-pointer hover:bg-primary/5 hover:text-primary rounded-lg p-2.5 transition-colors"
+                    {!loadingCategories &&
+                      !errorCategories &&
+                      categories.map((cat) => (
+                        <div
+                          key={cat.parent._id}
+                          className="group/item relative"
                         >
-                          {cat.parent.image && (
-                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-100 mr-3 shadow-sm group-hover/item:border-primary/30 transition-colors flex-shrink-0">
-                              <img src={cat.parent.image} alt={cat.parent.name} className="w-full h-full object-cover" />
-                            </div>
-                          )}
-                          <span className="flex-1 font-semibold text-sm">{cat.parent.name}</span>
-                          {cat.children && cat.children.length > 0 && (
-                            <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover/item:text-primary transition-colors flex-shrink-0" />
-                          )}
-                        </Link>
-
-                        {/* Sub Menu (Children) */}
-                        {cat.children && cat.children.length > 0 && (
-                          <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 w-[260px] z-50">
-                            <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
-                              <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
-                                {cat.parent.name}
+                          <Link
+                            href={`/category/${cat.parent._id}`}
+                            className="flex items-center w-full cursor-pointer hover:bg-primary/5 hover:text-primary rounded-lg p-2.5 transition-colors"
+                          >
+                            {cat.parent.image && (
+                              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-100 mr-3 shadow-sm group-hover/item:border-primary/30 transition-colors flex-shrink-0">
+                                <img
+                                  src={cat.parent.image}
+                                  alt={cat.parent.name}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
-                              <ul className="grid gap-1 pb-1">
-                                {cat.children.map((child) => (
-                                  <li key={child._id} className="group/subitem relative">
-                                    <Link
-                                      href={`/category/${child._id}`}
-                                      className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-md hover:bg-primary/5 text-gray-600 hover:text-primary transition-colors"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        {child.image && (
-                                          <img src={child.image} alt={child.name} className="w-6 h-6 rounded object-cover border border-gray-100" />
-                                        )}
-                                        <span className="text-sm font-medium">{child.name}</span>
-                                      </div>
-                                      {child.children && child.children.length > 0 && (
-                                        <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 group-hover/subitem:text-primary transition-colors flex-shrink-0" />
-                                      )}
-                                    </Link>
+                            )}
+                            <span className="flex-1 font-semibold text-sm">
+                              {cat.parent.name}
+                            </span>
+                            {cat.children && cat.children.length > 0 && (
+                              <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover/item:text-primary transition-colors flex-shrink-0" />
+                            )}
+                          </Link>
 
-                                    {/* Grandchildren Menu */}
-                                    {child.children && child.children.length > 0 && (
-                                      <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/subitem:opacity-100 group-hover/subitem:visible transition-all duration-200 w-[240px] z-[60]">
-                                        <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
-                                          <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                          {/* Sub Menu (Children) */}
+                          {cat.children && cat.children.length > 0 && (
+                            <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 w-[260px] z-50">
+                              <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
+                                <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                                  {cat.parent.name}
+                                </div>
+                                <ul className="grid gap-1 pb-1">
+                                  {cat.children.map((child) => (
+                                    <li
+                                      key={child._id}
+                                      className="group/subitem relative"
+                                    >
+                                      <Link
+                                        href={`/category/${child._id}`}
+                                        className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-md hover:bg-primary/5 text-gray-600 hover:text-primary transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          {child.image && (
+                                            <img
+                                              src={child.image}
+                                              alt={child.name}
+                                              className="w-6 h-6 rounded object-cover border border-gray-100"
+                                            />
+                                          )}
+                                          <span className="text-sm font-medium">
                                             {child.name}
-                                          </div>
-                                          <ul className="grid gap-1 pb-1">
-                                            {child.children.map((grand) => (
-                                              <li key={grand._id}>
-                                                <Link
-                                                  href={`/category/${grand._id}`}
-                                                  className="cursor-pointer text-sm px-3 py-2 rounded-md text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors flex items-center gap-2"
-                                                >
-                                                  {grand.image && (
-                                                    <img src={grand.image} alt={grand.name} className="w-5 h-5 rounded object-cover border border-gray-100" />
-                                                  )}
-                                                  <span>{grand.name}</span>
-                                                </Link>
-                                              </li>
-                                            ))}
-                                          </ul>
+                                          </span>
                                         </div>
-                                      </div>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
+                                        {child.children &&
+                                          child.children.length > 0 && (
+                                            <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 group-hover/subitem:text-primary transition-colors flex-shrink-0" />
+                                          )}
+                                      </Link>
+
+                                      {/* Grandchildren Menu */}
+                                      {child.children &&
+                                        child.children.length > 0 && (
+                                          <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/subitem:opacity-100 group-hover/subitem:visible transition-all duration-200 w-[240px] z-[60]">
+                                            <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
+                                              <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                                                {child.name}
+                                              </div>
+                                              <ul className="grid gap-1 pb-1">
+                                                {child.children.map((grand) => (
+                                                  <li key={grand._id}>
+                                                    <Link
+                                                      href={`/category/${grand._id}`}
+                                                      className="cursor-pointer text-sm px-3 py-2 rounded-md text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors flex items-center gap-2"
+                                                    >
+                                                      {grand.image && (
+                                                        <img
+                                                          src={grand.image}
+                                                          alt={grand.name}
+                                                          className="w-5 h-5 rounded object-cover border border-gray-100"
+                                                        />
+                                                      )}
+                                                      <span>{grand.name}</span>
+                                                    </Link>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          )}
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -731,12 +905,20 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
             <form className="relative flex-1" onSubmit={handleSearch}>
               <Input
                 type="text"
-                placeholder={lang === 'vi' ? pagesConfigVi.header.search.placeholder : pagesConfigEn.header.search.placeholder}
+                placeholder={
+                  lang === "vi"
+                    ? pagesConfigVi.header.search.placeholder
+                    : pagesConfigEn.header.search.placeholder
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-4 pr-12 py-2.5 w-full rounded-full border-gray-200 focus-visible:ring-primary/20 bg-gray-50 focus:bg-white transition-colors"
               />
-              <Button size="icon" className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-primary text-white hover:bg-primary/90" type="submit">
+              <Button
+                size="icon"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-primary text-white hover:bg-primary/90"
+                type="submit"
+              >
                 <Search className="h-4 w-4" />
               </Button>
             </form>
@@ -748,6 +930,7 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
             <Button variant="ghost" size="sm" className="md:hidden">
               <Search className="h-5 w-5" />
             </Button>
+            <SpaServicesDropdown />
             {/* Blog */}
             <Button variant="ghost" size="sm" asChild>
               <Link href="/blog" aria-label="Blog">
@@ -755,13 +938,16 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
               </Link>
             </Button>
             {/* Wishlist */}
-            <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex"
+              asChild
+            >
               <Link href="/wishlist" aria-label="Yêu thích">
                 <Heart className="h-5 w-5" />
               </Link>
             </Button>
-
-
 
             {/* Language Switcher */}
             {/* <Button variant="outline" size="sm" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>
@@ -770,7 +956,7 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
             {/* Nút Chatbot, Notification, Cart chỉ hiển thị nếu đã đăng nhập */}
             {isLoggedIn && userRole === 1 && (
               <Button
-                onClick={() => router.push('/messages')}
+                onClick={() => router.push("/messages")}
                 variant="ghost"
                 size="sm"
                 className="rounded-full p-0 w-10 h-10 flex items-center justify-center transition-all duration-200 relative"
@@ -791,7 +977,11 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
               </>
             )}
             {/* User Account */}
-            <UserDropdown isLoggedIn={isLoggedIn} user={user} userRole={userRole} />
+            <UserDropdown
+              isLoggedIn={isLoggedIn}
+              user={user}
+              userRole={userRole}
+            />
           </div>
         </div>
       </div>
@@ -800,16 +990,24 @@ export default function Header({ initialSearchTerm = "" }: { initialSearchTerm?:
         <form className="relative" onSubmit={handleSearch}>
           <Input
             type="text"
-            placeholder={lang === 'vi' ? pagesConfigVi.header.search.mobilePlaceholder : pagesConfigEn.header.search.mobilePlaceholder}
+            placeholder={
+              lang === "vi"
+                ? pagesConfigVi.header.search.mobilePlaceholder
+                : pagesConfigEn.header.search.mobilePlaceholder
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-4 pr-12 py-2 w-full"
           />
-          <Button size="sm" className="absolute right-1 top-1 h-8" type="submit">
+          <Button
+            size="sm"
+            className="absolute right-1 top-1 h-8"
+            type="submit"
+          >
             <Search className="h-4 w-4" />
           </Button>
         </form>
       </div>
     </div>
-  )
+  );
 }
