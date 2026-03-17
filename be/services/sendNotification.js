@@ -12,28 +12,38 @@ const { getIO } = require('../config/socket.io');
  * @param {String} [param0.ticketId] - ID ticket liên quan (nếu có)
  * @returns {Promise<Object>} notification đã lưu
  */
-async function sendNotification({ userId, title, description, type, orderId, ticketId }) {
+async function sendNotification({
+  userId,
+  title,
+  description,
+  type,
+  orderId,
+  ticketId,
+  meta,
+}) {
   if (!userId || !title || !type) {
-    throw new Error('Thiếu thông tin bắt buộc khi gửi notification');
+    throw new Error("Thiếu thông tin bắt buộc khi gửi notification");
   }
-  // Lưu vào DB
+
   const notification = new Notification({
     userId,
     title,
     description,
     type,
     orderId,
-    ticketId
+    ticketId,
+    meta,
   });
+
   await notification.save();
 
-  // Gửi realtime qua socket.io
   try {
     const io = getIO();
-    io.to(userId.toString()).emit('notification', notification);
+    io.to(userId.toString()).emit("notification", notification);
   } catch (e) {
-    console.error('Lỗi khi gửi notification qua socket:', e);
+    console.error("Lỗi khi gửi notification qua socket:", e);
   }
+
   return notification;
 }
 

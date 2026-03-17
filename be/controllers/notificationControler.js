@@ -23,13 +23,64 @@ exports.markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
     const { isRead } = req.body;
+    const userId = req.user.id;
 
     if (typeof isRead !== "boolean") {
       return res.status(400).json({ message: "isRead must be boolean" });
     }
 
-    const notification = await Notification.findByIdAndUpdate(
-      id,
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, userId },
+      { isRead },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    res.status(200).json(notification);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.markAllAsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { isRead } = req.body;
+
+    if (typeof isRead !== "boolean") {
+      return res.status(400).json({ message: "isRead must be boolean" });
+    }
+
+    const result = await Notification.updateMany(
+      { userId },
+      { $set: { isRead } }
+    );
+
+    res.status(200).json({
+      message: isRead
+        ? "Tất cả đã đọc"
+        : "Tất cả chưa đọc",
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.markAsRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isRead } = req.body;
+    const userId = req.user.id;
+
+    if (typeof isRead !== "boolean") {
+      return res.status(400).json({ message: "isRead must be boolean" });
+    }
+
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, userId },
       { isRead },
       { new: true }
     );

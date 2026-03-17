@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Eye, Trash2, RefreshCcw, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { io, Socket } from "socket.io-client";
 
 import { api, useApi } from "../../../../utils/axios";
 
@@ -23,8 +24,18 @@ import SubscriberDetail from "./components/SubscriberDetail";
 import Pagination from "./components/Pagination";
 import { Subscriber } from "./types";
 
+type NotificationItem = {
+  _id: string;
+  title: string;
+  description?: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
 export default function SubscribersPage() {
   const { request } = useApi();
+  const socketRef = useRef<Socket | null>(null);
 
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,11 +54,13 @@ export default function SubscribersPage() {
       setLoading(true);
       const response = await request(() => api.get("/subscribers"));
 
-      if (response.success) {
+      if (response?.success) {
         setSubscribers(response.data || []);
+      } else if (Array.isArray(response?.data)) {
+        setSubscribers(response.data);
       } else {
         toast.error(
-          response.message || "Không thể tải danh sách email đăng ký"
+          response?.message || "Không thể tải danh sách email đăng ký"
         );
       }
     } catch (err: any) {
@@ -59,6 +72,50 @@ export default function SubscribersPage() {
 
   useEffect(() => {
     fetchSubscribers();
+  }, []);
+
+  useEffect(() => {
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+
+    if (!token) return;
+
+    try {
+      const decoded = JSON.parse(atob(token.split(".")[1]));
+      const adminId = decoded.id || decoded._id;
+
+      if (!adminId) return;
+
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const SOCKET_URL = new URL(API_URL).origin;
+
+      const socket = io(SOCKET_URL, {
+        path: "/socket.io",
+        transports: ["websocket"],
+        reconnection: true,
+      });
+
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        socket.emit("join", adminId);
+      });
+
+      socket.on("notification", (newNotification: NotificationItem) => {
+        if (newNotification.type === "subscriber") {
+          fetchSubscribers();
+        }
+      });
+
+      return () => {
+        socket.off("connect");
+        socket.off("notification");
+        socket.disconnect();
+      };
+    } catch (error) {
+      console.error("Lỗi socket subscribers:", error);
+    }
   }, []);
 
   const filteredSubscribers = subscribers.filter(
@@ -160,7 +217,7 @@ export default function SubscribersPage() {
                   {filteredSubscribers.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={4 + 1}
+                        colSpan={5}
                         className="text-center py-6 text-gray-500"
                       >
                         Không có email đăng ký phù hợp!

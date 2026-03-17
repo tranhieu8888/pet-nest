@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     orderId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Order", // Tham chiếu đến đơn hàng liên quan (nếu có)
+      ref: "Order",
       required: false,
     },
     title: {
@@ -26,6 +26,10 @@ const notificationSchema = new mongoose.Schema(
       default: false,
     },
     ticketId: { type: mongoose.Schema.Types.ObjectId, ref: "Ticket" },
+    meta: {
+      type: Object,
+      default: {},
+    },
   },
   { timestamps: true }
 );

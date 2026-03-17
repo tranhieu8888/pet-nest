@@ -2,10 +2,11 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell } from "lucide-react";
+import { Bell, CheckCheck, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import { api, useApi } from "../../../../utils/axios";
+import { useRouter } from "next/navigation";
 
 type NotificationItem = {
   _id: string;
@@ -14,6 +15,13 @@ type NotificationItem = {
   type: string;
   isRead: boolean;
   createdAt: string;
+  meta?: {
+    targetUrl?: string;
+    orderId?: string;
+    customerId?: string;
+    groomingId?: string;
+    scheduleId?: string;
+  };
 };
 
 export default function StaffNotificationBell({
@@ -22,6 +30,7 @@ export default function StaffNotificationBell({
   staffId: string | null;
 }) {
   const { request } = useApi();
+  const router = useRouter();
 
   const socketRef = useRef<Socket | null>(null);
   const triggerRef = useRef<HTMLDivElement | null>(null);
@@ -30,7 +39,7 @@ export default function StaffNotificationBell({
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 360 });
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 380 });
 
   const unreadCount = useMemo(
     () => notifications.filter((item) => !item.isRead).length,
@@ -53,14 +62,87 @@ export default function StaffNotificationBell({
     }
   };
 
-  const markAsRead = async (id: string) => {
+  const markOne = async (id: string, isRead: boolean) => {
     try {
-      await request(() => api.patch(`/notifications/${id}`, { isRead: true }));
+      await request(() => api.patch(`/notifications/${id}`, { isRead }));
       setNotifications((prev) =>
-        prev.map((item) => (item._id === id ? { ...item, isRead: true } : item))
+        prev.map((item) => (item._id === id ? { ...item, isRead } : item))
       );
+      toast.success(isRead ? "Đã đọc" : "hưa đọc");
     } catch (error: any) {
       toast.error(error?.message || "Không thể cập nhật thông báo");
+    }
+  };
+
+  const markAll = async (isRead: boolean) => {
+    try {
+      await request(() => api.patch(`/notifications/mark-all`, { isRead }));
+      setNotifications((prev) => prev.map((item) => ({ ...item, isRead })));
+      toast.success(
+        isRead
+          ? "Tất cả đã đọc"
+          : "Tất cả chưa đọc"
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "Không thể cập nhật tất cả thông báo");
+    }
+  };
+
+  const deleteOne = async (id: string) => {
+    try {
+      await request(() => api.delete(`/notifications/${id}`));
+      setNotifications((prev) => prev.filter((item) => item._id !== id));
+      toast.success("Đã xóa thông báo");
+    } catch (error: any) {
+      toast.error(error?.message || "Không thể xóa thông báo");
+    }
+  };
+
+  const deleteAll = async () => {
+    try {
+      await request(() => api.delete(`/notifications`));
+      setNotifications([]);
+      toast.success("Đã xóa tất cả thông báo");
+    } catch (error: any) {
+      toast.error(error?.message || "Không thể xóa tất cả thông báo");
+    }
+  };
+
+  const handleNotificationClick = async (item: NotificationItem) => {
+    if (!item.isRead) {
+      await markOne(item._id, true);
+    }
+
+    if (item.meta?.targetUrl) {
+      setOpen(false);
+      router.push(item.meta.targetUrl);
+      return;
+    }
+
+    switch (item.type) {
+      case "schedule":
+        setOpen(false);
+        router.push("/staff/schedule");
+        return;
+
+      case "service":
+      case "order":
+        setOpen(false);
+        router.push("/staff/services");
+        return;
+
+      case "customer":
+        setOpen(false);
+        router.push("/staff/customers");
+        return;
+
+      case "grooming":
+        setOpen(false);
+        router.push("/staff/grooming");
+        return;
+
+      default:
+        return;
     }
   };
 
@@ -68,7 +150,7 @@ export default function StaffNotificationBell({
     if (!triggerRef.current) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
-    const width = Math.min(360, window.innerWidth - 16);
+    const width = Math.min(380, window.innerWidth - 16);
     const left = Math.max(
       8,
       Math.min(rect.right - width, window.innerWidth - width - 8)
@@ -166,57 +248,118 @@ export default function StaffNotificationBell({
               top: panelPos.top,
               left: panelPos.left,
               width: panelPos.width,
-              maxHeight: "400px",
+              maxHeight: "460px",
             }}
           >
             <div className="px-4 py-3 border-b bg-white">
-              <h3 className="text-sm font-semibold text-gray-900">Thông báo</h3>
-              <p className="text-xs text-gray-500">
-                {unreadCount > 0
-                  ? `${unreadCount} thông báo chưa đọc`
-                  : "Không có thông báo chưa đọc"}
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Thông báo
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {unreadCount > 0
+                      ? `${unreadCount} thông báo chưa đọc`
+                      : "Không có thông báo chưa đọc"}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => markAll(true)}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+                  >
+                    <CheckCheck className="h-3.5 w-3.5" />
+                    Đọc hết
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => markAll(false)}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Chưa đọc hết
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={deleteAll}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Xóa hết
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="max-h-[340px] overflow-y-auto bg-white">
+            <div className="max-h-[360px] overflow-y-auto bg-white">
               {notifications.length === 0 ? (
                 <div className="p-4 text-sm text-gray-500 text-center">
                   Chưa có thông báo nào
                 </div>
               ) : (
                 notifications.map((item) => (
-                  <button
+                  <div
                     key={item._id}
-                    type="button"
-                    onClick={() => {
-                      if (!item.isRead) markAsRead(item._id);
-                    }}
-                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 ${
+                    className={`w-full border-b last:border-b-0 ${
                       !item.isRead ? "bg-blue-50" : "bg-white"
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      {!item.isRead && (
-                        <span className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                          {item.title}
-                        </p>
-
-                        {item.description && (
-                          <p className="mt-1 text-sm text-gray-600 break-words">
-                            {item.description}
-                          </p>
+                    <button
+                      type="button"
+                      onClick={() => handleNotificationClick(item)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50"
+                    >
+                      <div className="flex items-start gap-3">
+                        {!item.isRead && (
+                          <span className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
                         )}
 
-                        <p className="mt-2 text-xs text-gray-400">
-                          {new Date(item.createdAt).toLocaleString("vi-VN")}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                            {item.title}
+                          </p>
+
+                          {item.description && (
+                            <p className="mt-1 text-sm text-gray-600 break-words">
+                              {item.description}
+                            </p>
+                          )}
+
+                          <p className="mt-2 text-xs text-gray-400">
+                            {new Date(item.createdAt).toLocaleString("vi-VN")}
+                          </p>
+                        </div>
                       </div>
+                    </button>
+
+                    <div className="px-4 pb-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markOne(item._id, !item.isRead);
+                        }}
+                        className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+                      >
+                        {item.isRead ? "Chưa đọc" : "Đã đọc"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteOne(item._id);
+                        }}
+                        className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        Xóa
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
