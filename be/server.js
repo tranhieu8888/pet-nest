@@ -14,6 +14,7 @@ const productRoute = require("./routes/productRoute");
 const wishlistRoute = require("./routes/wishlistRoute");
 const reviewRoute = require("./routes/reviewRoute");
 const bannerRoute = require("./routes/bannerRoute");
+const attributeRoute = require("./routes/attributeRoute");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,6 +33,7 @@ app.use("/api/products", productRoute);
 app.use("/api/wishlist", wishlistRoute);
 app.use("/api/reviews", reviewRoute);
 app.use("/api/banners", bannerRoute);
+app.use("/api/attributes", attributeRoute);
 app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {

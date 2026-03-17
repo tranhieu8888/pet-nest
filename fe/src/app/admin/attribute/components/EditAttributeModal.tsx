@@ -113,7 +113,7 @@ export function EditAttributeModal({ isOpen, onClose, onSave, attribute, categor
                                 <label key={cat._id} className="flex items-center gap-2">
                                     <Checkbox
                                         checked={formData.categories.includes(cat._id)}
-                                        onChange={(e) => {
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                             const isChecked = e.target.checked;
                                             setFormData(f => {
                                                 if (isChecked) {
