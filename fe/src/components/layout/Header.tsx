@@ -14,6 +14,7 @@ import {
   Trash2,
   Menu,
   Scissors,
+  Dog,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -435,6 +436,12 @@ function UserDropdown({
           <Link href="/my-spa-bookings" className="flex items-center">
             <Scissors className="mr-2 h-4 w-4" />
             Lịch spa của tôi
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/petProfile" className="flex items-center">
+            <Dog className="mr-2 h-4 w-4" />
+            Thú cưng của tôi
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
