@@ -231,7 +231,7 @@ function NotificationDropdown() {
       try {
         const token = sessionStorage.getItem("token");
         await api.patch(
-          `/notification/${notification._id}`,
+          `/notifications/${notification._id}`,
           { isRead: true },
           {
             headers: { Authorization: `Bearer ${token}` },

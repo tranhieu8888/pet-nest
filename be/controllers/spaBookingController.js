@@ -3,6 +3,8 @@ const SpaBooking = require("../models/spaBookingModel");
 const SpaService = require("../models/spaServiceModel");
 const User = require("../models/userModel");
 const Pet = require("../models/petModel");
+const { sendNotification } = require("../services/sendNotification");
+const { ROLES } = require("../config/role");
 
 function generateBookingCode() {
   const random = Math.floor(100000 + Math.random() * 900000);
@@ -158,6 +160,19 @@ exports.createSpaBooking = async (req, res) => {
       cancelledAt: null,
       cancellationReason: "",
     });
+
+    // Gửi thông báo cho tất cả staff khi có booking mới
+    const staffList = await User.find({ role: ROLES.STAFF });
+    const notifyPromises = staffList.map((staff) =>
+      sendNotification({
+        userId: staff._id,
+        title: "Có booking spa mới",
+        description: `Khách hàng ${customer.name} vừa đặt lịch dịch vụ '${service.name}' cho thú cưng '${pet.name}'.`,
+        type: "spa-booking",
+        orderId: booking._id,
+      })
+    );
+    await Promise.all(notifyPromises);
 
     return res.status(201).json({
       success: true,

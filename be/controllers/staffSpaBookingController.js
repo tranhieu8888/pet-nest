@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const SpaBooking = require("../models/spaBookingModel");
 const User = require("../models/userModel");
 const StaffSchedule = require("../models/staffScheduleModel");
+const { sendNotification } = require("../services/sendNotification");
 
 const VN_TIMEZONE = "Asia/Ho_Chi_Minh";
 
@@ -260,6 +261,22 @@ exports.confirmSpaBooking = async (req, res) => {
 
     await booking.save();
 
+    // Sau khi xác nhận booking thành công
+    // Gửi thông báo cho customer
+    if (booking && booking.customerId) {
+      await sendNotification({
+        userId: booking.customerId,
+        title: "Booking spa đã được xác nhận",
+        description: `Booking dịch vụ '${
+          booking.serviceSnapshot?.name || ""
+        }' cho thú cưng '${
+          booking.petSnapshot?.name || ""
+        }' đã được nhân viên xác nhận.`,
+        type: "spa-booking",
+        orderId: booking._id,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Xác nhận booking thành công",
@@ -346,6 +363,22 @@ exports.rejectSpaBooking = async (req, res) => {
 
     await booking.save();
 
+    // Sau khi từ chối booking thành công
+    // Gửi thông báo cho customer
+    if (booking && booking.customerId) {
+      await sendNotification({
+        userId: booking.customerId,
+        title: "Booking spa bị từ chối",
+        description: `Booking dịch vụ '${
+          booking.serviceSnapshot?.name || ""
+        }' cho thú cưng '${
+          booking.petSnapshot?.name || ""
+        }' đã bị từ chối bởi nhân viên.`,
+        type: "spa-booking",
+        orderId: booking._id,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Đã từ chối nhận booking. Booking sẽ chuyển cho nhân viên khác",
@@ -405,6 +438,20 @@ exports.completeSpaBooking = async (req, res) => {
     }
 
     await booking.save();
+
+    // Sau khi hoàn tất booking thành công
+    // Gửi thông báo cho customer
+    if (booking && booking.customerId) {
+      await sendNotification({
+        userId: booking.customerId,
+        title: "Booking spa đã hoàn tất",
+        description: `Booking dịch vụ '${
+          booking.serviceSnapshot?.name || ""
+        }' cho thú cưng '${booking.petSnapshot?.name || ""}' đã được hoàn tất.`,
+        type: "spa-booking",
+        orderId: booking._id,
+      });
+    }
 
     return res.status(200).json({
       success: true,
