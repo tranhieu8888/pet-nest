@@ -58,6 +58,14 @@ interface CartItem {
   image: string;
 }
 
+type SpaServiceMenuItem = {
+  _id: string;
+  name: string;
+  slug: string;
+  category: "spa" | "cleaning" | "grooming" | "coloring";
+  isActive: boolean;
+};
+
 interface Notification {
   _id: string;
   orderId?: string;
@@ -69,7 +77,6 @@ interface Notification {
   createdAt: string;
 }
 
-// Thêm interface cho category
 interface CategoryMenu {
   _id: string;
   name: string;
@@ -77,12 +84,11 @@ interface CategoryMenu {
   image?: string;
   children?: CategoryMenu[];
 }
+
 interface ParentCategoryMenu {
   parent: CategoryMenu;
   children: CategoryMenu[];
 }
-
-// Sample cart items
 
 let socket: Socket | null = null;
 
@@ -100,47 +106,6 @@ function CartDropdown() {
   const { lang } = useLanguage();
   const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
-  // useEffect(() => {
-  //   const fetchCartData = async () => {
-  //     try {
-  //       setIsLoading(true);
-  //       const response = await api.get('/cart/getcart');
-  //       if (response.data.success && response.data.data) {
-  //         const items = response.data.data.cartItems || [];
-  //         setCartItems((items as any[]).map((item: any) => ({
-  //           _id: item._id || '',
-  //           variantId: item.product.selectedVariant?._id || '',
-  //           name: item.product.name || 'Unknown Product',
-  //           price: item.product.selectedVariant?.price || 0,
-  //           quantity: item.quantity || 1,
-  //           image: item.product.selectedVariant?.images?.[0]?.url || "/placeholder.svg"
-  //         })));
-  //         setCartCount(items.length);
-  //       } else {
-  //         setCartItems([]);
-  //         setCartCount(0);
-  //       }
-  //     } catch (error) {
-  //       console.error("Failed to fetch cart data:", error);
-  //       setCartItems([]);
-  //       setCartCount(0);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchCartData();
-
-  //   const handleCartUpdate = () => {
-  //     fetchCartData();
-  //   };
-  //   window.addEventListener('cartUpdated', handleCartUpdate);
-  //   return () => {
-  //     window.removeEventListener('cartUpdated', handleCartUpdate);
-  //   };
-  // }, []);
-
-  // Get the latest added product (last in the array)
   const latestItem =
     cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
 
@@ -150,7 +115,7 @@ function CartDropdown() {
         <Button variant="ghost" size="sm" className="relative">
           <ShoppingCart className="h-5 w-5" />
           {cartCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+            <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
               {cartCount}
             </Badge>
           )}
@@ -158,18 +123,18 @@ function CartDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="p-4">
-          <h3 className="font-semibold mb-3">{config.cart.title}</h3>
+          <h3 className="mb-3 font-semibold">{config.cart.title}</h3>
           {isLoading ? (
-            <div className="flex justify-center items-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-4">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
           ) : !latestItem ? (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="py-4 text-center text-muted-foreground">
               {config.cart.empty}
             </div>
           ) : (
             <>
-              <div className="space-y-3 max-h-64 overflow-y-auto">
+              <div className="max-h-64 space-y-3 overflow-y-auto">
                 <div
                   key={`${latestItem._id}-${latestItem.variantId}`}
                   className="flex items-center space-x-3"
@@ -177,14 +142,14 @@ function CartDropdown() {
                   <img
                     src={latestItem.image || "/placeholder.svg"}
                     alt={latestItem.name}
-                    className="w-12 h-12 rounded-md object-cover"
+                    className="h-12 w-12 rounded-md object-cover"
                   />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
                       {latestItem.name}
                     </p>
                     <div className="flex items-center space-x-2">
-                      <span className="text-red-500 font-semibold">
+                      <span className="font-semibold text-red-500">
                         {latestItem.price.toLocaleString("vi-VN")}₫
                       </span>
                     </div>
@@ -211,7 +176,6 @@ function NotificationDropdown() {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Lấy notification
   useEffect(() => {
     const fetchNotifications = async () => {
       setLoading(true);
@@ -232,18 +196,20 @@ function NotificationDropdown() {
     fetchNotifications();
   }, []);
 
-  // Lắng nghe socket để nhận notification mới
   useEffect(() => {
     const socket = getSocket();
     const token = sessionStorage.getItem("token");
     let userId = null;
+
     if (token) {
       const decoded = jwtDecode<{ id: string }>(token);
       userId = decoded.id;
     }
+
     if (userId) {
       socket.emit("join", userId);
     }
+
     socket.on("notification", (notification: Notification) => {
       setNotifications((prev) => {
         const exists = prev.some((n) => n._id === notification._id);
@@ -251,6 +217,7 @@ function NotificationDropdown() {
         return [notification, ...prev];
       });
     });
+
     return () => {
       socket.off("notification");
     };
@@ -258,7 +225,6 @@ function NotificationDropdown() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  // Đánh dấu đã đọc
   const handleMarkAsRead = async (notification: Notification) => {
     if (!notification.isRead) {
       try {
@@ -270,25 +236,16 @@ function NotificationDropdown() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+
         setNotifications((prev) =>
           prev.map((n) =>
             n._id === notification._id ? { ...n, isRead: true } : n
           )
         );
-      } catch {
-        // Có thể hiện toast lỗi ở đây
-      }
-    }
-    console.log("notification:", notification);
-    if (notification.orderId) {
-      // router.push(`/myorder/${notification.orderId}`); // Removed as per edit hint
-    }
-    if (notification.type === "ticket" && notification.ticketId) {
-      // router.push(`/requestsupport/${notification.ticketId}`); // Removed as per edit hint
+      } catch {}
     }
   };
 
-  // Xóa notification theo id -> xóa 1
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
@@ -306,7 +263,6 @@ function NotificationDropdown() {
     }
   };
 
-  //xóa all
   const handleDeleteAll = async () => {
     try {
       const token = sessionStorage.getItem("token");
@@ -323,7 +279,7 @@ function NotificationDropdown() {
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+            <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
               {unreadCount}
             </Badge>
           )}
@@ -331,8 +287,8 @@ function NotificationDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="p-4">
-          <h3 className="font-semibold mb-3">Thông báo</h3>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
+          <h3 className="mb-3 font-semibold">Thông báo</h3>
+          <div className="max-h-64 space-y-3 overflow-y-auto">
             {loading ? (
               <div>Đang tải...</div>
             ) : error ? (
@@ -343,25 +299,25 @@ function NotificationDropdown() {
               notifications.map((notification) => (
                 <div
                   key={notification._id}
-                  className={`p-3 rounded-lg border ${
+                  className={`flex cursor-pointer items-start justify-between gap-2 rounded-lg border p-3 ${
                     !notification.isRead
-                      ? "bg-blue-50 border-blue-200"
+                      ? "border-blue-200 bg-blue-50"
                       : "bg-gray-50"
-                  } cursor-pointer flex justify-between items-start gap-2`}
+                  }`}
                 >
                   <div
                     className="flex-1"
                     onClick={() => handleMarkAsRead(notification)}
                   >
-                    <div className="flex justify-between items-start mb-1">
+                    <div className="mb-1 flex items-start justify-between">
                       <h4 className="text-sm font-medium">
                         {notification.title}
                       </h4>
                       {!notification.isRead && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">
+                    <p className="mb-1 text-sm text-muted-foreground">
                       {notification.description}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -379,7 +335,7 @@ function NotificationDropdown() {
                     disabled={deletingId === notification._id}
                     title="Xóa thông báo"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))
@@ -422,8 +378,6 @@ function UserDropdown({
           console.error("Error disabling Google auto select:", error);
         }
       }
-      // Cập nhật trạng thái
-      // Reload lại trang để cập nhật UI
       window.location.reload();
     } catch (error) {
       console.error("Error during logout:", error);
@@ -452,7 +406,7 @@ function UserDropdown({
           size="sm"
           className="flex items-center space-x-2"
         >
-          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <User className="h-4 w-4" />
           </div>
           <span className="hidden md:block">{user?.name}</span>
@@ -475,6 +429,12 @@ function UserDropdown({
           <Link href="/myorder" className="flex items-center">
             <Package className="mr-2 h-4 w-4" />
             {config.user.myOrders}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/my-spa-bookings" className="flex items-center">
+            <Scissors className="mr-2 h-4 w-4" />
+            Lịch spa của tôi
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -501,30 +461,19 @@ function UserDropdown({
   );
 }
 
-function SpaServicesDropdown() {
-  const spaServices = [
-    {
-      label: "Spa Thú Cưng",
-      href: "/services/pet-spa",
-    },
-    {
-      label: "Vệ Sinh Tai Móng",
-      href: "/services/ear-nail-cleaning",
-    },
-    {
-      label: "Cắt Tỉa Lông Thú Cưng",
-      href: "/services/pet-grooming",
-    },
-    {
-      label: "Nhuộm Lông Thú Cưng",
-      href: "/services/pet-coloring",
-    },
-  ];
-
+function SpaServicesDropdown({
+  spaServices = [],
+  loading = false,
+  error = null,
+}: {
+  spaServices?: SpaServiceMenuItem[];
+  loading?: boolean;
+  error?: string | null;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1 text-sm font-semibold text-red-600 hover:text-primary transition-colors">
+        <button className="flex items-center gap-1 text-sm font-semibold text-red-600 transition-colors hover:text-primary">
           <Scissors className="h-4 w-4" />
           DỊCH VỤ SPA
           <ChevronDown className="h-4 w-4" />
@@ -536,26 +485,37 @@ function SpaServicesDropdown() {
         className="w-72 rounded-none border border-gray-200 bg-white p-4 shadow-lg"
       >
         <div className="space-y-1">
-          {spaServices.map((service, index) => (
-            <React.Fragment key={service.href}>
-              <DropdownMenuItem
-                asChild
-                className="cursor-pointer px-0 py-3 focus:bg-transparent"
-              >
-                <Link
-                  href={service.href}
-                  className="w-full tex
-                t-[18px] text-gray-600 hover:text-primary"
+          {loading ? (
+            <div className="px-2 py-3 text-sm text-gray-500">
+              Đang tải dịch vụ...
+            </div>
+          ) : error ? (
+            <div className="px-2 py-3 text-sm text-red-500">{error}</div>
+          ) : spaServices.length === 0 ? (
+            <div className="px-2 py-3 text-sm text-gray-500">
+              Chưa có dịch vụ nào
+            </div>
+          ) : (
+            spaServices.map((service, index) => (
+              <React.Fragment key={service._id}>
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer px-0 py-3 focus:bg-transparent"
                 >
-                  {service.label}
-                </Link>
-              </DropdownMenuItem>
+                  <Link
+                    href={`/services/${service.slug}`}
+                    className="w-full text-[18px] text-gray-600 hover:text-primary"
+                  >
+                    {service.name}
+                  </Link>
+                </DropdownMenuItem>
 
-              {index !== spaServices.length - 1 && (
-                <div className="border-b border-gray-200" />
-              )}
-            </React.Fragment>
-          ))}
+                {index !== spaServices.length - 1 && (
+                  <div className="border-b border-gray-200" />
+                )}
+              </React.Fragment>
+            ))
+          )}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -568,26 +528,33 @@ export default function Header({
   initialSearchTerm?: string;
 }) {
   const [searchQuery, setSearchQuery] = React.useState(initialSearchTerm);
-  const { lang, setLang } = useLanguage();
+  const { lang } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(
     null
   );
   const [userRole, setUserRole] = useState<number | null>(null);
+
   const [categories, setCategories] = useState<ParentCategoryMenu[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
+
+  const [spaServices, setSpaServices] = useState<SpaServiceMenuItem[]>([]);
+  const [loadingSpaServices, setLoadingSpaServices] = useState(true);
+  const [errorSpaServices, setErrorSpaServices] = useState<string | null>(null);
+
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const retryTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Lấy userId từ sessionStorage hoặc token khi mount, retry nếu chưa có
   useEffect(() => {
     const getUserId = () => {
       const token = sessionStorage.getItem("token");
       let id = sessionStorage.getItem("userId");
+
       if ((!id || id === "") && token) {
         try {
           const decoded = jwtDecode<{ id?: string; _id?: string }>(token);
@@ -595,6 +562,7 @@ export default function Header({
           if (id) sessionStorage.setItem("userId", id);
         } catch {}
       }
+
       return id && id !== "" ? id : null;
     };
 
@@ -604,7 +572,6 @@ export default function Header({
         setUserId(id);
         if (retryTimeout.current) clearTimeout(retryTimeout.current);
       } else {
-        // Thử lại sau 200ms nếu chưa có userId
         retryTimeout.current = setTimeout(trySetUserId, 200);
       }
     };
@@ -616,7 +583,6 @@ export default function Header({
     };
   }, []);
 
-  // Move auth check here
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -626,6 +592,7 @@ export default function Header({
           setUser(null);
           return;
         }
+
         const axiosInstance = axios.create({
           baseURL: "http://localhost:5000",
           headers: {
@@ -633,6 +600,7 @@ export default function Header({
             "Content-Type": "application/json",
           },
         });
+
         const response = await axiosInstance.get("/api/auth/myprofile");
         if (response.data.success) {
           setUser(response.data.user);
@@ -656,6 +624,7 @@ export default function Header({
         setUser(null);
       }
     };
+
     checkAuth();
   }, []);
 
@@ -672,7 +641,7 @@ export default function Header({
       setUserRole(null);
     }
   }, [isLoggedIn]);
-  // Fetch categories for menu
+
   useEffect(() => {
     setLoadingCategories(true);
     api
@@ -687,7 +656,30 @@ export default function Header({
       });
   }, []);
 
-  // Nếu initialSearchTerm thay đổi (khi chuyển trang search), đồng bộ input
+  useEffect(() => {
+    const fetchSpaServices = async () => {
+      try {
+        setLoadingSpaServices(true);
+        setErrorSpaServices(null);
+
+        const res = await api.get("/spa-services");
+        const list = res?.data?.data;
+
+        console.log("SPA SERVICES:", res?.data);
+
+        setSpaServices(Array.isArray(list) ? list : []);
+      } catch (err: any) {
+        console.error("FETCH SPA SERVICES ERROR:", err);
+        setSpaServices([]);
+        setErrorSpaServices(err?.message || "Lỗi lấy dịch vụ spa");
+      } finally {
+        setLoadingSpaServices(false);
+      }
+    };
+
+    fetchSpaServices();
+  }, []);
+
   React.useEffect(() => {
     setSearchQuery(initialSearchTerm);
   }, [initialSearchTerm]);
@@ -699,65 +691,65 @@ export default function Header({
     }
   };
 
-  // Lắng nghe socket để nhận tin nhắn mới
   useEffect(() => {
     if (!isLoggedIn || userRole !== 1) return;
+
     const socket = getSocket();
     const token = sessionStorage.getItem("token");
     let userId = null;
+
     if (token) {
       const decoded = jwtDecode<{ id: string }>(token);
       userId = decoded.id;
     }
+
     if (userId) {
       socket.emit("join", userId);
     }
-    // Lắng nghe tin nhắn mới
+
     socket.on("newMessage", () => {
-      // Nếu user không ở trang /messages thì tăng số chưa đọc
       if (pathname !== "/messages") {
-        setUnreadChatCount((prev) => {
-          const newCount = prev + 1;
-          return newCount;
-        });
+        setUnreadChatCount((prev) => prev + 1);
       }
     });
+
     return () => {
       socket.off("newMessage");
     };
   }, [isLoggedIn, userRole, pathname]);
 
-  // Đọc số lượng tin nhắn chưa đọc từ API khi khởi tạo
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
         const token = sessionStorage.getItem("token");
         if (!userId || !token) return;
+
         const res = await axios.get(
           `http://localhost:5000/conversation/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // Tổng số tin nhắn chưa đọc từ tất cả conversation
+
         const totalUnread = Array.isArray(res.data)
           ? res.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)
           : 0;
+
         setUnreadChatCount(totalUnread);
-      } catch (e) {
+      } catch {
         setUnreadChatCount(0);
       }
     };
+
     if (userId) fetchUnreadCount();
   }, [userId, pathname]);
 
   return (
     <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Main header */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/homepage">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <span className="text-lg font-bold text-primary-foreground">
                   {lang === "vi"
                     ? pagesConfigVi.header.brand.short
                     : pagesConfigEn.header.brand.short}
@@ -771,31 +763,30 @@ export default function Header({
             </div>
           </Link>
 
-          {/* Search Bar & Categories */}
-          <div className="flex-1 max-w-3xl mx-8 hidden md:flex items-center gap-3">
-            {/* Hoverable Category Menu */}
-            <div className="relative group/category z-50">
-              <div className="flex items-center gap-2 font-semibold text-gray-700 hover:text-primary hover:bg-primary/5 border border-gray-200 min-w-max hidden lg:flex h-10 px-4 py-2 justify-center rounded-md cursor-pointer transition-colors">
-                <Menu className="w-4 h-4" />
+          <div className="mx-8 hidden max-w-3xl flex-1 items-center gap-3 md:flex">
+            <div className="group/category relative z-50">
+              <div className="hidden min-w-max cursor-pointer items-center justify-center gap-2 rounded-md border border-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-primary/5 hover:text-primary lg:flex h-10">
+                <Menu className="h-4 w-4" />
                 {lang === "vi" ? "Danh mục" : "Categories"}
               </div>
 
-              {/* Dropdown Content - hidden by default, shown on group hover */}
-              <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover/category:opacity-100 group-hover/category:visible transition-all duration-200 w-[300px]">
-                <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
-                  <div className="font-bold text-xs uppercase px-3 py-2 text-gray-400 tracking-wider">
+              <div className="invisible absolute left-0 top-full w-[300px] pt-2 opacity-0 transition-all duration-200 group-hover/category:visible group-hover/category:opacity-100">
+                <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
+                  <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-400">
                     {loadingCategories
                       ? "Đang tải..."
                       : lang === "vi"
                       ? "Tất cả danh mục"
                       : "All Categories"}
                   </div>
+
                   {errorCategories && (
-                    <div className="text-red-500 text-sm px-2">
+                    <div className="px-2 text-sm text-red-500">
                       {errorCategories}
                     </div>
                   )}
-                  <div className="flex flex-col gap-1 mt-1 pb-1 relative">
+
+                  <div className="relative mt-1 flex flex-col gap-1 pb-1">
                     {!loadingCategories &&
                       !errorCategories &&
                       categories.map((cat) => (
@@ -805,30 +796,29 @@ export default function Header({
                         >
                           <Link
                             href={`/category/${cat.parent._id}`}
-                            className="flex items-center w-full cursor-pointer hover:bg-primary/5 hover:text-primary rounded-lg p-2.5 transition-colors"
+                            className="flex w-full items-center rounded-lg p-2.5 transition-colors hover:bg-primary/5 hover:text-primary"
                           >
                             {cat.parent.image && (
-                              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-100 mr-3 shadow-sm group-hover/item:border-primary/30 transition-colors flex-shrink-0">
+                              <div className="relative mr-3 h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm transition-colors group-hover/item:border-primary/30">
                                 <img
                                   src={cat.parent.image}
                                   alt={cat.parent.name}
-                                  className="w-full h-full object-cover"
+                                  className="h-full w-full object-cover"
                                 />
                               </div>
                             )}
-                            <span className="flex-1 font-semibold text-sm">
+                            <span className="flex-1 text-sm font-semibold">
                               {cat.parent.name}
                             </span>
                             {cat.children && cat.children.length > 0 && (
-                              <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover/item:text-primary transition-colors flex-shrink-0" />
+                              <ChevronDown className="h-4 w-4 flex-shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/item:text-primary" />
                             )}
                           </Link>
 
-                          {/* Sub Menu (Children) */}
                           {cat.children && cat.children.length > 0 && (
-                            <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 w-[260px] z-50">
-                              <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
-                                <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                            <div className="invisible absolute left-full top-0 z-50 ml-1 w-[260px] pt-0 opacity-0 transition-all duration-200 group-hover/item:visible group-hover/item:opacity-100">
+                              <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
+                                <div className="mb-1 border-b border-gray-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary">
                                   {cat.parent.name}
                                 </div>
                                 <ul className="grid gap-1 pb-1">
@@ -839,14 +829,14 @@ export default function Header({
                                     >
                                       <Link
                                         href={`/category/${child._id}`}
-                                        className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-md hover:bg-primary/5 text-gray-600 hover:text-primary transition-colors"
+                                        className="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 text-gray-600 transition-colors hover:bg-primary/5 hover:text-primary"
                                       >
                                         <div className="flex items-center gap-2">
                                           {child.image && (
                                             <img
                                               src={child.image}
                                               alt={child.name}
-                                              className="w-6 h-6 rounded object-cover border border-gray-100"
+                                              className="h-6 w-6 rounded border border-gray-100 object-cover"
                                             />
                                           )}
                                           <span className="text-sm font-medium">
@@ -855,16 +845,15 @@ export default function Header({
                                         </div>
                                         {child.children &&
                                           child.children.length > 0 && (
-                                            <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 group-hover/subitem:text-primary transition-colors flex-shrink-0" />
+                                            <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/subitem:text-primary" />
                                           )}
                                       </Link>
 
-                                      {/* Grandchildren Menu */}
                                       {child.children &&
                                         child.children.length > 0 && (
-                                          <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/subitem:opacity-100 group-hover/subitem:visible transition-all duration-200 w-[240px] z-[60]">
-                                            <div className="p-2 rounded-xl shadow-xl border border-gray-100 bg-white">
-                                              <div className="font-bold text-xs uppercase px-3 py-2 text-primary tracking-wider border-b border-gray-50 mb-1">
+                                          <div className="invisible absolute left-full top-0 z-[60] ml-1 w-[240px] pt-0 opacity-0 transition-all duration-200 group-hover/subitem:visible group-hover/subitem:opacity-100">
+                                            <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
+                                              <div className="mb-1 border-b border-gray-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary">
                                                 {child.name}
                                               </div>
                                               <ul className="grid gap-1 pb-1">
@@ -872,13 +861,13 @@ export default function Header({
                                                   <li key={grand._id}>
                                                     <Link
                                                       href={`/category/${grand._id}`}
-                                                      className="cursor-pointer text-sm px-3 py-2 rounded-md text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors flex items-center gap-2"
+                                                      className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-primary/5 hover:text-primary"
                                                     >
                                                       {grand.image && (
                                                         <img
                                                           src={grand.image}
                                                           alt={grand.name}
-                                                          className="w-5 h-5 rounded object-cover border border-gray-100"
+                                                          className="h-5 w-5 rounded border border-gray-100 object-cover"
                                                         />
                                                       )}
                                                       <span>{grand.name}</span>
@@ -912,11 +901,11 @@ export default function Header({
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-4 pr-12 py-2.5 w-full rounded-full border-gray-200 focus-visible:ring-primary/20 bg-gray-50 focus:bg-white transition-colors"
+                className="w-full rounded-full border-gray-200 bg-gray-50 py-2.5 pl-4 pr-12 transition-colors focus:bg-white focus-visible:ring-primary/20"
               />
               <Button
                 size="icon"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-primary text-white hover:bg-primary/90"
+                className="absolute right-1.5 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full bg-primary text-white hover:bg-primary/90"
                 type="submit"
               >
                 <Search className="h-4 w-4" />
@@ -924,20 +913,23 @@ export default function Header({
             </form>
           </div>
 
-          {/* Right side actions */}
           <div className="flex items-center space-x-2">
-            {/* Mobile search */}
             <Button variant="ghost" size="sm" className="md:hidden">
               <Search className="h-5 w-5" />
             </Button>
-            <SpaServicesDropdown />
-            {/* Blog */}
+
+            <SpaServicesDropdown
+              spaServices={spaServices}
+              loading={loadingSpaServices}
+              error={errorSpaServices}
+            />
+
             <Button variant="ghost" size="sm" asChild>
               <Link href="/blog" aria-label="Blog">
                 Blog
               </Link>
             </Button>
-            {/* Wishlist */}
+
             <Button
               variant="ghost"
               size="sm"
@@ -949,34 +941,30 @@ export default function Header({
               </Link>
             </Button>
 
-            {/* Language Switcher */}
-            {/* <Button variant="outline" size="sm" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>
-              {lang === 'vi' ? pagesConfigVi.header.language.vi : pagesConfigEn.header.language.en}
-            </Button> */}
-            {/* Nút Chatbot, Notification, Cart chỉ hiển thị nếu đã đăng nhập */}
             {isLoggedIn && userRole === 1 && (
               <Button
                 onClick={() => router.push("/messages")}
                 variant="ghost"
                 size="sm"
-                className="rounded-full p-0 w-10 h-10 flex items-center justify-center transition-all duration-200 relative"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full p-0 transition-all duration-200"
                 title="Chat với CSKH"
               >
-                <MessageCircle className="h-5 w-5 mx-auto" />
+                <MessageCircle className="mx-auto h-5 w-5" />
                 {unreadChatCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
                     {unreadChatCount}
                   </Badge>
                 )}
               </Button>
             )}
+
             {isLoggedIn && (
               <>
                 <NotificationDropdown />
                 <CartDropdown />
               </>
             )}
-            {/* User Account */}
+
             <UserDropdown
               isLoggedIn={isLoggedIn}
               user={user}
@@ -986,7 +974,7 @@ export default function Header({
         </div>
       </div>
 
-      <div className="md:hidden border-t p-4">
+      <div className="border-t p-4 md:hidden">
         <form className="relative" onSubmit={handleSearch}>
           <Input
             type="text"
@@ -997,7 +985,7 @@ export default function Header({
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-4 pr-12 py-2 w-full"
+            className="w-full py-2 pl-4 pr-12"
           />
           <Button
             size="sm"

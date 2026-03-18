@@ -40,7 +40,6 @@ router.patch(
   authorizeRoles(ROLES.STAFF),
   completeSpaBooking
 );
-
 router.patch("/:id/pay", verifyToken, authorizeRoles(ROLES.STAFF), markAsPaid);
 
 module.exports = router;

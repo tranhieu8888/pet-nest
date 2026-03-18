@@ -105,7 +105,7 @@ exports.getStaffSpaBookings = async (req, res) => {
   }
 };
 
-// STAFF xem chi tiết 1 booking
+// STAFF xem chi tiết
 exports.getStaffSpaBookingById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -182,8 +182,19 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    const staff = await User.findById(staffId);
+    if (
+      Array.isArray(booking.rejectedByStaffIds) &&
+      booking.rejectedByStaffIds.some(
+        (item) => String(item) === String(staffId)
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Bạn đã từ chối booking này, không thể nhận lại",
+      });
+    }
 
+    const staff = await User.findById(staffId);
     if (!staff) {
       return res.status(404).json({
         success: false,
@@ -193,14 +204,13 @@ exports.confirmSpaBooking = async (req, res) => {
 
     const bookingDateOnly = getVNDateOnly(booking.startAt);
 
-    const allSchedules = await StaffSchedule.find({});
-    const allSchedulesOfStaff = allSchedules.filter(
-      (item) => String(item.staffId) === String(staffId)
-    );
-
-    const schedule = allSchedulesOfStaff.find(
-      (item) => getVNDateOnly(item.workDate) === bookingDateOnly
-    );
+    const schedule = await StaffSchedule.findOne({
+      staffId,
+      workDate: {
+        $gte: new Date(`${bookingDateOnly}T00:00:00.000Z`),
+        $lte: new Date(`${bookingDateOnly}T23:59:59.999Z`),
+      },
+    });
 
     if (!schedule) {
       return res.status(400).json({
@@ -235,7 +245,7 @@ exports.confirmSpaBooking = async (req, res) => {
 
     const conflictBooking = await SpaBooking.findOne({
       _id: { $ne: booking._id },
-      staffId: staff._id,
+      staffId,
       status: "confirmed",
       startAt: { $lt: booking.endAt },
       endAt: { $gt: booking.startAt },
@@ -272,7 +282,7 @@ exports.confirmSpaBooking = async (req, res) => {
   }
 };
 
-// STAFF từ chối booking -> trả lại hàng chờ để staff khác nhận
+// STAFF từ chối booking
 exports.rejectSpaBooking = async (req, res) => {
   try {
     const staffId = req.user?.id || req.user?._id || req.user?.userId;
@@ -315,7 +325,7 @@ exports.rejectSpaBooking = async (req, res) => {
     const logLine = [
       `[${new Date().toISOString()}]`,
       `Staff: ${staff?.name || "Không rõ"}`,
-      `Từ chối nhận booking`,
+      "Từ chối nhận booking",
       rejectReason ? `Lý do: ${rejectReason}` : "",
     ]
       .filter(Boolean)
@@ -330,15 +340,11 @@ exports.rejectSpaBooking = async (req, res) => {
     booking.cancelledAt = null;
     booking.cancellationReason = "";
 
-    if (!Array.isArray(booking.rejectedByStaffIds)) {
-      booking.rejectedByStaffIds = [];
-    }
-
-    const existed = booking.rejectedByStaffIds.some(
-      (item) => String(item) === String(staffId)
-    );
-
-    if (!existed) {
+    if (
+      !booking.rejectedByStaffIds.some(
+        (item) => String(item) === String(staffId)
+      )
+    ) {
       booking.rejectedByStaffIds.push(staffId);
     }
 

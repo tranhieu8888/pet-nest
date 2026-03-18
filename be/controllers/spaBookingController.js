@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const SpaBooking = require("../models/spaBookingModel");
 const SpaService = require("../models/spaServiceModel");
 const User = require("../models/userModel");
@@ -66,6 +67,17 @@ exports.createSpaBooking = async (req, res) => {
       });
     }
 
+    if (
+      Array.isArray(service.petTypes) &&
+      service.petTypes.length > 0 &&
+      !service.petTypes.includes(pet.type)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Dịch vụ này không áp dụng cho loại thú cưng đã chọn",
+      });
+    }
+
     const startDate = new Date(startAt);
     if (Number.isNaN(startDate.getTime())) {
       return res.status(400).json({
@@ -74,8 +86,7 @@ exports.createSpaBooking = async (req, res) => {
       });
     }
 
-    const now = new Date();
-    if (startDate < now) {
+    if (startDate < new Date()) {
       return res.status(400).json({
         success: false,
         message: "Không thể đặt lịch trong quá khứ",
@@ -86,7 +97,6 @@ exports.createSpaBooking = async (req, res) => {
       startDate.getTime() + service.durationMinutes * 60 * 1000
     );
 
-    // 🔥 CHECK TRÙNG LỊCH CỦA PET
     const existingBooking = await SpaBooking.findOne({
       petId,
       status: { $in: ["pending", "confirmed"] },
@@ -106,16 +116,17 @@ exports.createSpaBooking = async (req, res) => {
       customerId,
       petId,
       serviceId: service._id,
+      staffId: null,
       rejectedByStaffIds: [],
 
       customerSnapshot: {
-        name: customer.name,
+        name: customer.name || "",
         phone: customer.phone || "",
         email: customer.email || "",
       },
 
       petSnapshot: {
-        name: pet.name,
+        name: pet.name || "",
         type: pet.type,
         breed: pet.breed || "",
         age: pet.age ?? null,
@@ -132,11 +143,19 @@ exports.createSpaBooking = async (req, res) => {
         durationMinutes: service.durationMinutes,
       },
 
+      staffSnapshot: {
+        name: "",
+        phone: "",
+      },
+
       startAt: startDate,
       endAt: endDate,
-      note,
+      note: String(note || "").trim(),
       status: "pending",
       paymentStatus: "unpaid",
+      internalNote: "",
+      cancelledAt: null,
+      cancellationReason: "",
     });
 
     return res.status(201).json({
@@ -168,6 +187,7 @@ exports.getMySpaBookings = async (req, res) => {
     const bookings = await SpaBooking.find({ customerId })
       .populate("serviceId", "name slug image")
       .populate("petId", "name type breed")
+      .populate("staffId", "name phone")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -187,7 +207,6 @@ exports.getMySpaBookings = async (req, res) => {
 exports.getSpaBookingById = async (req, res) => {
   try {
     const customerId = req.user?.id || req.user?._id || req.user?.userId;
-
     const { id } = req.params;
 
     if (!customerId) {
@@ -197,9 +216,17 @@ exports.getSpaBookingById = async (req, res) => {
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID booking không hợp lệ",
+      });
+    }
+
     const booking = await SpaBooking.findById(id)
       .populate("serviceId", "name slug image")
-      .populate("petId", "name type breed");
+      .populate("petId", "name type breed")
+      .populate("staffId", "name phone");
 
     if (!booking) {
       return res.status(404).json({
@@ -232,7 +259,6 @@ exports.getSpaBookingById = async (req, res) => {
 exports.cancelSpaBooking = async (req, res) => {
   try {
     const customerId = req.user?.id || req.user?._id || req.user?.userId;
-
     const { id } = req.params;
     const { reason = "" } = req.body;
 
@@ -240,6 +266,13 @@ exports.cancelSpaBooking = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: "Không xác định được người dùng đăng nhập",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID booking không hợp lệ",
       });
     }
 
@@ -259,7 +292,6 @@ exports.cancelSpaBooking = async (req, res) => {
       });
     }
 
-    // 🔥 CHỈ CHO HỦY KHI PENDING
     if (booking.status !== "pending") {
       return res.status(400).json({
         success: false,
@@ -269,7 +301,8 @@ exports.cancelSpaBooking = async (req, res) => {
 
     booking.status = "cancelled";
     booking.cancelledAt = new Date();
-    booking.cancellationReason = reason;
+    booking.cancellationReason = String(reason || "").trim();
+    booking.rejectedByStaffIds = [];
 
     await booking.save();
 

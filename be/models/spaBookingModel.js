@@ -28,12 +28,15 @@ const spaBookingSchema = new mongoose.Schema(
       default: null,
     },
 
-    rejectedByStaffIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+    rejectedByStaffIds: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      default: [],
+    },
 
     customerSnapshot: {
       name: { type: String, required: true },
@@ -87,8 +90,8 @@ const spaBookingSchema = new mongoose.Schema(
     note: { type: String, default: "" },
     internalNote: { type: String, default: "" },
 
-    cancelledAt: { type: Date, default: null },   // Thời điểm khách hàng hủy
-    cancellationReason: { type: String, default: "" }, // Lý do hủy (nếu có) của khách hàng
+    cancelledAt: { type: Date, default: null },
+    cancellationReason: { type: String, default: "" },
   },
   {
     timestamps: true,
