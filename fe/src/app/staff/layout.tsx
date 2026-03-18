@@ -147,7 +147,7 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
               <div className="flex flex-col text-left">
                 <span className="font-medium">Nhân viên</span>
                 <span className="text-xs text-gray-500">
-                  petcare.staff@gmail.com
+                  petnest.staff@gmail.com
                 </span>
               </div>
               <ChevronUp className="ml-auto size-4 text-gray-400" />

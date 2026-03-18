@@ -15,7 +15,10 @@ const staffScheduleSchema = new mongoose.Schema(
     isOff: { type: Boolean, default: false },
     note: { type: String, default: "" },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    collection: "staffSchedules",
+  }
 );
 
 staffScheduleSchema.index({ staffId: 1, workDate: 1 }, { unique: true });

@@ -28,6 +28,13 @@ const spaBookingSchema = new mongoose.Schema(
       default: null,
     },
 
+    rejectedByStaffIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
     customerSnapshot: {
       name: { type: String, required: true },
       phone: { type: String, default: "" },
@@ -62,15 +69,7 @@ const spaBookingSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "checked_in",
-        "in_progress",
-        "ready",
-        "completed",
-        "cancelled",
-      ],
+      enum: ["pending", "confirmed", "completed", "cancelled"],
       default: "pending",
     },
 
@@ -88,8 +87,8 @@ const spaBookingSchema = new mongoose.Schema(
     note: { type: String, default: "" },
     internalNote: { type: String, default: "" },
 
-    cancelledAt: { type: Date, default: null },
-    cancellationReason: { type: String, default: "" },
+    cancelledAt: { type: Date, default: null },   // Thời điểm khách hàng hủy
+    cancellationReason: { type: String, default: "" }, // Lý do hủy (nếu có) của khách hàng
   },
   {
     timestamps: true,

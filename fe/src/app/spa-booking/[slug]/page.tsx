@@ -10,6 +10,7 @@ import { CalendarDays, Clock, PawPrint } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { api } from "../../../../utils/axios";
+import { toast } from "sonner";
 
 interface SpaService {
   _id: string;
@@ -272,10 +273,11 @@ export default function SpaBookingPage() {
       });
 
       if (response.data?.success) {
-        setSuccessMessage(response.data?.message || "Đặt lịch spa thành công.");
+        // setSuccessMessage(response.data?.message || "Đặt lịch spa thành công.");
 
         setTimeout(() => {
-          router.push("/petProfile");
+          toast.success("Đặt lịch thành công! Chuyển về trang chủ");
+          router.push("/homepage");
         }, 1200);
       } else {
         setError(response.data?.message || "Đặt lịch thất bại.");

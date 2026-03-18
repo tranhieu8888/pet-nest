@@ -8,13 +8,10 @@ function generateBookingCode() {
   return `SPA-${Date.now()}-${random}`;
 }
 
+// ================= CREATE =================
 exports.createSpaBooking = async (req, res) => {
   try {
-    console.log("CREATE SPA BOOKING HIT");
-    console.log("REQ.USER:", req.user);
-    console.log("REQ.BODY:", req.body);
-
-    const customerId = req.user?.id || req.user?._id;
+    const customerId = req.user?.id || req.user?._id || req.user?.userId;
 
     if (!customerId) {
       return res.status(401).json({
@@ -89,11 +86,27 @@ exports.createSpaBooking = async (req, res) => {
       startDate.getTime() + service.durationMinutes * 60 * 1000
     );
 
+    // 🔥 CHECK TRÙNG LỊCH CỦA PET
+    const existingBooking = await SpaBooking.findOne({
+      petId,
+      status: { $in: ["pending", "confirmed"] },
+      startAt: { $lt: endDate },
+      endAt: { $gt: startDate },
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        success: false,
+        message: "Thú cưng đã có lịch trùng thời gian",
+      });
+    }
+
     const booking = await SpaBooking.create({
       bookingCode: generateBookingCode(),
       customerId,
       petId,
       serviceId: service._id,
+      rejectedByStaffIds: [],
 
       customerSnapshot: {
         name: customer.name,
@@ -140,9 +153,10 @@ exports.createSpaBooking = async (req, res) => {
   }
 };
 
+// ================= LIST =================
 exports.getMySpaBookings = async (req, res) => {
   try {
-    const customerId = req.user?.id || req.user?._id;
+    const customerId = req.user?.id || req.user?._id || req.user?.userId;
 
     if (!customerId) {
       return res.status(401).json({
@@ -169,9 +183,11 @@ exports.getMySpaBookings = async (req, res) => {
   }
 };
 
+// ================= DETAIL =================
 exports.getSpaBookingById = async (req, res) => {
   try {
-    const customerId = req.user?.id || req.user?._id;
+    const customerId = req.user?.id || req.user?._id || req.user?.userId;
+
     const { id } = req.params;
 
     if (!customerId) {
@@ -212,9 +228,11 @@ exports.getSpaBookingById = async (req, res) => {
   }
 };
 
+// ================= CANCEL =================
 exports.cancelSpaBooking = async (req, res) => {
   try {
-    const customerId = req.user?.id || req.user?._id;
+    const customerId = req.user?.id || req.user?._id || req.user?.userId;
+
     const { id } = req.params;
     const { reason = "" } = req.body;
 
@@ -241,10 +259,11 @@ exports.cancelSpaBooking = async (req, res) => {
       });
     }
 
-    if (["completed", "cancelled", "in_progress"].includes(booking.status)) {
+    // 🔥 CHỈ CHO HỦY KHI PENDING
+    if (booking.status !== "pending") {
       return res.status(400).json({
         success: false,
-        message: "Booking này không thể hủy",
+        message: "Chỉ có thể hủy khi booking chưa được xác nhận",
       });
     }
 
