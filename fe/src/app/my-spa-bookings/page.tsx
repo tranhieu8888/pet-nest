@@ -5,6 +5,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { api, useApi } from "../../../utils/axios";
 import { toast } from "sonner";
+import { io, Socket } from "socket.io-client";
+import { jwtDecode } from "jwt-decode";
 
 type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
 type PaymentStatus = "paid" | "unpaid";
@@ -317,6 +319,28 @@ export default function MySpaBookingsPage() {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    // Kết nối socket và lắng nghe notification
+    const socket: Socket = io("http://localhost:5000");
+    const token = sessionStorage.getItem("token");
+    let userId = null;
+    if (token) {
+      const decoded = jwtDecode<{ id: string }>(token);
+      userId = decoded.id;
+    }
+    if (userId) {
+      socket.emit("join", userId);
+    }
+    socket.on("notification", (notification: any) => {
+      if (notification?.type === "spa-booking") {
+        fetchBookings();
+      }
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <>
