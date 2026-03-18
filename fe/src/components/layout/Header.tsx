@@ -503,7 +503,7 @@ function SpaServicesDropdown({
                   className="cursor-pointer px-0 py-3 focus:bg-transparent"
                 >
                   <Link
-                    href={`/services/${service.slug}`}
+                    href={`/spa-services/${service.slug}`}
                     className="w-full text-[18px] text-gray-600 hover:text-primary"
                   >
                     {service.name}
