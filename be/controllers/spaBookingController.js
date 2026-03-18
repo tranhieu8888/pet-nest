@@ -134,6 +134,7 @@ exports.createSpaBooking = async (req, res) => {
         note: pet.note || "",
         allergies: pet.allergies || "",
         behaviorNote: pet.behaviorNote || "",
+        image: pet.image || "",
       },
 
       serviceSnapshot: {

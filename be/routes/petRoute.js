@@ -4,6 +4,7 @@ const router = express.Router();
 const verifyToken = require("../middleware/auth");
 const authorizeRoles = require("../middleware/authorization");
 const { ROLES } = require("../config/role");
+const { upload } = require("../config/upload.js");
 
 const {
   getMyPets,
@@ -15,9 +16,21 @@ const {
 // CUSTOMER đăng nhập mới thao tác được pet của mình
 router.get("/my-pets", verifyToken, authorizeRoles(ROLES.CUSTOMER), getMyPets);
 
-router.post("/", verifyToken, authorizeRoles(ROLES.CUSTOMER), createPet);
+router.post(
+  "/",
+  verifyToken,
+  authorizeRoles(ROLES.CUSTOMER),
+  upload.single("image"),
+  createPet
+);
 
-router.put("/:id", verifyToken, authorizeRoles(ROLES.CUSTOMER), updatePet);
+router.put(
+  "/:id",
+  verifyToken,
+  authorizeRoles(ROLES.CUSTOMER),
+  upload.single("image"),
+  updatePet
+);
 
 router.delete("/:id", verifyToken, authorizeRoles(ROLES.CUSTOMER), deletePet);
 

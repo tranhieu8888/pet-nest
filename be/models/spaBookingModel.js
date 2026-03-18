@@ -53,6 +53,7 @@ const spaBookingSchema = new mongoose.Schema(
       note: { type: String, default: "" },
       allergies: { type: String, default: "" },
       behaviorNote: { type: String, default: "" },
+      image: { type: String, default: "" },
     },
 
     serviceSnapshot: {

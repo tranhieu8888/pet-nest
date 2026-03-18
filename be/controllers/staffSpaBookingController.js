@@ -202,13 +202,18 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    const bookingDateOnly = getVNDateOnly(booking.startAt);
+    // ✅ FIX TIMEZONE: dùng UTC theo DB
+    const startOfDay = new Date(booking.startAt);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(booking.startAt);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     const schedule = await StaffSchedule.findOne({
       staffId,
       workDate: {
-        $gte: new Date(`${bookingDateOnly}T00:00:00.000Z`),
-        $lte: new Date(`${bookingDateOnly}T23:59:59.999Z`),
+        $gte: startOfDay,
+        $lte: endOfDay,
       },
     });
 
@@ -231,18 +236,20 @@ exports.confirmSpaBooking = async (req, res) => {
     const bookingStartMinutes = getVNMinutes(booking.startAt);
     const bookingEndMinutes = getVNMinutes(booking.endAt);
 
+    // ✅ LOGIC MỚI: chỉ cần overlap là được
     if (
       shiftStartMinutes === null ||
       shiftEndMinutes === null ||
-      bookingStartMinutes < shiftStartMinutes ||
-      bookingEndMinutes > shiftEndMinutes
+      bookingEndMinutes <= shiftStartMinutes ||
+      bookingStartMinutes >= shiftEndMinutes
     ) {
       return res.status(400).json({
         success: false,
-        message: "Booking nằm ngoài ca làm việc của nhân viên",
+        message: "Booking không nằm trong khoảng thời gian làm việc",
       });
     }
 
+    // ✅ CHECK TRÙNG LỊCH
     const conflictBooking = await SpaBooking.findOne({
       _id: { $ne: booking._id },
       staffId,

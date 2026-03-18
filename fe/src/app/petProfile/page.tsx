@@ -20,6 +20,7 @@ interface Pet {
   note?: string;
   allergies?: string;
   behaviorNote?: string;
+  image?: string;
   isActive?: boolean;
 }
 
@@ -33,6 +34,7 @@ interface PetFormData {
   note: string;
   allergies: string;
   behaviorNote: string;
+  image: File | null;
 }
 
 interface FormErrors {
@@ -45,6 +47,7 @@ interface FormErrors {
   note?: string;
   allergies?: string;
   behaviorNote?: string;
+  image?: string;
 }
 
 const initialForm: PetFormData = {
@@ -57,6 +60,7 @@ const initialForm: PetFormData = {
   note: "",
   allergies: "",
   behaviorNote: "",
+  image: null,
 };
 
 function getPetTypeLabel(type: Pet["type"]) {
@@ -75,20 +79,26 @@ function getGenderLabel(gender?: Pet["gender"]) {
 }
 
 function buildPayload(form: PetFormData) {
-  return {
-    name: form.name.trim(),
-    type: form.type,
-    breed: form.breed.trim(),
-    gender: form.gender,
-    age: form.age.trim() ? Number(form.age) : null,
-    weight: form.weight.trim() ? Number(form.weight) : null,
-    note: form.note.trim(),
-    allergies: form.allergies.trim(),
-    behaviorNote: form.behaviorNote.trim(),
-  };
+  const formData = new FormData();
+
+  formData.append("name", form.name.trim());
+  formData.append("type", form.type);
+  formData.append("breed", form.breed.trim());
+  formData.append("gender", form.gender);
+  formData.append("age", form.age.trim());
+  formData.append("weight", form.weight.trim());
+  formData.append("note", form.note.trim());
+  formData.append("allergies", form.allergies.trim());
+  formData.append("behaviorNote", form.behaviorNote.trim());
+
+  if (form.image) {
+    formData.append("image", form.image);
+  }
+
+  return formData;
 }
 
-function validateForm(form: PetFormData): FormErrors {
+function validateForm(form: PetFormData, isEditing = false): FormErrors {
   const errors: FormErrors = {};
 
   if (!form.name.trim()) {
@@ -127,6 +137,10 @@ function validateForm(form: PetFormData): FormErrors {
     errors.weight = "Cân nặng không được nhỏ hơn 0";
   }
 
+  if (!isEditing && !form.image) {
+    errors.image = "Ảnh thú cưng không được để trống";
+  }
+
   return errors;
 }
 
@@ -144,6 +158,9 @@ export default function PetProfilePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"" | "dog" | "cat">("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Preview image state
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const itemsPerPage = 6;
 
@@ -223,9 +240,22 @@ export default function PetProfilePage() {
     setEditingPet(null);
     setForm(initialForm);
     setFieldErrors({});
+    setPreviewImage(null);
     setOpenModal(true);
     setError(null);
   };
+
+  function getPetImageUrl(image?: string) {
+    if (!image) return "";
+
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+
+    return `http://localhost:5000${
+      image.startsWith("/") ? image : `/${image}`
+    }`;
+  }
 
   const handleOpenEdit = (pet: Pet) => {
     setEditingPet(pet);
@@ -242,8 +272,10 @@ export default function PetProfilePage() {
       note: pet.note || "",
       allergies: pet.allergies || "",
       behaviorNote: pet.behaviorNote || "",
+      image: null,
     });
     setFieldErrors({});
+    setPreviewImage(pet.image ? getPetImageUrl(pet.image) : null);
     setOpenModal(true);
     setError(null);
   };
@@ -254,6 +286,7 @@ export default function PetProfilePage() {
     setEditingPet(null);
     setForm(initialForm);
     setFieldErrors({});
+    setPreviewImage(null);
   };
 
   const handleChange = (
@@ -262,6 +295,24 @@ export default function PetProfilePage() {
     >
   ) => {
     const { name, value } = e.target;
+
+    if (e.target instanceof HTMLInputElement && e.target.type === "file") {
+      const file = e.target.files?.[0] || null;
+      setForm((prev) => ({ ...prev, [name]: file }));
+      setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+      // Preview image logic
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setPreviewImage(null);
+      }
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }));
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
   };
@@ -269,7 +320,7 @@ export default function PetProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const errors = validateForm(form);
+    const errors = validateForm(form, !!editingPet);
     setFieldErrors(errors);
 
     if (Object.keys(errors).length > 0) {
@@ -285,10 +336,14 @@ export default function PetProfilePage() {
       const payload = buildPayload(form);
 
       if (editingPet?._id) {
-        await api.put(`/pets/${editingPet._id}`, payload);
+        await api.put(`/pets/${editingPet._id}`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         toast.success("Cập nhật thú cưng thành công.");
       } else {
-        await api.post("/pets", payload);
+        await api.post("/pets", payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         toast.success("Thêm thú cưng thành công.");
       }
 
@@ -466,6 +521,21 @@ export default function PetProfilePage() {
                       key={pet._id}
                       className="rounded-2xl border border-pink-100 bg-white p-6 shadow-md"
                     >
+                      {pet.image ? (
+                        <img
+                          src={getPetImageUrl(pet.image)}
+                          alt={pet.name}
+                          className="mb-4 h-48 w-full rounded-xl object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.svg";
+                          }}
+                        />
+                      ) : (
+                        <div className="mb-4 flex h-48 w-full items-center justify-center rounded-xl bg-pink-50 text-pink-400">
+                          <PawPrint size={40} />
+                        </div>
+                      )}
+
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-semibold text-pink-600">
@@ -730,6 +800,43 @@ export default function PetProfilePage() {
                       </p>
                     )}
                   </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-800">
+                    Ảnh thú cưng
+                  </label>
+
+                  <input
+                    name="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
+                  />
+
+                  {/* Preview image when selecting new file or editing */}
+                  {previewImage && (
+                    <div className="mt-3">
+                      <p className="mb-2 text-sm text-gray-600">
+                        Ảnh xem trước:
+                      </p>
+                      <img
+                        src={previewImage}
+                        alt="Preview"
+                        className="h-32 w-32 rounded-xl border object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg";
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {fieldErrors.image && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors.image}
+                    </p>
+                  )}
                 </div>
 
                 <div>

@@ -38,6 +38,12 @@ interface Pet {
   customerId?: string;
   userId?: string;
   ownerId?: string;
+  image?: string;
+}
+function getPetImageUrl(image?: string) {
+  if (!image) return "/placeholder.svg";
+  if (image.startsWith("http://") || image.startsWith("https://")) return image;
+  return `http://localhost:5000${image.startsWith("/") ? image : `/${image}`}`;
 }
 
 function getValidImageUrl(url?: string, fallback = "/placeholder.svg") {
@@ -478,8 +484,17 @@ export default function SpaBookingPage() {
                                       : "border-gray-200 hover:border-pink-300 hover:bg-pink-50/40"
                                   }`}
                                 >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div>
+                                  <div className="flex items-start gap-3">
+                                    <img
+                                      src={getPetImageUrl(pet.image)}
+                                      alt={pet.name}
+                                      className="h-16 w-16 rounded-xl object-cover border bg-gray-100"
+                                      onError={(e) => {
+                                        e.currentTarget.src =
+                                          "/placeholder.svg";
+                                      }}
+                                    />
+                                    <div className="flex-1">
                                       <p className="font-semibold text-gray-900">
                                         {pet.name}
                                       </p>

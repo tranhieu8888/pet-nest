@@ -53,21 +53,24 @@ const petSchema = new mongoose.Schema(
 
     note: {
       type: String,
-      // required: [true, "Ghi chú là bắt buộc"],
       default: "",
       trim: true,
     },
 
     allergies: {
       type: String,
-      // required: [true, "Dị ứng là bắt buộc"],
       default: "",
       trim: true,
     },
 
     behaviorNote: {
       type: String,
-      // required: [true, "Hành vi cần lưu ý là bắt buộc"],
+      default: "",
+      trim: true,
+    },
+
+    image: {
+      type: String,
       default: "",
       trim: true,
     },
@@ -85,17 +88,5 @@ petSchema.path("name").validate(function (value) {
 petSchema.path("breed").validate(function (value) {
   return typeof value === "string" && value.trim().length > 0;
 }, "Giống không được để trống");
-
-// petSchema.path("note").validate(function (value) {
-//   return typeof value === "string" && value.trim().length > 0;
-// }, "Ghi chú không được để trống");
-
-// petSchema.path("allergies").validate(function (value) {
-//   return typeof value === "string" && value.trim().length > 0;
-// }, "Dị ứng không được để trống");
-
-// petSchema.path("behaviorNote").validate(function (value) {
-//   return typeof value === "string" && value.trim().length > 0;
-// }, "Hành vi cần lưu ý không được để trống");
 
 module.exports = mongoose.model("Pet", petSchema);

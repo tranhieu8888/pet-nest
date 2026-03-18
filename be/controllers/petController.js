@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 const Pet = require("../models/petModel");
 
 function validatePetInput(body, isUpdate = false) {
@@ -68,19 +70,20 @@ function validatePetInput(body, isUpdate = false) {
     checkRequiredNumber("weight", "Cân nặng");
   }
 
-  // if (!isUpdate || body.note !== undefined) {
-  //   checkRequiredString("note", "Ghi chú");
-  // }
-
-  // if (!isUpdate || body.allergies !== undefined) {
-  //   checkRequiredString("allergies", "Dị ứng");
-  // }
-
-  // if (!isUpdate || body.behaviorNote !== undefined) {
-  //   checkRequiredString("behaviorNote", "Hành vi cần lưu ý");
-  // }
-
   return errors;
+}
+
+function safeTrim(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function deleteUploadedFile(filePath) {
+  if (!filePath) return;
+
+  const fullPath = path.join(__dirname, "..", filePath.replace(/^\//, ""));
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+  }
 }
 
 // GET pets của customer đang đăng nhập
@@ -113,6 +116,7 @@ exports.createPet = async (req, res) => {
     const errors = validatePetInput(req.body, false);
 
     if (Object.keys(errors).length > 0) {
+      if (req.file) deleteUploadedFile(`/uploads/${req.file.filename}`);
       return res.status(400).json({
         success: false,
         message: "Dữ liệu không hợp lệ",
@@ -128,9 +132,10 @@ exports.createPet = async (req, res) => {
       gender: req.body.gender,
       age: Number(req.body.age),
       weight: Number(req.body.weight),
-      note: req.body.note.trim(),
-      allergies: req.body.allergies.trim(),
-      behaviorNote: req.body.behaviorNote.trim(),
+      note: safeTrim(req.body.note),
+      allergies: safeTrim(req.body.allergies),
+      behaviorNote: safeTrim(req.body.behaviorNote),
+      image: req.file ? `/uploads/${req.file.filename}` : "",
       isActive: true,
     });
 
@@ -141,6 +146,11 @@ exports.createPet = async (req, res) => {
     });
   } catch (e) {
     console.error("CREATE PET ERROR:", e);
+
+    if (req.file) {
+      deleteUploadedFile(`/uploads/${req.file.filename}`);
+    }
+
     return res.status(500).json({
       success: false,
       message: e.message || "Lỗi server khi thêm thú cưng",
@@ -155,6 +165,7 @@ exports.updatePet = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (req.file) deleteUploadedFile(`/uploads/${req.file.filename}`);
       return res.status(400).json({
         success: false,
         message: "ID thú cưng không hợp lệ",
@@ -164,6 +175,7 @@ exports.updatePet = async (req, res) => {
     const pet = await Pet.findById(id);
 
     if (!pet || !pet.isActive) {
+      if (req.file) deleteUploadedFile(`/uploads/${req.file.filename}`);
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy thú cưng",
@@ -171,6 +183,7 @@ exports.updatePet = async (req, res) => {
     }
 
     if (String(pet.customerId) !== String(customerId)) {
+      if (req.file) deleteUploadedFile(`/uploads/${req.file.filename}`);
       return res.status(403).json({
         success: false,
         message: "Bạn không có quyền cập nhật thú cưng này",
@@ -180,6 +193,7 @@ exports.updatePet = async (req, res) => {
     const errors = validatePetInput(req.body, true);
 
     if (Object.keys(errors).length > 0) {
+      if (req.file) deleteUploadedFile(`/uploads/${req.file.filename}`);
       return res.status(400).json({
         success: false,
         message: "Dữ liệu không hợp lệ",
@@ -187,19 +201,29 @@ exports.updatePet = async (req, res) => {
       });
     }
 
+    const oldImage = pet.image;
+
     if (req.body.name !== undefined) pet.name = req.body.name.trim();
     if (req.body.type !== undefined) pet.type = req.body.type;
     if (req.body.breed !== undefined) pet.breed = req.body.breed.trim();
     if (req.body.gender !== undefined) pet.gender = req.body.gender;
     if (req.body.age !== undefined) pet.age = Number(req.body.age);
     if (req.body.weight !== undefined) pet.weight = Number(req.body.weight);
-    if (req.body.note !== undefined) pet.note = req.body.note.trim();
+    if (req.body.note !== undefined) pet.note = safeTrim(req.body.note);
     if (req.body.allergies !== undefined)
-      pet.allergies = req.body.allergies.trim();
+      pet.allergies = safeTrim(req.body.allergies);
     if (req.body.behaviorNote !== undefined)
-      pet.behaviorNote = req.body.behaviorNote.trim();
+      pet.behaviorNote = safeTrim(req.body.behaviorNote);
+
+    if (req.file) {
+      pet.image = `/uploads/${req.file.filename}`;
+    }
 
     await pet.save();
+
+    if (req.file && oldImage) {
+      deleteUploadedFile(oldImage);
+    }
 
     return res.status(200).json({
       success: true,
@@ -208,6 +232,11 @@ exports.updatePet = async (req, res) => {
     });
   } catch (e) {
     console.error("UPDATE PET ERROR:", e);
+
+    if (req.file) {
+      deleteUploadedFile(`/uploads/${req.file.filename}`);
+    }
+
     return res.status(500).json({
       success: false,
       message: e.message || "Lỗi server khi cập nhật thú cưng",
