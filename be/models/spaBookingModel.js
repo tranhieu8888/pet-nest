@@ -41,6 +41,8 @@ const spaBookingSchema = new mongoose.Schema(
       age: { type: Number, default: null },
       weight: { type: Number, default: null },
       note: { type: String, default: "" },
+      allergies: { type: String, default: "" },
+      behaviorNote: { type: String, default: "" },
     },
 
     serviceSnapshot: {
@@ -55,12 +57,21 @@ const spaBookingSchema = new mongoose.Schema(
       phone: { type: String, default: "" },
     },
 
-    appointmentDate: { type: Date, required: true },
-    appointmentTime: { type: String, required: true },
+    // thay cho appointmentDate + appointmentTime
+    startAt: { type: Date, required: true },
+    endAt: { type: Date, required: true },
 
     status: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled"],
+      enum: [
+        "pending",
+        "confirmed",
+        "checked_in",
+        "in_progress",
+        "ready",
+        "completed",
+        "cancelled",
+      ],
       default: "pending",
     },
 
@@ -70,9 +81,22 @@ const spaBookingSchema = new mongoose.Schema(
       default: "unpaid",
     },
 
-    note: { type: String, default: "" },
+    checkedInAt: { type: Date, default: null },
+    startedAt: { type: Date, default: null },
+    finishedAt: { type: Date, default: null },
+    checkedOutAt: { type: Date, default: null },
+
+    note: { type: String, default: "" }, // note từ customer
+    internalNote: { type: String, default: "" }, // note staff/admin
+
+    cancelledAt: { type: Date, default: null },
+    cancellationReason: { type: String, default: "" },
   },
   { timestamps: true }
 );
+
+spaBookingSchema.index({ customerId: 1, createdAt: -1 });
+spaBookingSchema.index({ staffId: 1, startAt: 1 });
+spaBookingSchema.index({ startAt: 1, endAt: 1, status: 1 });
 
 module.exports = mongoose.model("SpaBooking", spaBookingSchema);

@@ -25,56 +25,83 @@ export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const registered = searchParams.get('registered') === 'true';
+    const redirect = searchParams.get("redirect");
     const [showVerifyNotice, setShowVerifyNotice] = useState(registered);
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError('');
+      e.preventDefault();
+      setIsLoading(true);
+      setError("");
 
-        try {
-            const response = await api.post('/auth/login', { email, password });
+      try {
+        const response = await api.post("/auth/login", { email, password });
 
-            if (response.data.success) {
-                const { token } = response.data;
+        if (response.data.success) {
+          const { token } = response.data;
 
-                if (rememberMe) {
-                    localStorage.setItem('token', token);
-                } else {
-                    sessionStorage.setItem('token', token);
-                }
+          if (rememberMe) {
+            localStorage.setItem("token", token);
+            sessionStorage.removeItem("token");
+          } else {
+            sessionStorage.setItem("token", token);
+            localStorage.removeItem("token");
+          }
 
-                try {
-                    const decoded = jwtDecode<{ role: number }>(token);
-                    const role = decoded.role;
-                    switch (role) {
-                        case 0:
-                            router.push('/admin/blog');
-                            break;
-                        case 2:
-                            router.push('/staff/schedule');
-                            break;
-                        case 1:
-                        default:
-                            router.push('/homepage');
-                            break;
-                    }
-                } catch {
-                    router.push('/homepage');
-                }
-            } else {
-                setError(response.data.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+          try {
+            const decoded = jwtDecode<{ role: number }>(token);
+            const role = decoded.role;
+
+            const isAdmin = role === 0;
+            const isStaff = (role & 2) === 2;
+            const isCustomer = (role & 1) === 1;
+
+            if (redirect && isCustomer && !isAdmin && !isStaff) {
+              router.push(redirect);
+              return;
             }
-        } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: ErrorResponse } };
-            if (axiosError.response?.data?.message?.includes('chưa được xác minh email')) {
-                setShowVerificationModal(true);
-            } else {
-                setError(axiosError.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+
+            if (isAdmin) {
+              router.push("/admin/blog");
+              return;
             }
-        } finally {
-            setIsLoading(false);
+
+            if (isStaff) {
+              router.push("/staff/schedule");
+              return;
+            }
+
+            if (isCustomer) {
+              router.push(redirect || "/homepage");
+              return;
+            }
+
+            router.push(redirect || "/homepage");
+          } catch {
+            router.push(redirect || "/homepage");
+          }
+        } else {
+          setError(
+            response.data.message || "Đăng nhập thất bại. Vui lòng thử lại."
+          );
         }
+      } catch (error: unknown) {
+        const axiosError = error as { response?: { data?: ErrorResponse } };
+
+        if (
+          axiosError.response?.data?.message?.includes(
+            "chưa được xác minh email"
+          )
+        ) {
+          setShowVerificationModal(true);
+        } else {
+          setError(
+            axiosError.response?.data?.message ||
+              "Đăng nhập thất bại. Vui lòng thử lại."
+          );
+        }
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     const handleResendVerification = async () => {
@@ -95,56 +122,79 @@ export default function LoginPage() {
         }
     };
 
-    const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-        if (!credentialResponse.credential) {
-            setError('Không thể xác thực với Google. Vui lòng thử lại.');
-            return;
-        }
+    const handleGoogleSuccess = async (credentialResponse: {
+      credential?: string;
+    }) => {
+      if (!credentialResponse.credential) {
+        setError("Không thể xác thực với Google. Vui lòng thử lại.");
+        return;
+      }
 
-        try {
-            setIsLoading(true);
-            setError('');
+      try {
+        setIsLoading(true);
+        setError("");
 
-            const response = await api.post('/auth/google', {
-                credential: credentialResponse.credential
-            });
+        const response = await api.post("/auth/google", {
+          credential: credentialResponse.credential,
+        });
 
-            if (response.data.success) {
-                const { token } = response.data;
+        if (response.data.success) {
+          const { token } = response.data;
 
-                if (rememberMe) {
-                    localStorage.setItem('token', token);
-                } else {
-                    sessionStorage.setItem('token', token);
-                }
+          if (rememberMe) {
+            localStorage.setItem("token", token);
+            sessionStorage.removeItem("token");
+          } else {
+            sessionStorage.setItem("token", token);
+            localStorage.removeItem("token");
+          }
 
-                try {
-                    const decoded = jwtDecode<{ role: number }>(token);
-                    const role = decoded.role;
-                    switch (role) {
-                        case 0:
-                            router.push('/admin/blog');
-                            break;
-                        case 2:
-                            router.push('/staff/dashboard');
-                            break;
-                        case 1:
-                        default:
-                            router.push('/homepage');
-                            break;
-                    }
-                } catch {
-                    router.push('/homepage');
-                }
-            } else {
-                setError(response.data.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+          try {
+            const decoded = jwtDecode<{ role: number }>(token);
+            const role = decoded.role;
+
+            const isAdmin = role === 0;
+            const isStaff = (role & 2) === 2;
+            const isCustomer = (role & 1) === 1;
+
+            if (redirect && isCustomer && !isAdmin && !isStaff) {
+              router.push(redirect);
+              return;
             }
-        } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: ErrorResponse } };
-            setError(axiosError.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại sau');
-        } finally {
-            setIsLoading(false);
+
+            if (isAdmin) {
+              router.push("/admin/blog");
+              return;
+            }
+
+            if (isStaff) {
+              router.push("/staff/schedule");
+              return;
+            }
+
+            if (isCustomer) {
+              router.push(redirect || "/homepage");
+              return;
+            }
+
+            router.push(redirect || "/homepage");
+          } catch {
+            router.push(redirect || "/homepage");
+          }
+        } else {
+          setError(
+            response.data.message || "Đăng nhập thất bại. Vui lòng thử lại."
+          );
         }
+      } catch (error: unknown) {
+        const axiosError = error as { response?: { data?: ErrorResponse } };
+        setError(
+          axiosError.response?.data?.message ||
+            "Có lỗi xảy ra, vui lòng thử lại sau"
+        );
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     const handleGoogleError = () => {

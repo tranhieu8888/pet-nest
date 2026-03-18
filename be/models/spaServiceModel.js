@@ -17,12 +17,24 @@ const spaServiceSchema = new mongoose.Schema(
     },
     price: { type: Number, required: true, min: 0 },
     durationMinutes: { type: Number, required: true, min: 1 },
+    image: { type: String, default: "" },
     isActive: { type: Boolean, default: true },
 
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    collection: "spaServices",
+  }
 );
 
-module.exports =  mongoose.model("SpaService", spaServiceSchema);
+module.exports = mongoose.model("SpaService", spaServiceSchema);

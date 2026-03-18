@@ -86,7 +86,7 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
                   <div className="flex flex-col leading-none">
                     <span className="font-bold text-lg">Staff Panel</span>
                     <span className="text-xs opacity-80">
-                      Pet Care & Grooming
+                      Pet Nest & Grooming
                     </span>
                   </div>
                 </Link>

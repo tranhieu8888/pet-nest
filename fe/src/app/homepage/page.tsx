@@ -82,6 +82,19 @@ interface TopSellingProduct {
   reviews: ProductReview[];
 }
 
+interface SpaService {
+  _id: string;
+  name: string;
+  slug: string;
+  category: "spa" | "cleaning" | "grooming" | "coloring";
+  description: string;
+  petTypes: ("dog" | "cat")[];
+  price: number;
+  durationMinutes: number;
+  isActive: boolean;
+  image?: string;
+}
+
 export default function HomePage() {
   const { lang } = useLanguage();
   const pagesConfig = lang === "vi" ? viConfig : enConfig;
@@ -103,6 +116,10 @@ export default function HomePage() {
   const [parentError, setParentError] = useState<string | null>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [topSellingError, setTopSellingError] = useState<string | null>(null);
+
+  const [spaServices, setSpaServices] = useState<SpaService[]>([]);
+  const [isLoadingSpaServices, setIsLoadingSpaServices] = useState(true);
+  const [spaServicesError, setSpaServicesError] = useState<string | null>(null);
   const now = new Date();
 
   useEffect(() => {
@@ -247,6 +264,45 @@ export default function HomePage() {
     };
 
     void fetchTopSellingProducts();
+  }, []);
+
+  useEffect(() => {
+    const fetchSpaServices = async () => {
+      try {
+        setIsLoadingSpaServices(true);
+        const response = await api.get("/spa-services");
+
+        const servicesData = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        const activeServices = servicesData.filter(
+          (service: SpaService) => service.isActive
+        );
+
+        setSpaServices(activeServices);
+      } catch (err: unknown) {
+        console.error("Error fetching spa services:", err);
+        if (err instanceof AxiosError) {
+          setSpaServicesError(
+            err.response?.data?.message ||
+              err.message ||
+              "An error occurred while fetching spa services"
+          );
+        } else if (err instanceof Error) {
+          setSpaServicesError(err.message);
+        } else {
+          setSpaServicesError("An error occurred while fetching spa services");
+        }
+        setSpaServices([]);
+      } finally {
+        setIsLoadingSpaServices(false);
+      }
+    };
+
+    void fetchSpaServices();
   }, []);
 
   return (
@@ -420,6 +476,127 @@ export default function HomePage() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Spa Services Section */}
+      <section className="py-20 bg-gradient-to-b from-pink-50 to-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Dịch vụ Spa thú cưng</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Chăm sóc toàn diện cho thú cưng của bạn với các dịch vụ tắm, vệ
+              sinh, cắt tỉa và làm đẹp chuyên nghiệp.
+            </p>
+          </div>
+
+          {isLoadingSpaServices ? (
+            <div className="text-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Đang tải dịch vụ spa...</p>
+            </div>
+          ) : spaServicesError ? (
+            <div className="text-center py-10">
+              <p className="text-red-600">
+                Có lỗi xảy ra khi tải dịch vụ spa. Vui lòng thử lại sau.
+              </p>
+            </div>
+          ) : spaServices.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {spaServices.slice(0, 8).map((service, index) => (
+                  <motion.div
+                    key={service._id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.08 }}
+                    className="group"
+                  >
+                    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col border border-pink-100">
+                      <div className="relative h-52 bg-pink-50">
+                        <Image
+                          src={getValidImageUrl(
+                            service.image,
+                            "/placeholder.svg"
+                          )}
+                          alt={service.name}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-pink-600 text-white text-xs font-semibold px-3 py-1 rounded-full capitalize">
+                            {service.category}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-5 flex flex-col flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-pink-600 transition-colors mb-2 line-clamp-2">
+                          {service.name}
+                        </h3>
+
+                        <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                          {service.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {service.petTypes?.map((petType) => (
+                            <span
+                              key={petType}
+                              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
+                            >
+                              {petType === "dog" ? "Chó" : "Mèo"}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="mt-auto space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-pink-600 font-bold text-xl">
+                              {service.price.toLocaleString("vi-VN")}đ
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {service.durationMinutes} phút
+                            </span>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/spa-services/${service.slug}`}
+                              className="flex-1 text-center border border-pink-600 text-pink-600 hover:bg-pink-50 px-4 py-2 rounded-xl font-medium transition"
+                            >
+                              Xem chi tiết
+                            </Link>
+                            <Link
+                              href={`/spa-booking/${service.slug}`}
+                              className="flex-1 text-center bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl font-medium transition"
+                            >
+                              Đặt lịch
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="text-center mt-10">
+                <Link
+                  href="/spa-services"
+                  className="inline-flex items-center bg-pink-600 hover:bg-pink-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                  Xem tất cả dịch vụ spa
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-gray-600">
+                Hiện chưa có dịch vụ spa nào để hiển thị
+              </p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Shop by Pet Section */}

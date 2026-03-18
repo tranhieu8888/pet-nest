@@ -19,6 +19,9 @@ const bannerRoute = require("./routes/bannerRoute");
 const voucherRoute = require("./routes/voucherRoute");
 const subscriberRoutes = require("./routes/subscriberRoute");
 const notificationRoute = require("./routes/notificationRoute");
+const spaServiceRoute = require("./routes/spaServiceRoute");
+const spaBookingRoute = require("./routes/spaBookingRoute");
+const petRoute = require("./routes/petRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -54,6 +57,9 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/vouchers", voucherRoute);
 app.use("/api/subscribers", subscriberRoutes);
 app.use("/api/notifications", notificationRoute);
+app.use("/api/spa-services", spaServiceRoute);
+app.use("/api/spa-bookings", spaBookingRoute);
+app.use("/api/pets", petRoute);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
