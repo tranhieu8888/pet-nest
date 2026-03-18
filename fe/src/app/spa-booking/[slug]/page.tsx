@@ -139,23 +139,21 @@ export default function SpaBookingPage() {
         setServiceError(null);
         setPetsError(null);
 
-        const [serviceResponse, petsResponse] = await Promise.all([
-          //api.get(`/spa-services/${serviceSlug}`),
-          api.get(`/spa-services/slug/${serviceSlug}`),
-          api.get("/pets/my-pets"),
-        ]);
+        setService(null);
+        setPets([]);
+        setSelectedPetId("");
+        setStartAt("");
+        setNote("");
 
+        const serviceResponse = await api.get(`/spa-services/${serviceSlug}`);
         const serviceData =
           serviceResponse.data?.data ||
           serviceResponse.data?.service ||
           serviceResponse.data ||
           null;
 
-        const petsData = Array.isArray(petsResponse.data?.data)
-          ? petsResponse.data.data
-          : Array.isArray(petsResponse.data)
-          ? petsResponse.data
-          : [];
+        console.log("BOOKING PARAM SLUG:", serviceSlug);
+        console.log("BOOKING SERVICE DATA:", serviceData);
 
         if (!serviceData) {
           setServiceError("Không tìm thấy thông tin dịch vụ spa.");
@@ -163,25 +161,45 @@ export default function SpaBookingPage() {
           setService(serviceData);
         }
 
-        setPets(petsData);
+        try {
+          const petsResponse = await api.get("/pets/my-pets");
 
-        if (petsData.length > 0) {
-          setSelectedPetId((prev) => prev || petsData[0]._id);
+          const petsData = Array.isArray(petsResponse.data?.data)
+            ? petsResponse.data.data
+            : Array.isArray(petsResponse.data)
+            ? petsResponse.data
+            : [];
+
+          setPets(petsData);
+
+          if (petsData.length > 0) {
+            setSelectedPetId(petsData[0]._id);
+          }
+        } catch (petErr: unknown) {
+          if (petErr instanceof AxiosError) {
+            setPetsError(
+              petErr.response?.data?.message ||
+                petErr.message ||
+                "Không thể tải danh sách thú cưng"
+            );
+          } else if (petErr instanceof Error) {
+            setPetsError(petErr.message);
+          } else {
+            setPetsError("Không thể tải danh sách thú cưng");
+          }
         }
       } catch (err: unknown) {
-        console.error("Error fetching booking data:", err);
-
         if (err instanceof AxiosError) {
           const message =
             err.response?.data?.message ||
             err.message ||
-            "Có lỗi xảy ra khi tải dữ liệu đặt lịch";
+            "Có lỗi xảy ra khi tải dịch vụ spa";
 
           setError(message);
         } else if (err instanceof Error) {
           setError(err.message);
         } else {
-          setError("Có lỗi xảy ra khi tải dữ liệu đặt lịch");
+          setError("Có lỗi xảy ra khi tải dịch vụ spa");
         }
       } finally {
         setLoading(false);
@@ -211,8 +229,20 @@ export default function SpaBookingPage() {
     return !!service && !!selectedPetId && !!startAt && !submitting;
   }, [service, selectedPetId, startAt, submitting]);
 
+  console.log("SERVICE STATE BEFORE SUBMIT:", service);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("CURRENT PARAM SLUG:", serviceSlug);
+    console.log("SERVICE STATE BEFORE SUBMIT:", service);
+
+    if (!service || service.slug !== serviceSlug) {
+      setError(
+        "Thông tin dịch vụ chưa đồng bộ, vui lòng đợi tải xong hoặc tải lại trang."
+      );
+      return;
+    }
 
     if (!service?._id) {
       setError("Không xác định được dịch vụ cần đặt.");
@@ -236,8 +266,8 @@ export default function SpaBookingPage() {
 
       const response = await api.post("/spa-bookings", {
         petId: selectedPetId,
-        serviceId: service._id,
-        startAt: new Date(startAt).toISOString(),
+        serviceSlug: service.slug,
+        startAt,
         note: note.trim(),
       });
 
@@ -245,7 +275,7 @@ export default function SpaBookingPage() {
         setSuccessMessage(response.data?.message || "Đặt lịch spa thành công.");
 
         setTimeout(() => {
-          router.push("/profile/spa-bookings");
+          router.push("/petProfile");
         }, 1200);
       } else {
         setError(response.data?.message || "Đặt lịch thất bại.");

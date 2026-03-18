@@ -12,6 +12,13 @@ const {
   cancelSpaBooking,
 } = require("../controllers/spaBookingController");
 
+router.get("/test", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "spa booking route ok",
+  });
+});
+
 // CUSTOMER phải login mới được tạo booking
 router.post("/", verifyToken, authorizeRoles(ROLES.CUSTOMER), createSpaBooking);
 

@@ -57,7 +57,6 @@ const spaBookingSchema = new mongoose.Schema(
       phone: { type: String, default: "" },
     },
 
-    // thay cho appointmentDate + appointmentTime
     startAt: { type: Date, required: true },
     endAt: { type: Date, required: true },
 
@@ -86,13 +85,16 @@ const spaBookingSchema = new mongoose.Schema(
     finishedAt: { type: Date, default: null },
     checkedOutAt: { type: Date, default: null },
 
-    note: { type: String, default: "" }, // note từ customer
-    internalNote: { type: String, default: "" }, // note staff/admin
+    note: { type: String, default: "" },
+    internalNote: { type: String, default: "" },
 
     cancelledAt: { type: Date, default: null },
     cancellationReason: { type: String, default: "" },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    collection: "spaBookings",
+  }
 );
 
 spaBookingSchema.index({ customerId: 1, createdAt: -1 });

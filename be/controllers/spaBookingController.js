@@ -10,14 +10,25 @@ function generateBookingCode() {
 
 exports.createSpaBooking = async (req, res) => {
   try {
-    const customerId = req.user.id || req.user._id;
+    console.log("CREATE SPA BOOKING HIT");
+    console.log("REQ.USER:", req.user);
+    console.log("REQ.BODY:", req.body);
 
-    const { petId, serviceId, startAt, note = "" } = req.body;
+    const customerId = req.user?.id || req.user?._id;
 
-    if (!petId || !serviceId || !startAt) {
+    if (!customerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Không xác định được người dùng đăng nhập",
+      });
+    }
+
+    const { petId, serviceSlug, startAt, note = "" } = req.body;
+
+    if (!petId || !serviceSlug || !startAt) {
       return res.status(400).json({
         success: false,
-        message: "Thiếu petId, serviceId hoặc startAt",
+        message: "Thiếu petId, serviceSlug hoặc startAt",
       });
     }
 
@@ -37,7 +48,6 @@ exports.createSpaBooking = async (req, res) => {
       });
     }
 
-    // Chỉ cho đặt pet của chính mình
     if (
       String(pet.customerId || pet.userId || pet.ownerId) !== String(customerId)
     ) {
@@ -48,7 +58,7 @@ exports.createSpaBooking = async (req, res) => {
     }
 
     const service = await SpaService.findOne({
-      _id: serviceId,
+      slug: serviceSlug,
       isActive: true,
     });
 
@@ -83,7 +93,7 @@ exports.createSpaBooking = async (req, res) => {
       bookingCode: generateBookingCode(),
       customerId,
       petId,
-      serviceId,
+      serviceId: service._id,
 
       customerSnapshot: {
         name: customer.name,
@@ -132,7 +142,14 @@ exports.createSpaBooking = async (req, res) => {
 
 exports.getMySpaBookings = async (req, res) => {
   try {
-    const customerId = req.user.id || req.user._id;
+    const customerId = req.user?.id || req.user?._id;
+
+    if (!customerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Không xác định được người dùng đăng nhập",
+      });
+    }
 
     const bookings = await SpaBooking.find({ customerId })
       .populate("serviceId", "name slug image")
@@ -154,8 +171,15 @@ exports.getMySpaBookings = async (req, res) => {
 
 exports.getSpaBookingById = async (req, res) => {
   try {
-    const customerId = req.user.id || req.user._id;
+    const customerId = req.user?.id || req.user?._id;
     const { id } = req.params;
+
+    if (!customerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Không xác định được người dùng đăng nhập",
+      });
+    }
 
     const booking = await SpaBooking.findById(id)
       .populate("serviceId", "name slug image")
@@ -190,9 +214,16 @@ exports.getSpaBookingById = async (req, res) => {
 
 exports.cancelSpaBooking = async (req, res) => {
   try {
-    const customerId = req.user.id || req.user._id;
+    const customerId = req.user?.id || req.user?._id;
     const { id } = req.params;
     const { reason = "" } = req.body;
+
+    if (!customerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Không xác định được người dùng đăng nhập",
+      });
+    }
 
     const booking = await SpaBooking.findById(id);
 
