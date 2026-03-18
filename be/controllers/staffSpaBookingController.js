@@ -5,21 +5,6 @@ const StaffSchedule = require("../models/staffScheduleModel");
 
 const VN_TIMEZONE = "Asia/Ho_Chi_Minh";
 
-function getVNDateOnly(dateInput) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: VN_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date(dateInput));
-
-  const year = parts.find((p) => p.type === "year")?.value;
-  const month = parts.find((p) => p.type === "month")?.value;
-  const day = parts.find((p) => p.type === "day")?.value;
-
-  return `${year}-${month}-${day}`;
-}
-
 function getVNMinutes(dateInput) {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: VN_TIMEZONE,
@@ -202,7 +187,7 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    // ✅ FIX TIMEZONE: dùng UTC theo DB
+    // FIX TIMEZONE: dùng UTC theo DB
     const startOfDay = new Date(booking.startAt);
     startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -236,7 +221,7 @@ exports.confirmSpaBooking = async (req, res) => {
     const bookingStartMinutes = getVNMinutes(booking.startAt);
     const bookingEndMinutes = getVNMinutes(booking.endAt);
 
-    // ✅ LOGIC MỚI: chỉ cần overlap là được
+    // LOGIC MỚI: chỉ cần overlap là được
     if (
       shiftStartMinutes === null ||
       shiftEndMinutes === null ||
@@ -249,7 +234,7 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    // ✅ CHECK TRÙNG LỊCH
+    // CHECK TRÙNG LỊCH
     const conflictBooking = await SpaBooking.findOne({
       _id: { $ne: booking._id },
       staffId,

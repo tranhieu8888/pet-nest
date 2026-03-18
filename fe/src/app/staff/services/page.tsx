@@ -46,7 +46,7 @@ const statusOptions = [
   { value: "pending", label: "Chờ xác nhận" },
   { value: "confirmed", label: "Đã xác nhận" },
   { value: "completed", label: "Hoàn tất" },
-  { value: "cancelled", label: "Đã hủy" },
+  // { value: "cancelled", label: "Đã hủy" }, // Loại bỏ vì booking đã hủy không hiển thị cho staff
 ];
 
 const PAGE_SIZE = 5;
