@@ -6,8 +6,11 @@ export interface BlogImage {
 export interface Blog {
   _id: string;
   title: string;
+  slug: string;
   description: string;
   tag: string;
-  images: BlogImage[];
+  image: BlogImage;
   createdAt: string;
+  updatedAt?: string;
+  views?: number;
 }

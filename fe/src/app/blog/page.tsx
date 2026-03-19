@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { api } from "../../../utils/axios";
 import "./blog.css";
 import Header from "@/components/layout/Header";
@@ -24,6 +23,7 @@ function stripHtml(html: string) {
 
 interface BlogImage {
   url: string;
+  public_id?: string;
 }
 
 interface Author {
@@ -34,9 +34,10 @@ interface Author {
 interface BlogPost {
   _id: string;
   title: string;
+  slug: string; // dùng slug để đi detail
   description: string;
   tag: string;
-  images: BlogImage[];
+  image?: BlogImage;
   author: Author | null;
   createdAt: string;
 }
@@ -46,11 +47,7 @@ export default function BlogPage() {
   const pagesConfig = lang === "vi" ? viConfig : enConfig;
   const blogConfig = pagesConfig.blog;
 
-  const searchParams = useSearchParams();
-  const blogId = searchParams.get("id");
-
   const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,12 +56,14 @@ export default function BlogPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
 
-  // ================= FETCH ALL BLOGS (luôn fetch để dùng cho related) =================
+  // ================= FETCH ALL BLOGS =================
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         const response = await api.get("/blogs");
-        setPosts(response.data.blogs);
+        // axios thường trả response.data
+        const blogs = response.data?.blogs ?? response.data ?? [];
+        setPosts(blogs);
       } catch (err: any) {
         setError(err?.response?.data?.message || "Error loading posts");
       } finally {
@@ -74,25 +73,6 @@ export default function BlogPage() {
 
     fetchBlogs();
   }, []);
-
-  // ================= FETCH DETAIL =================
-  useEffect(() => {
-    if (!blogId) {
-      setSelectedPost(null);
-      return;
-    }
-
-    const fetchBlogDetail = async () => {
-      try {
-        const response = await api.get(`/blogs/${blogId}`);
-        setSelectedPost(response.data.blog);
-      } catch (err) {
-        setError("Error loading blog detail");
-      }
-    };
-
-    fetchBlogDetail();
-  }, [blogId]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -117,142 +97,18 @@ export default function BlogPage() {
     );
   }
 
-  // ================= DETAIL VIEW =================
-  if (blogId && selectedPost) {
-    const relatedPosts = posts.filter(
-      (post) => post.tag === selectedPost.tag && post._id !== selectedPost._id
-    );
-
-    return (
-      <div className="blog-container">
-        <Header />
-
-        <div className="blog-content">
-          <div className="blog-back-button">
-            <Link href="/blog" className="back-link">
-              ← {blogConfig.backToHome}
-            </Link>
-          </div>
-
-          <h1 className="blog-card-title">{selectedPost.title}</h1>
-
-          <p style={{ marginBottom: "1rem", color: "#6b7280" }}>
-            {new Date(selectedPost.createdAt).toLocaleDateString("vi-VN")}
-          </p>
-
-          {/* Multi images detail */}
-          {selectedPost.images.length > 0 && (
-            <div style={{ marginBottom: "2rem" }}>
-              <div className="blog-card-image" style={{ height: "400px" }}>
-                <Image
-                  src={selectedPost.images[0].url}
-                  alt={selectedPost.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              {selectedPost.images.length > 1 && (
-                <div className="blog-multi-images" style={{ height: "200px" }}>
-                  {selectedPost.images.slice(1).map((img, index) => (
-                    <div key={index} className="blog-multi-image">
-                      <Image
-                        src={img.url}
-                        alt={selectedPost.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div
-            dangerouslySetInnerHTML={{
-              __html: selectedPost.description,
-            }}
-          />
-
-          {/* RELATED POSTS */}
-          {relatedPosts.length > 0 && (
-            <div style={{ marginTop: "3rem" }}>
-              <h3
-                style={{
-                  marginBottom: "1.5rem",
-                  fontSize: "1.5rem",
-                  fontWeight: 700,
-                }}
-              >
-                Bài viết liên quan
-              </h3>
-
-              <div className="blog-grid">
-                {relatedPosts.slice(0, 3).map((post) => (
-                  <article key={post._id} className="blog-card">
-                    <div className="blog-card-image">
-                      {post.images.length > 0 ? (
-                        <div className="blog-multi-images">
-                          {post.images.slice(0, 3).map((img, index) => (
-                            <div key={index} className="blog-multi-image">
-                              <Image
-                                src={img.url}
-                                alt={post.title}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <Image
-                          src="/images/blog/default.jpg"
-                          alt={post.title}
-                          fill
-                          className="object-cover"
-                        />
-                      )}
-
-                      <div className="blog-card-tag">{post.tag}</div>
-                    </div>
-
-                    <div className="blog-card-content">
-                      <h2 className="blog-card-title">
-                        <Link href={`/blog?id=${post._id}`}>{post.title}</Link>
-                      </h2>
-
-                      <p className="blog-card-description">
-                        {decodeHTML(stripHtml(post.description))}
-                      </p>
-
-                      <Link
-                        href={`/blog?id=${post._id}`}
-                        className="blog-card-link"
-                      >
-                        Đọc thêm →
-                      </Link>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <Footer />
-      </div>
-    );
-  }
-
   // ================= LIST VIEW =================
 
-  const filteredPosts = posts.filter(
-    (post) =>
-      (post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
-      (selectedTag === "" || post.tag === selectedTag)
-  );
+  const filteredPosts = posts.filter((post) => {
+    const q = searchQuery.toLowerCase();
+    const matchesQuery =
+      post.title?.toLowerCase().includes(q) ||
+      post.description?.toLowerCase().includes(q);
+
+    const matchesTag = selectedTag === "" || post.tag === selectedTag;
+
+    return matchesQuery && matchesTag;
+  });
 
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
 
@@ -260,6 +116,8 @@ export default function BlogPage() {
     (currentPage - 1) * postsPerPage,
     currentPage * postsPerPage
   );
+
+  const allTags = Array.from(new Set(posts.map((p) => p.tag).filter(Boolean)));
 
   return (
     <div className="blog-container">
@@ -288,7 +146,7 @@ export default function BlogPage() {
             All
           </button>
 
-          {Array.from(new Set(posts.map((post) => post.tag))).map((tag) => (
+          {allTags.map((tag) => (
             <button
               key={tag}
               onClick={() => setSelectedTag(tag)}
@@ -306,19 +164,13 @@ export default function BlogPage() {
           {paginatedPosts.map((post) => (
             <article key={post._id} className="blog-card">
               <div className="blog-card-image">
-                {post.images.length > 0 ? (
-                  <div className="blog-multi-images">
-                    {post.images.slice(0, 3).map((img, index) => (
-                      <div key={index} className="blog-multi-image">
-                        <Image
-                          src={img.url}
-                          alt={post.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                {post.image?.url ? (
+                  <Image
+                    src={post.image.url}
+                    alt={post.title}
+                    fill
+                    className="object-cover"
+                  />
                 ) : (
                   <Image
                     src="/images/blog/default.jpg"
@@ -333,14 +185,14 @@ export default function BlogPage() {
 
               <div className="blog-card-content">
                 <h2 className="blog-card-title">
-                  <Link href={`/blog?id=${post._id}`}>{post.title}</Link>
+                  <Link href={`/blog/${post.slug}`}>{post.title}</Link>
                 </h2>
 
                 <p className="blog-card-description">
                   {decodeHTML(stripHtml(post.description))}
                 </p>
 
-                <Link href={`/blog?id=${post._id}`} className="blog-card-link">
+                <Link href={`/blog/${post.slug}`} className="blog-card-link">
                   {blogConfig.readMore} →
                 </Link>
               </div>

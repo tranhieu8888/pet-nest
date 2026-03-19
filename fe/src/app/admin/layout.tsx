@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   TrendingUp,
   LogOut,
@@ -11,8 +9,6 @@ import {
   Users,
   ChevronUp,
   Megaphone,
-  LifeBuoy,
-  Star,
   Gift,
   Image,
   ListTree,
@@ -35,7 +31,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 import {
@@ -47,8 +42,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import Link from "next/link";
+import AdminNotificationBell from "./components/AdminNotificationBell";
 
-// Menu items
 const menuItems = [
   // {
   //   title: "Admin Dashboard",
@@ -107,7 +102,7 @@ const menuItems = [
   // },
 ];
 
-function AdminSidebar() {
+function AdminSidebar({ adminId }: { adminId: string | null }) {
   const pathname = usePathname();
 
   const handleLogout = () => {
@@ -117,23 +112,31 @@ function AdminSidebar() {
   };
 
   return (
-    <Sidebar className="border-r bg-white shadow-xl">
-      <SidebarHeader className="border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/admin/dashboard">
-                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
-                  <TrendingUp className="size-5" />
-                </div>
-                <div className="flex flex-col leading-none">
-                  <span className="font-bold text-lg">Admin Panel</span>
-                  <span className="text-xs opacity-80">Management System</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+    <Sidebar className="border-r bg-white shadow-xl overflow-visible">
+      <SidebarHeader className="border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white overflow-visible">
+        <div className="flex items-center justify-between px-2 py-2">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link href="/admin/dashboard">
+                  <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
+                    <TrendingUp className="size-5" />
+                  </div>
+                  <div className="flex flex-col leading-none">
+                    <span className="font-bold text-lg">Admin Panel</span>
+                    <span className="text-xs opacity-80">
+                      Management System
+                    </span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+
+          <div className="shrink-0">
+            <AdminNotificationBell adminId={adminId} />
+          </div>
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="py-4">
@@ -151,10 +154,11 @@ function AdminSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className={`transition-all duration-200 rounded-lg ${isActive
-                        ? "bg-indigo-100 text-indigo-600 font-semibold"
-                        : "hover:bg-gray-100"
-                        }`}
+                      className={`transition-all duration-200 rounded-lg ${
+                        isActive
+                          ? "bg-indigo-100 text-indigo-600 font-semibold"
+                          : "hover:bg-gray-100"
+                      }`}
                     >
                       <Link
                         href={item.url}
@@ -189,7 +193,7 @@ function AdminSidebar() {
 
           <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
             <DropdownMenuItem
-              onClick={() => (window.location.href = "profile")}
+              onClick={() => (window.location.href = "/profile")}
             >
               <User className="mr-2 h-4 w-4" />
               Hồ sơ
@@ -221,10 +225,12 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [adminId, setAdminId] = useState<string | null>(null);
 
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
+
     if (!token) {
       router.push("/login");
       return;
@@ -235,16 +241,22 @@ export default function AdminLayout({
 
       if (decoded.role !== 0) {
         router.push("/");
+        return;
       }
+
+      setAdminId(decoded.id || decoded._id || null);
     } catch {
       router.push("/login");
     }
-  }, []);
+  }, [router]);
 
   return (
     <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset>{children}</SidebarInset>
+      <AdminSidebar adminId={adminId} />
+
+      <SidebarInset className="bg-gray-50 min-h-screen">
+        <main className="p-4">{children}</main>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

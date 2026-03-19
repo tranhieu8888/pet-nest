@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function AdminPage() {
-  redirect('/marketing/voucher')
+  redirect('/admin/voucher1')
 }

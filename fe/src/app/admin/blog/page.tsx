@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Eye, Edit, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { api } from "../../../../utils/axios";
 import { useApi } from "../../../../utils/axios";
@@ -23,15 +24,12 @@ import BlogForm from "./components/BlogForm";
 import BlogDetail from "./components/BlogDetail";
 import Pagination from "./components/Pagination";
 import { Blog } from "./types";
-import toast, { Toaster } from "react-hot-toast";
 
 export default function BlogPage() {
   const { request } = useApi();
 
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,11 +37,8 @@ export default function BlogPage() {
   const [selectedBlog, setSelectedBlog] = useState<Blog | undefined>();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
 
-  // =========================
-  // FETCH BLOGS
-  // =========================
   const fetchBlogs = async () => {
     try {
       setLoading(true);
@@ -52,10 +47,10 @@ export default function BlogPage() {
       if (response.success) {
         setBlogs(response.blogs || []);
       } else {
-        setError("Không thể tải danh sách blog");
+        toast.error(response.message || "Không thể tải danh sách blog");
       }
     } catch (err: any) {
-      setError(err.message || "Không thể tải danh sách blog");
+      toast.error(err.message || "Không thể tải danh sách blog");
     } finally {
       setLoading(false);
     }
@@ -65,18 +60,12 @@ export default function BlogPage() {
     fetchBlogs();
   }, []);
 
-  // =========================
-  // FILTER
-  // =========================
   const filteredBlogs = blogs.filter(
     (blog) =>
       blog.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       blog.tag?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // =========================
-  // ADD BLOG
-  // =========================
   const handleAddBlog = async (formData: FormData) => {
     try {
       const response = await request(() =>
@@ -87,19 +76,15 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        toast.success("Tạo blog thành công!");
+        toast.success("Tạo blog thành công");
       } else {
         throw new Error(response.message || "Tạo blog thất bại");
       }
     } catch (err: any) {
-      toast.error(err.message || "Tạo blog thất bại");
       throw err;
     }
   };
 
-  // =========================
-  // EDIT BLOG
-  // =========================
   const handleEditBlog = async (formData: FormData) => {
     if (!selectedBlog) return;
 
@@ -112,21 +97,16 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        // ✅ Cập nhật selectedBlog với dữ liệu mới từ response
         setSelectedBlog(response.blog);
-        toast.success("Cập nhật blog thành công!");
-        setTimeout(() => setSuccessMessage(null), 3000);
+        toast.success("Cập nhật blog thành công");
       } else {
-        toast.error(response.message || "Cập nhật blog thất bại");
+        throw new Error(response.message || "Cập nhật blog thất bại");
       }
     } catch (err: any) {
-      toast.error(err.message || "Cập nhật blog thất bại");
+      throw err;
     }
   };
 
-  // =========================
-  // DELETE BLOG
-  // =========================
   const handleDeleteBlog = async (id: string) => {
     try {
       if (!window.confirm("Bạn có chắc muốn xoá blog này?")) return;
@@ -135,33 +115,33 @@ export default function BlogPage() {
 
       if (response.success) {
         await fetchBlogs();
-        toast.success("Xoá blog thành công!");
-        setTimeout(() => setSuccessMessage(null), 3000);
+        toast.success("Xoá blog thành công");
       } else {
-        setError(response.message || "Xoá blog thất bại");
+        toast.error(response.message || "Xoá blog thất bại");
       }
     } catch (err: any) {
-      toast.error(err.message || "Xoá blog thất bại!");
+      toast.error(err.message || "Xoá blog thất bại");
     }
   };
 
-  // =========================
-  // RENDER
-  // =========================
+  const handleSuggestBlog = async (title: string) => {
+    return await request(() => api.post("/blogs/suggest", { title }));
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Quản lý Blog</CardTitle>
+            <CardTitle>Quản lý Bài viết</CardTitle>
             <Button
               onClick={() => {
                 setSelectedBlog(undefined);
-                setIsDetailOpen(false); // đảm bảo view đóng
+                setIsDetailOpen(false);
                 setIsFormOpen(true);
               }}
             >
-              Thêm Blog
+              Thêm Mới
             </Button>
           </div>
         </CardHeader>
@@ -169,7 +149,7 @@ export default function BlogPage() {
         <CardContent>
           <div className="mb-4">
             <Input
-              placeholder="Tìm kiếm..."
+              placeholder="Tìm kiếm theo tiêu đề hoặc tag..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-sm"
@@ -178,7 +158,7 @@ export default function BlogPage() {
 
           {loading ? (
             <div className="flex justify-center h-32 items-center">
-              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -187,6 +167,7 @@ export default function BlogPage() {
                   <TableRow>
                     <TableHead className="w-16 text-center">STT</TableHead>
                     <TableHead className="w-[45%]">Tiêu đề</TableHead>
+                    <TableHead className="w-24 text-center">Lượt xem</TableHead>
                     <TableHead className="w-32 text-center">Tag</TableHead>
                     <TableHead className="w-40 text-center">Ngày tạo</TableHead>
                     <TableHead className="w-32 text-right">Hành động</TableHead>
@@ -194,69 +175,92 @@ export default function BlogPage() {
                 </TableHeader>
 
                 <TableBody>
-                  {filteredBlogs
-                    .slice(
-                      (currentPage - 1) * itemsPerPage,
-                      currentPage * itemsPerPage
-                    )
-                    .map((blog, index) => (
-                      <TableRow key={blog._id}>
-                        <TableCell className="text-center">
-                          {(currentPage - 1) * itemsPerPage + index + 1}
-                        </TableCell>
+                  {filteredBlogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-6 text-gray-500"
+                      >
+                        Không có bài viết phù hợp!
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredBlogs
+                      .slice(
+                        (currentPage - 1) * itemsPerPage,
+                        currentPage * itemsPerPage
+                      )
+                      .map((blog, index) => (
+                        <TableRow key={blog._id}>
+                          <TableCell className="text-center">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
+                          </TableCell>
 
-                        <TableCell className="text-left truncate">
-                          {blog.title}
-                        </TableCell>
+                          <TableCell className="text-left truncate">
+                            {blog.title}
+                          </TableCell>
 
-                        <TableCell className="text-center">
-                          <Badge>{blog.tag}</Badge>
-                        </TableCell>
+                          <TableCell className="text-center">
+                            {blog.views ?? 0}
+                          </TableCell>
 
-                        <TableCell className="text-center">
-                          {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                const res = await request(() =>
-                                  api.get(`/blogs/${blog._id}`)
-                                );
-                                if (res.success) {
-                                  setSelectedBlog(res.blog);
-                                  setIsDetailOpen(true);
-                                }
-                              }}
-                            >
-                              <Eye size={16} />
-                            </Button>
+                          <TableCell className="text-center">
+                            <Badge>{blog.tag}</Badge>
+                          </TableCell>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedBlog(blog);
-                                setIsFormOpen(true);
-                              }}
-                            >
-                              <Edit size={16} />
-                            </Button>
+                          <TableCell className="text-center">
+                            {new Date(blog.createdAt).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                          </TableCell>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                              onClick={() => handleDeleteBlog(blog._id)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  const res = await request(() =>
+                                    api.get(`/blogs/${blog._id}`)
+                                  );
+                                  if (res.success) {
+                                    setSelectedBlog(res.blog);
+                                    setIsDetailOpen(true);
+                                  } else {
+                                    toast.error(
+                                      res.message ||
+                                        "Không thể tải chi tiết blog"
+                                    );
+                                  }
+                                }}
+                              >
+                                <Eye size={16} />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedBlog(blog);
+                                  setIsFormOpen(true);
+                                }}
+                              >
+                                <Edit size={16} />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600"
+                                onClick={() => handleDeleteBlog(blog._id)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
                 </TableBody>
               </Table>
 
@@ -274,6 +278,7 @@ export default function BlogPage() {
       <BlogForm
         blog={selectedBlog}
         onSubmit={selectedBlog ? handleEditBlog : handleAddBlog}
+        onSuggestTitle={handleSuggestBlog}
         isOpen={isFormOpen}
         onClose={() => {
           setIsFormOpen(false);
