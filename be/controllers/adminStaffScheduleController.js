@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const StaffSchedule = require("../models/staffScheduleModel");
+const SpaBooking = require("../models/spaBookingModel");
 
 function normalizeWorkDate(dateInput) {
   const date = new Date(dateInput);
@@ -9,8 +10,29 @@ function normalizeWorkDate(dateInput) {
   return date;
 }
 
+function getStartAndEndOfDay(dateInput) {
+  const date = new Date(dateInput);
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
 function isValidTimeFormat(value) {
   return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+}
+
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr || typeof timeStr !== "string") return null;
+
+  const [hour, minute] = timeStr.split(":").map(Number);
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+
+  return hour * 60 + minute;
 }
 
 function validatePayload(body) {
@@ -42,6 +64,60 @@ function validatePayload(body) {
   return null;
 }
 
+async function hasConfirmedBookingsOutsideNewShift({
+  staffId,
+  workDate,
+  isOff,
+  shiftStart,
+  shiftEnd,
+  excludeScheduleId = null,
+}) {
+  const { start, end } = getStartAndEndOfDay(workDate);
+
+  const confirmedBookings = await SpaBooking.find({
+    staffId,
+    status: "confirmed",
+    startAt: { $gte: start, $lte: end },
+  }).select("_id startAt endAt bookingCode");
+
+  if (!confirmedBookings.length) {
+    return null;
+  }
+
+  if (isOff) {
+    return {
+      type: "off-day-conflict",
+      booking: confirmedBookings[0],
+    };
+  }
+
+  const newShiftStartMinutes = parseTimeToMinutes(shiftStart);
+  const newShiftEndMinutes = parseTimeToMinutes(shiftEnd);
+
+  for (const booking of confirmedBookings) {
+    const bookingStart = new Date(booking.startAt);
+    const bookingEnd = new Date(booking.endAt);
+
+    const bookingStartMinutes =
+      bookingStart.getHours() * 60 + bookingStart.getMinutes();
+    const bookingEndMinutes =
+      bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+
+    const isOutsideShift =
+      bookingStartMinutes < newShiftStartMinutes ||
+      bookingEndMinutes > newShiftEndMinutes;
+
+    if (isOutsideShift) {
+      return {
+        type: "shift-conflict",
+        booking,
+      };
+    }
+  }
+
+  return null;
+}
+
 // Lấy danh sách lịch làm việc
 exports.getAll = async (req, res) => {
   try {
@@ -52,9 +128,11 @@ exports.getAll = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const total = await StaffSchedule.countDocuments();
+    const baseFilter = { isDeleted: false };
 
-    const schedules = await StaffSchedule.find()
+    const total = await StaffSchedule.countDocuments(baseFilter);
+
+    const schedules = await StaffSchedule.find(baseFilter)
       .populate("staffId", "name")
       .sort({ workDate: -1, createdAt: -1 })
       .skip(skip)
@@ -81,11 +159,35 @@ exports.create = async (req, res) => {
       shiftEnd: req.body.isOff ? "" : req.body.shiftEnd,
       isOff: !!req.body.isOff,
       note: req.body.note || "",
+      isDeleted: false,
+      deletedAt: null,
     };
 
     const errorMessage = validatePayload(payload);
     if (errorMessage) {
       return res.status(400).json({ message: errorMessage });
+    }
+
+    const conflict = await hasConfirmedBookingsOutsideNewShift({
+      staffId: payload.staffId,
+      workDate: payload.workDate,
+      isOff: payload.isOff,
+      shiftStart: payload.shiftStart,
+      shiftEnd: payload.shiftEnd,
+    });
+
+    if (conflict?.type === "off-day-conflict") {
+      return res.status(400).json({
+        message:
+          "Không thể tạo ngày nghỉ vì nhân viên đã có booking được xác nhận trong ngày này",
+      });
+    }
+
+    if (conflict?.type === "shift-conflict") {
+      return res.status(400).json({
+        message:
+          "Không thể tạo ca làm này vì đã có booking được xác nhận nằm ngoài khung giờ làm việc",
+      });
     }
 
     const schedule = await StaffSchedule.create(payload);
@@ -133,14 +235,47 @@ exports.update = async (req, res) => {
       return res.status(400).json({ message: errorMessage });
     }
 
-    const schedule = await StaffSchedule.findByIdAndUpdate(id, payload, {
-      new: true,
-      runValidators: true,
-    }).populate("staffId", "name");
+    const schedule = await StaffSchedule.findOne({
+      _id: id,
+      isDeleted: false,
+    });
 
     if (!schedule) {
       return res.status(404).json({ message: "Không tìm thấy lịch làm việc" });
     }
+
+    const conflict = await hasConfirmedBookingsOutsideNewShift({
+      staffId: payload.staffId,
+      workDate: payload.workDate,
+      isOff: payload.isOff,
+      shiftStart: payload.shiftStart,
+      shiftEnd: payload.shiftEnd,
+      excludeScheduleId: id,
+    });
+
+    if (conflict?.type === "off-day-conflict") {
+      return res.status(400).json({
+        message:
+          "Không thể chuyển sang nghỉ trong ngày vì nhân viên đã có booking được xác nhận trong ngày này",
+      });
+    }
+
+    if (conflict?.type === "shift-conflict") {
+      return res.status(400).json({
+        message:
+          "Không thể cập nhật ca làm vì đã có booking được xác nhận nằm ngoài khung giờ mới",
+      });
+    }
+
+    schedule.staffId = payload.staffId;
+    schedule.workDate = payload.workDate;
+    schedule.shiftStart = payload.shiftStart;
+    schedule.shiftEnd = payload.shiftEnd;
+    schedule.isOff = payload.isOff;
+    schedule.note = payload.note;
+
+    await schedule.save();
+    await schedule.populate("staffId", "name");
 
     res.json({
       ...schedule.toObject(),
@@ -157,7 +292,7 @@ exports.update = async (req, res) => {
   }
 };
 
-// Xoá lịch
+// Xoá mềm lịch
 exports.remove = async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,13 +301,36 @@ exports.remove = async (req, res) => {
       return res.status(400).json({ message: "ID lịch không hợp lệ" });
     }
 
-    const schedule = await StaffSchedule.findByIdAndDelete(id);
+    const schedule = await StaffSchedule.findOne({
+      _id: id,
+      isDeleted: false,
+    });
 
     if (!schedule) {
       return res.status(404).json({ message: "Không tìm thấy lịch làm việc" });
     }
 
-    res.json({ success: true });
+    const { start, end } = getStartAndEndOfDay(schedule.workDate);
+
+    const confirmedBooking = await SpaBooking.findOne({
+      staffId: schedule.staffId,
+      status: "confirmed",
+      startAt: { $gte: start, $lte: end },
+    }).select("_id bookingCode");
+
+    if (confirmedBooking) {
+      return res.status(400).json({
+        message:
+          "Không thể xoá lịch vì nhân viên đã có booking được xác nhận trong ngày này",
+      });
+    }
+
+    schedule.isDeleted = true;
+    schedule.deletedAt = new Date();
+
+    await schedule.save();
+
+    res.json({ success: true, message: "Đã xoá lịch thành công" });
   } catch (e) {
     res.status(400).json({ message: e.message || "Xoá lịch thất bại" });
   }

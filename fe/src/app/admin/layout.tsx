@@ -19,6 +19,7 @@ import {
   Mail,
   Workflow,
   ImageIcon,
+  ShoppingCart,
 } from "lucide-react";
 
 import {
@@ -49,11 +50,11 @@ import Link from "next/link";
 import AdminNotificationBell from "./components/AdminNotificationBell";
 
 const menuItems = [
-  // {
-  //   title: "Admin Dashboard",
-  //   url: "/admin/dashboard",
-  //   icon: TrendingUp,
-  // },
+  {
+    title: "Admin Dashboard",
+    url: "/admin/dashboard",
+    icon: TrendingUp,
+  },
   {
     title: "Quản lý người dùng",
     url: "/admin/users",
@@ -89,15 +90,25 @@ const menuItems = [
     url: "/admin/subscribers",
     icon: Mail,
   },
-  { 
-    title: "Quản lý quảng cáo", 
-    url: "/admin/banner", 
-    icon: ImageIcon 
+  {
+    title: "Quản lý quảng cáo",
+    url: "/admin/banner",
+    icon: ImageIcon,
   },
-  { 
-    title: "Quản lý mã giảm giá", 
-    url: "/admin/voucher", 
-    icon: TicketPercent 
+  {
+    title: "Quản lý mã giảm giá",
+    url: "/admin/voucher",
+    icon: TicketPercent,
+  },
+  {
+    title: "Quản lý dịch vụ spa",
+    url: "/admin/spa-services",
+    icon: TicketPercent,
+  },
+  {
+    title: "Quản lý orders: Minh làm nốt phần này nhé",
+    url: "/admin/orders",
+    icon: ShoppingCart,
   },
 ];
 

@@ -27,8 +27,18 @@ interface SpaService {
 
 const ITEMS_PER_PAGE = 8;
 
-function getValidImageUrl(url?: string, fallback = "/placeholder.svg") {
-  return url && url.trim() ? url : fallback;
+function getSpaImageUrl(image?: string) {
+  if (!image || !image.trim()) return "/placeholder.svg";
+
+  const trimmed = image.trim();
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  return `http://localhost:5000${
+    trimmed.startsWith("/") ? trimmed : `/${trimmed}`
+  }`;
 }
 
 function getCategoryLabel(category: SpaService["category"]) {
@@ -190,12 +200,10 @@ export default function SpaServicesPage() {
                     <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col border border-pink-100">
                       <div className="relative h-56 bg-pink-50">
                         <Image
-                          src={getValidImageUrl(
-                            service.image,
-                            "/placeholder.svg"
-                          )}
+                          src={getSpaImageUrl(service.image)}
                           alt={service.name}
                           fill
+                          unoptimized
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute top-3 left-3">

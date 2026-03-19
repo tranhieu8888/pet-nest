@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const spaServiceSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, trim: true },
+    slug: { type: String, required: true, trim: true },
     category: {
       type: String,
       enum: ["spa", "cleaning", "grooming", "coloring"],
@@ -20,6 +20,9 @@ const spaServiceSchema = new mongoose.Schema(
     image: { type: String, default: "" },
     isActive: { type: Boolean, default: true },
 
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -34,6 +37,14 @@ const spaServiceSchema = new mongoose.Schema(
   {
     timestamps: true,
     collection: "spaServices",
+  }
+);
+
+spaServiceSchema.index(
+  { slug: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDeleted: false },
   }
 );
 

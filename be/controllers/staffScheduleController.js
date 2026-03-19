@@ -8,7 +8,10 @@ exports.getMySchedules = async (req, res) => {
       return res.status(400).json({ message: "Không xác định được nhân viên" });
     }
 
-    const schedules = await StaffSchedule.find({ staffId }).sort({
+    const schedules = await StaffSchedule.find({
+      staffId,
+      isDeleted: false,
+    }).sort({
       workDate: 1,
     });
 
