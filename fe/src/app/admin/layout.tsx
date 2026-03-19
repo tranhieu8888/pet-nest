@@ -15,6 +15,10 @@ import {
   Settings,
   MessageCircle,
   SlidersHorizontal,
+  TicketPercent,
+  Mail,
+  Workflow,
+  ImageIcon,
 } from "lucide-react";
 
 import {
@@ -70,36 +74,31 @@ const menuItems = [
     url: "/admin/category",
     icon: ListTree,
   },
-    {
+  {
     title: "Quản lý thuộc tính",
     url: "/admin/attribute",
     icon: SlidersHorizontal,
   },
-  // {
-  //   title: "Quản lý banner",
-  //   url: "/admin/banner",
-  //   icon: Image,
-  // },
-  // {
-  //   title: "Quản lý đánh giá",
-  //   url: "/admin/review",
-  //   icon: Star,
-  // },
-  // {
-  //   title: "Quản lý voucher",
-  //   url: "/admin/voucher",
-  //   icon: Gift,
-  // },
-  // {
-  //   title: "Chăm sóc khách hàng",
-  //   url: "/messages",
-  //   icon: MessageCircle,
-  // },
-  // {
-  //   title: "Yêu cầu hỗ trợ",
-  //   url: "/admin/supportrequest",
-  //   icon: LifeBuoy,
-  // },
+  {
+    title: "Quản lý lịch làm việc",
+    url: "/admin/staff-schedule",
+    icon: Workflow,
+  },
+  {
+    title: "Quản lý email đăng ký",
+    url: "/admin/subscribers",
+    icon: Mail,
+  },
+  { 
+    title: "Quản lý quảng cáo", 
+    url: "/admin/banner", 
+    icon: ImageIcon 
+  },
+  { 
+    title: "Quản lý mã giảm giá", 
+    url: "/admin/voucher", 
+    icon: TicketPercent 
+  },
 ];
 
 function AdminSidebar({ adminId }: { adminId: string | null }) {
