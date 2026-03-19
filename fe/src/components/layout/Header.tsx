@@ -514,9 +514,21 @@ function SpaServicesDropdown({
 
       <DropdownMenuContent
         align="start"
-        className="w-72 rounded-none border border-gray-200 bg-white p-4 shadow-lg"
+        sideOffset={8}
+        className="w-72 rounded-none border border-gray-200 bg-white p-2 shadow-lg"
       >
-        <div className="space-y-1">
+        <div className="px-2 pb-2 pt-1">
+          <div className="text-sm font-semibold text-gray-800">
+            Danh sách dịch vụ spa
+          </div>
+          {!loading && !error && spaServices.length > 0 && (
+            <div className="text-xs text-gray-500">
+              Tổng cộng: {spaServices.length} dịch vụ
+            </div>
+          )}
+        </div>
+
+        <div className="max-h-[420px] overflow-y-auto pr-1">
           {loading ? (
             <div className="px-2 py-3 text-sm text-gray-500">
               Đang tải dịch vụ...
@@ -528,25 +540,32 @@ function SpaServicesDropdown({
               Chưa có dịch vụ nào
             </div>
           ) : (
-            spaServices.map((service, index) => (
-              <React.Fragment key={service._id}>
-                <DropdownMenuItem
-                  asChild
-                  className="cursor-pointer px-0 py-3 focus:bg-transparent"
-                >
-                  <Link
-                    href={`/spa-services/${service.slug}`}
-                    className="w-full text-[18px] text-gray-600 hover:text-primary"
+            <div className="space-y-1">
+              {spaServices.map((service, index) => (
+                <React.Fragment key={service._id}>
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer px-2 py-3 focus:bg-gray-50"
                   >
-                    {service.name}
-                  </Link>
-                </DropdownMenuItem>
+                    <Link
+                      href={`/spa-services/${service.slug}`}
+                      className="flex w-full flex-col items-start"
+                    >
+                      <span className="text-[16px] font-medium text-gray-700 hover:text-primary">
+                        {service.name}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {service.category}
+                      </span>
+                    </Link>
+                  </DropdownMenuItem>
 
-                {index !== spaServices.length - 1 && (
-                  <div className="border-b border-gray-200" />
-                )}
-              </React.Fragment>
-            ))
+                  {index !== spaServices.length - 1 && (
+                    <div className="border-b border-gray-200" />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           )}
         </div>
       </DropdownMenuContent>
