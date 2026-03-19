@@ -28,6 +28,8 @@ const adminStaffScheduleRoute = require("./routes/adminStaffScheduleRoute");
 const adminUserRoute = require("./routes/adminUserRoute");
 const staffScheduleRoute = require("./routes/staffScheduleRoute");
 const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
+const searchRoute = require("./routes/searchRoute");
+
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -72,6 +74,7 @@ app.use("/api/admin/staff-schedules", adminStaffScheduleRoute);
 app.use("/api/admin/users", adminUserRoute);
 app.use("/api/staff/schedules", staffScheduleRoute);
 app.use("/api/admin/spa-services", adminSpaServiceRoute);
+app.use("/api/search", searchRoute);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
