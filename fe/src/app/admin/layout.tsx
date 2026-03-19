@@ -202,19 +202,19 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               onClick={() => (window.location.href = "/profile")}
             >
               <User className="mr-2 h-4 w-4" />
               Hồ sơ
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
 
-            <DropdownMenuItem>
+            {/* <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               Cài đặt
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
 
-            <DropdownMenuSeparator />
+            {/* <DropdownMenuSeparator /> */}
 
             <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />

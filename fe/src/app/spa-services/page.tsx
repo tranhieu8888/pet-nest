@@ -25,6 +25,13 @@ interface SpaService {
   image?: string;
 }
 
+type SortOption =
+  | "default"
+  | "name-asc"
+  | "name-desc"
+  | "price-asc"
+  | "price-desc";
+
 const ITEMS_PER_PAGE = 8;
 
 function getSpaImageUrl(image?: string) {
@@ -61,6 +68,7 @@ export default function SpaServicesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortOption>("default");
 
   const router = useRouter();
 
@@ -129,15 +137,42 @@ export default function SpaServicesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [spaServices]);
+  }, [spaServices, sortBy]);
 
-  const totalPages = Math.ceil(spaServices.length / ITEMS_PER_PAGE);
+  const sortedServices = useMemo(() => {
+    const sorted = [...spaServices];
+
+    switch (sortBy) {
+      case "name-asc":
+        sorted.sort((a, b) =>
+          a.name.localeCompare(b.name, "vi", { sensitivity: "base" })
+        );
+        break;
+      case "name-desc":
+        sorted.sort((a, b) =>
+          b.name.localeCompare(a.name, "vi", { sensitivity: "base" })
+        );
+        break;
+      case "price-asc":
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        break;
+    }
+
+    return sorted;
+  }, [spaServices, sortBy]);
+
+  const totalPages = Math.ceil(sortedServices.length / ITEMS_PER_PAGE);
 
   const currentServices = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return spaServices.slice(startIndex, endIndex);
-  }, [spaServices, currentPage]);
+    return sortedServices.slice(startIndex, endIndex);
+  }, [sortedServices, currentPage]);
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -169,6 +204,40 @@ export default function SpaServicesPage() {
               dành cho thú cưng của bạn.
             </p>
           </div>
+
+          {!isLoading && !error && spaServices.length > 0 && (
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white border border-pink-100 rounded-2xl p-4 shadow-sm">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Danh sách dịch vụ
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Có {sortedServices.length} dịch vụ đang hiển thị
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label
+                  htmlFor="sort-services"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Sắp xếp:
+                </label>
+                <select
+                  id="sort-services"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="rounded-xl border border-pink-200 px-4 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white"
+                >
+                  <option value="default">Mặc định</option>
+                  <option value="name-asc">Tên A-Z</option>
+                  <option value="name-desc">Tên Z-A</option>
+                  <option value="price-asc">Giá tăng dần</option>
+                  <option value="price-desc">Giá giảm dần</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {isLoading ? (
             <div className="text-center py-16">

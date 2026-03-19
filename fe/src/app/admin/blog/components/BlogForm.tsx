@@ -340,7 +340,7 @@ export default function BlogForm({
           </div>
 
           <div>
-            <Label>Mô tả</Label>
+            <Label className="mb-3">Mô tả</Label>
             <TinyEditor
               value={formData.description}
               onChange={handleDescChange}
@@ -351,7 +351,7 @@ export default function BlogForm({
           </div>
 
           <div>
-            <Label>Tag</Label>
+            <Label className="mb-3">Tag</Label>
             <Input
               value={formData.tag}
               onChange={(e) => handleTagChange(e.target.value)}
@@ -364,13 +364,13 @@ export default function BlogForm({
 
           {blog && (
             <div>
-              <Label>Lượt xem</Label>
+              <Label className="mb-3">Lượt xem</Label>
               <Input value={String(blog.views ?? 0)} readOnly disabled />
             </div>
           )}
 
           <div>
-            <Label>Ảnh</Label>
+            <Label className="mb-3">Ảnh</Label>
             <Input type="file" accept="image/*" onChange={handleImageChange} />
             {errors.image && (
               <p className="mt-1 text-sm text-red-600">{errors.image}</p>
@@ -395,6 +395,7 @@ export default function BlogForm({
             </div>
           )}
 
+          <Label className="my-3">Ảnh mới</Label>
           {imagePreview && (
             <div className="relative h-40 w-full">
               <NextImage
