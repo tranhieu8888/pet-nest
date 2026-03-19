@@ -20,6 +20,7 @@ import {
   Workflow,
   ImageIcon,
   ShoppingCart,
+  Server,
 } from "lucide-react";
 
 import {
@@ -103,7 +104,12 @@ const menuItems = [
   {
     title: "Quản lý dịch vụ spa",
     url: "/admin/spa-services",
-    icon: TicketPercent,
+    icon: Server,
+  },
+  {
+    title: "Quản lý đặt lịch spa",
+    url: "/admin/spa-bookings",
+    icon: ImageIcon,
   },
   {
     title: "Quản lý orders: Minh làm nốt phần này nhé",

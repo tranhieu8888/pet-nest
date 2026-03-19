@@ -274,7 +274,7 @@ export default function AdminSpaServicePage() {
 
         <CardContent>
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center w-full">
               <Input
                 placeholder="Tìm theo tên, slug, mô tả..."
                 value={search}
