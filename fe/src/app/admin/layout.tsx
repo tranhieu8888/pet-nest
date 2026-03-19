@@ -14,6 +14,7 @@ import {
   Settings,
   TicketPercent,
   Mail,
+  Workflow,
 } from "lucide-react";
 
 import {
@@ -45,6 +46,7 @@ import AdminNotificationBell from "./components/AdminNotificationBell";
 
 const menuItems = [
   { title: "Quản lý người dùng", url: "/admin/users", icon: Users },
+  { title: "Quản lý lịch làm việc", url: "/admin/staff-schedule", icon: Workflow },
   { title: "Quản lý email đăng ký", url: "/admin/subscribers", icon: Mail },
   { title: "Quản lý bài viết", url: "/admin/blog", icon: Megaphone },
   { title: "Quản lý sản phẩm", url: "/admin/product", icon: Gift },
