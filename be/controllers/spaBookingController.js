@@ -117,6 +117,11 @@ exports.createSpaBooking = async (req, res) => {
 
     const payOSOrderCode = Number(String(Date.now()).slice(-9));
 
+    // Mức giá thanh toán
+    let finalAmount = service.price;
+    // Bỏ comment dòng dưới để TEST với giá cố định (ví dụ 5000đ)
+    // finalAmount = 5000;
+
     const booking = await SpaBooking.create({
       bookingCode: generateBookingCode(),
       customerId,
@@ -146,7 +151,7 @@ exports.createSpaBooking = async (req, res) => {
       serviceSnapshot: {
         name: service.name,
         category: service.category,
-        price: service.price,
+        price: finalAmount, // Sử dụng finalAmount thay vì original price cho snapshot
         durationMinutes: service.durationMinutes,
       },
 
@@ -172,7 +177,7 @@ exports.createSpaBooking = async (req, res) => {
     // Tạo link thanh toán PayOS
     const paymentLinkRes = await payOSService.createPaymentLink({
       orderCode: payOSOrderCode,
-      amount: service.price,
+      amount: finalAmount,
       description: `BKG ${payOSOrderCode}`,
       cancelUrl: `http://localhost:3000/my-spa-bookings`,
       returnUrl: `http://localhost:3000/my-spa-bookings`,
