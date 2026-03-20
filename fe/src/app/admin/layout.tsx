@@ -99,6 +99,11 @@ const menuItems = [
     url: "/admin/voucher", 
     icon: TicketPercent 
   },
+  {
+    title: "Quản lý đánh giá",
+    url: "/admin/review",
+    icon: MessageCircle,
+  },
 ];
 
 function AdminSidebar({ adminId }: { adminId: string | null }) {
