@@ -25,16 +25,12 @@ export default function SubscriberDetail({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {" "}
       <DialogContent className="sm:max-w-md rounded-xl">
-        {" "}
         <DialogHeader>
-          {" "}
           <DialogTitle className="text-lg font-semibold">
-            Chi tiết đăng ký Email{" "}
-          </DialogTitle>{" "}
+            Chi tiết đăng ký Email
+          </DialogTitle>
         </DialogHeader>
-        ```
         <div className="space-y-5 text-sm">
           {/* Email */}
           <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/40">

@@ -1,10 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { Edit, Eye, Trash2 } from "lucide-react";
-
-import { api } from "../../../../utils/axios";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -27,191 +23,49 @@ import {
 
 import BannerForm from "./components/BannerForm";
 import BannerDetail from "./components/BannerDetail";
-import Pagination from "./components/Pagination";
-import { Banner, BannerSubmitData } from "./types";
-import { toast } from "sonner";
+import AdminPagination from "../components/AdminPagination";
+import { useBanners, TimeFilter } from "./hooks/useBanners";
+import { Banner } from "./types";
 
-type TimeFilter = "all" | "activeNow" | "expired" | "upcoming";
+const ITEMS_PER_PAGE = 7;
 
 export default function BannerPage() {
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
-
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [selectedBanner, setSelectedBanner] = useState<Banner | undefined>();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 7;
-
-  useEffect(() => {
-    fetchBanners();
-  }, []);
-
-  const fetchBanners = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await api.get("/banners");
-      setBanners(response.data || []);
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Lỗi tải dữ liệu");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getBannerTimeStatus = (banner: Banner): TimeFilter | "unknown" => {
-    const now = new Date();
-    const start = banner.startDate ? new Date(banner.startDate) : null;
-    const end = banner.endDate ? new Date(banner.endDate) : null;
-
-    if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return "unknown";
-    }
-
-    if (start > now) return "upcoming";
-    if (end < now) return "expired";
-    return "activeNow";
-  };
-
-  const filteredBanners = useMemo(() => {
-  return banners.filter((banner) => {
-    const keyword = searchQuery.trim().toLowerCase();
-
-    const matchSearch =
-      banner.title?.toLowerCase().includes(keyword) ||
-      banner.buttonText?.toLowerCase().includes(keyword);
-
-    const bannerTimeStatus = getBannerTimeStatus(banner);
-
-    const matchTime =
-      timeFilter === "all" ? true : bannerTimeStatus === timeFilter;
-
-    return matchSearch && matchTime;
-  });
-}, [banners, searchQuery, timeFilter]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, timeFilter]);
-
-  const paginatedBanners = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = currentPage * itemsPerPage;
-    return filteredBanners.slice(start, end);
-  }, [filteredBanners, currentPage]);
-
-  const handleAddBanner = async (data: BannerSubmitData) => {
-    try {
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("description", data.description || "");
-      formData.append("status", data.status);
-      formData.append("startDate", data.startDate);
-      formData.append("endDate", data.endDate || "");
-      formData.append("link", data.link || "");
-      formData.append("buttonText", data.buttonText || "");
-      if (data.image) formData.append("image", data.image);
-
-      await api.post("/banners", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      await fetchBanners();
-      setIsFormOpen(false);
-      setSelectedBanner(undefined);
-
-      toast.success("Tạo banner thành công");
-    } catch (err: any) {
-      throw new Error(
-        err.response?.data?.message || err.message || "Thêm thất bại"
-      );
-    }
-  };
-
-  const handleEditBanner = async (data: BannerSubmitData) => {
-    if (!selectedBanner) return;
-
-    try {
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("description", data.description || "");
-      formData.append("status", data.status);
-      formData.append("startDate", data.startDate);
-      formData.append("endDate", data.endDate || "");
-      formData.append("link", data.link || "");
-      formData.append("buttonText", data.buttonText || "");
-      if (data.image) formData.append("image", data.image);
-
-      const response = await api.put(
-        `/banners/${selectedBanner._id}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      setBanners((prev) =>
-        prev.map((item) =>
-          item._id === selectedBanner._id ? response.data : item
-        )
-      );
-
-      setIsFormOpen(false);
-      setSelectedBanner(undefined);
-
-      toast.success("Cập nhật banner thành công");
-    } catch (err: any) {
-      throw new Error(
-        err.response?.data?.message || err.message || "Cập nhật thất bại"
-      );
-    }
-  };
-
-  const handleDeleteBanner = async (id: string) => {
-    const confirmed = window.confirm(
-      "Bạn có chắc chắn muốn xóa banner này không?"
-    );
-    if (!confirmed) return;
-
-    try {
-      const response = await api.delete(`/banners/${id}`);
-
-      setBanners((prev) => prev.filter((item) => item._id !== id));
-
-      toast.success(response.data?.message || "Xóa banner thành công");
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Xóa thất bại");
-    }
-  };
+  const {
+    banners,
+    paginatedBanners,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    timeFilter,
+    setTimeFilter,
+    currentPage,
+    setCurrentPage,
+    isFormOpen,
+    isDetailOpen,
+    selectedBanner,
+    addBanner,
+    editBanner,
+    deleteBanner,
+    handleOpenForm,
+    handleOpenDetail,
+    handleCloseAll,
+    getBannerTimeStatus
+  } = useBanners(ITEMS_PER_PAGE);
 
   const renderTimeBadge = (banner: Banner) => {
     const timeStatus = getBannerTimeStatus(banner);
 
-    if (timeStatus === "activeNow") {
-      return <Badge className="bg-green-100 text-green-700">Còn hạn</Badge>;
+    switch (timeStatus) {
+      case "activeNow":
+        return <Badge className="bg-green-100 text-green-700 border-none">Còn hạn</Badge>;
+      case "expired":
+        return <Badge variant="destructive" className="border-none">Hết hạn</Badge>;
+      case "upcoming":
+        return <Badge className="bg-blue-100 text-blue-700 border-none">Chưa bắt đầu</Badge>;
+      default:
+        return <Badge variant="outline">Không xác định</Badge>;
     }
-
-    if (timeStatus === "expired") {
-      return <Badge variant="destructive">Hết hạn</Badge>;
-    }
-
-    if (timeStatus === "upcoming") {
-      return <Badge className="bg-blue-100 text-blue-700">Chưa bắt đầu</Badge>;
-    }
-
-    return <Badge variant="outline">Không xác định</Badge>;
   };
 
   return (
@@ -219,16 +73,8 @@ export default function BannerPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <CardTitle>Quản lý quảng cáo</CardTitle>
-
-            <Button
-              onClick={() => {
-                setSelectedBanner(undefined);
-                setIsFormOpen(true);
-              }}
-            >
-              Thêm Mới
-            </Button>
+            <CardTitle>Quản lý quảng cáo (Banner)</CardTitle>
+            <Button onClick={() => handleOpenForm()}>Thêm Banner Mới</Button>
           </div>
         </CardHeader>
 
@@ -258,106 +104,100 @@ export default function BannerPage() {
           </div>
 
           {loading ? (
-            <div>Đang tải dữ liệu...</div>
+            <div className="flex justify-center h-48 items-center">
+              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            </div>
           ) : error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-600">
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-6 text-red-600 text-center">
               {error}
             </div>
-          ) : filteredBanners.length === 0 ? (
-            <div className="py-10 text-center text-base font-medium text-gray-500">
-              Không có quảng cáo phù hợp!
+          ) : banners.length === 0 ? (
+            <div className="py-20 text-center text-muted-foreground italic">
+              Không tìm thấy quảng cáo nào phù hợp!
             </div>
           ) : (
             <>
-              <Table>
+              <Table className="border rounded-md">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>STT</TableHead>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Text nút</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Thời hạn</TableHead>
-                    <TableHead>Ngày bắt đầu</TableHead>
-                    <TableHead>Ngày kết thúc</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-16 text-center font-bold">STT</TableHead>
+                    <TableHead className="font-bold">Tiêu đề</TableHead>
+                    <TableHead className="font-bold">Nút bấm</TableHead>
+                    <TableHead className="text-center font-bold">Trạng thái</TableHead>
+                    <TableHead className="text-center font-bold">Thời hạn</TableHead>
+                    <TableHead className="text-center font-bold">Thời gian áp dụng</TableHead>
+                    <TableHead className="text-right font-bold w-40">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
 
                 <TableBody>
                   {paginatedBanners.map((banner, index) => (
-                    <TableRow key={banner._id}>
-                      <TableCell>
-                        {(currentPage - 1) * itemsPerPage + index + 1}
+                    <TableRow key={banner._id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="text-center">
+                        {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
                       </TableCell>
 
-                      <TableCell className="max-w-[220px] truncate">
+                      <TableCell className="max-w-[200px] truncate font-medium">
                         {banner.title}
                       </TableCell>
 
-                      <TableCell>{banner.buttonText || "Xem ngay"}</TableCell>
-
                       <TableCell>
-                        <Badge
-                          variant={
-                            banner.status === "active" ? "default" : "secondary"
-                          }
-                        >
-                          {banner.status === "active" ? "Kích hoạt" : "Tắt"}
+                        <Badge variant="outline" className="font-normal text-xs">
+                          {banner.buttonText || "Xem ngay"}
                         </Badge>
                       </TableCell>
 
-                      <TableCell>{renderTimeBadge(banner)}</TableCell>
-
-                      <TableCell>
-                        {banner.startDate
-                          ? new Date(banner.startDate).toLocaleDateString(
-                              "vi-VN"
-                            )
-                          : "N/A"}
+                      <TableCell className="text-center">
+                        <Badge
+                          className={
+                            banner.status === "active"
+                              ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-none"
+                          }
+                        >
+                          {banner.status === "active" ? "Kích hoạt" : "Vô hiệu"}
+                        </Badge>
                       </TableCell>
 
-                      <TableCell>
-                        {banner.endDate
-                          ? new Date(banner.endDate).toLocaleDateString("vi-VN")
-                          : "N/A"}
+                      <TableCell className="text-center">{renderTimeBadge(banner)}</TableCell>
+
+                      <TableCell className="text-center text-xs text-muted-foreground">
+                        <div className="flex flex-col">
+                          <span>BĐ: {banner.startDate ? new Date(banner.startDate).toLocaleDateString("vi-VN") : "N/A"}</span>
+                          <span>KT: {banner.endDate ? new Date(banner.endDate).toLocaleDateString("vi-VN") : "N/A"}</span>
+                        </div>
                       </TableCell>
 
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleOpenDetail(banner)}
                             title="Xem chi tiết"
-                            onClick={() => {
-                              setSelectedBanner(banner);
-                              setIsDetailOpen(true);
-                            }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye size={16} />
                           </Button>
 
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
+                            size="icon"
+                            className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            onClick={() => handleOpenForm(banner)}
                             title="Chỉnh sửa"
-                            onClick={() => {
-                              setSelectedBanner(banner);
-                              setIsFormOpen(true);
-                            }}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit size={16} />
                           </Button>
 
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => deleteBanner(banner._id)}
                             title="Xóa"
-                            onClick={() => handleDeleteBanner(banner._id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 size={16} />
                           </Button>
                         </div>
                       </TableCell>
@@ -366,10 +206,11 @@ export default function BannerPage() {
                 </TableBody>
               </Table>
 
-              <Pagination
-                totalItems={filteredBanners.length}
+              <AdminPagination
+                totalItems={banners.length}
+                itemsPerPage={ITEMS_PER_PAGE}
                 currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
+                onPageChange={setCurrentPage}
               />
             </>
           )}
@@ -379,21 +220,15 @@ export default function BannerPage() {
       <BannerForm
         banner={selectedBanner}
         isOpen={isFormOpen}
-        onClose={() => {
-          setIsFormOpen(false);
-          setSelectedBanner(undefined);
-        }}
-        onSubmit={selectedBanner ? handleEditBanner : handleAddBanner}
+        onClose={handleCloseAll}
+        onSubmit={selectedBanner ? editBanner : addBanner}
       />
 
       {selectedBanner && (
         <BannerDetail
           banner={selectedBanner}
           isOpen={isDetailOpen}
-          onClose={() => {
-            setIsDetailOpen(false);
-            setSelectedBanner(undefined);
-          }}
+          onClose={handleCloseAll}
         />
       )}
     </div>
