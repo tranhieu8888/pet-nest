@@ -6,6 +6,9 @@ const verifyToken = require("../middleware/auth");
 // POST /api/reviews
 router.post("/", verifyToken, reviewController.createReview);
 
+// GET /api/reviews
+router.get("/", reviewController.getAllReviews);
+
 // GET /api/reviews/product/:productId
 router.get("/product/:productId", reviewController.getReviewsByProduct);
 
