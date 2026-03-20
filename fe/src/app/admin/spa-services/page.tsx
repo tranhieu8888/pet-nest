@@ -182,7 +182,7 @@ export default function AdminSpaServicePage() {
     try {
       setLoading(true);
 
-      const res = await api.get<SpaServiceListResponse>("/admin/spa-services", {
+      const res = await api.get("/admin/spa-services", {
         params: {
           page: currentPage,
           limit: currentLimit,
@@ -191,8 +191,10 @@ export default function AdminSpaServicePage() {
         },
       });
 
-      setServices(Array.isArray(res.data?.data) ? res.data.data : []);
-      setTotal(res.data?.total || 0);
+      const payload = res.data as SpaServiceListResponse;
+
+      setServices(Array.isArray(payload?.data) ? payload.data : []);
+      setTotal(payload?.total || 0);
     } catch (error) {
       console.error("Fetch spa services error:", error);
       toast.error("Không thể tải danh sách dịch vụ spa");
