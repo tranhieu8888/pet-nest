@@ -21,25 +21,13 @@ const staffScheduleSchema = new mongoose.Schema(
     shiftStart: {
       type: String,
       default: "",
-      validate: {
-        validator: function (value) {
-          if (this.isOff) return true;
-          return isValidTimeFormat(value);
-        },
-        message: "Giờ bắt đầu không hợp lệ",
-      },
+      trim: true,
     },
 
     shiftEnd: {
       type: String,
       default: "",
-      validate: {
-        validator: function (value) {
-          if (this.isOff) return true;
-          return isValidTimeFormat(value);
-        },
-        message: "Giờ kết thúc không hợp lệ",
-      },
+      trim: true,
     },
 
     isOff: {
@@ -52,6 +40,16 @@ const staffScheduleSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -59,9 +57,20 @@ const staffScheduleSchema = new mongoose.Schema(
   }
 );
 
-staffScheduleSchema.index({ staffId: 1, workDate: 1 }, { unique: true });
+// Unique chỉ áp dụng với record chưa bị xoá mềm
+staffScheduleSchema.index(
+  { staffId: 1, workDate: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDeleted: false },
+  }
+);
 
 staffScheduleSchema.pre("validate", function (next) {
+  if (this.isDeleted) {
+    return next();
+  }
+
   if (this.isOff) {
     this.shiftStart = "";
     this.shiftEnd = "";

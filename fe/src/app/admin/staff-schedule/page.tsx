@@ -92,18 +92,17 @@ export default function StaffSchedulePage() {
 
     setLoading(true);
     try {
-      const res = await api.get<ScheduleListResponse>(
-        "/admin/staff-schedules",
-        {
-          params: {
-            page: currentPage,
-            limit: currentLimit,
-          },
-        }
-      );
+      const res = await api.get("/admin/staff-schedules", {
+        params: {
+          page: currentPage,
+          limit: currentLimit,
+        },
+      });
 
-      setSchedules(Array.isArray(res.data?.data) ? res.data.data : []);
-      setTotal(res.data?.total || 0);
+      const payload = res.data as ScheduleListResponse;
+
+      setSchedules(Array.isArray(payload?.data) ? payload.data : []);
+      setTotal(payload?.total || 0);
     } catch (error) {
       console.error("Fetch schedules error:", error);
       toast.error("Không thể tải dữ liệu lịch làm việc nhân viên");
@@ -422,7 +421,7 @@ function StaffScheduleForm({
           <div>
             <Label>Nhân viên</Label>
             <select
-              className="w-full border rounded px-3 py-2 bg-white"
+              className="w-full border rounded px-3 py-2 bg-white mt-3"
               value={getStaffIdValue(form.staffId)}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, staffId: e.target.value }))
@@ -442,7 +441,7 @@ function StaffScheduleForm({
             <Label>Ngày làm</Label>
             <input
               type="date"
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 mt-3"
               value={form.workDate ? form.workDate.slice(0, 10) : ""}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, workDate: e.target.value }))
@@ -481,7 +480,7 @@ function StaffScheduleForm({
               <Label>Bắt đầu</Label>
               <input
                 type="time"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 mt-3"
                 value={form.shiftStart}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, shiftStart: e.target.value }))
@@ -495,7 +494,7 @@ function StaffScheduleForm({
               <Label>Kết thúc</Label>
               <input
                 type="time"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 mt-3"
                 value={form.shiftEnd}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, shiftEnd: e.target.value }))
@@ -509,6 +508,7 @@ function StaffScheduleForm({
           <div>
             <Label>Ghi chú</Label>
             <Input
+            className="mt-3"
               value={form.note}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, note: e.target.value }))

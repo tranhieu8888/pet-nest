@@ -188,7 +188,6 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    // FIX TIMEZONE: dùng UTC theo DB
     const startOfDay = new Date(booking.startAt);
     startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -197,6 +196,7 @@ exports.confirmSpaBooking = async (req, res) => {
 
     const schedule = await StaffSchedule.findOne({
       staffId,
+      isDeleted: false,
       workDate: {
         $gte: startOfDay,
         $lte: endOfDay,
@@ -222,7 +222,6 @@ exports.confirmSpaBooking = async (req, res) => {
     const bookingStartMinutes = getVNMinutes(booking.startAt);
     const bookingEndMinutes = getVNMinutes(booking.endAt);
 
-    // LOGIC MỚI: chỉ cần overlap là được
     if (
       shiftStartMinutes === null ||
       shiftEndMinutes === null ||
@@ -235,7 +234,6 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    // CHECK TRÙNG LỊCH
     const conflictBooking = await SpaBooking.findOne({
       _id: { $ne: booking._id },
       staffId,
@@ -261,8 +259,6 @@ exports.confirmSpaBooking = async (req, res) => {
 
     await booking.save();
 
-    // Sau khi xác nhận booking thành công
-    // Gửi thông báo cho customer
     if (booking && booking.customerId) {
       await sendNotification({
         userId: booking.customerId,
@@ -363,8 +359,6 @@ exports.rejectSpaBooking = async (req, res) => {
 
     await booking.save();
 
-    // Sau khi từ chối booking thành công
-    // Gửi thông báo cho customer
     if (booking && booking.customerId) {
       await sendNotification({
         userId: booking.customerId,
@@ -439,8 +433,6 @@ exports.completeSpaBooking = async (req, res) => {
 
     await booking.save();
 
-    // Sau khi hoàn tất booking thành công
-    // Gửi thông báo cho customer
     if (booking && booking.customerId) {
       await sendNotification({
         userId: booking.customerId,

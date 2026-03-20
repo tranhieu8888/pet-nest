@@ -27,6 +27,9 @@ const staffSpaBookingRoute = require("./routes/staffSpaBookingRoute");
 const adminStaffScheduleRoute = require("./routes/adminStaffScheduleRoute");
 const adminUserRoute = require("./routes/adminUserRoute");
 const staffScheduleRoute = require("./routes/staffScheduleRoute");
+const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
+const searchRoute = require("./routes/searchRoute");
+const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -70,6 +73,10 @@ app.use("/api/staff/spa-bookings", staffSpaBookingRoute);
 app.use("/api/admin/staff-schedules", adminStaffScheduleRoute);
 app.use("/api/admin/users", adminUserRoute);
 app.use("/api/staff/schedules", staffScheduleRoute);
+app.use("/api/admin/spa-services", adminSpaServiceRoute);
+app.use("/api/search", searchRoute);
+app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
+
 
 app.get("/", (req, res) => {
   res.send("API is running...");

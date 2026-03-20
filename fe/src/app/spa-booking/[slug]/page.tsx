@@ -46,8 +46,18 @@ function getPetImageUrl(image?: string) {
   return `http://localhost:5000${image.startsWith("/") ? image : `/${image}`}`;
 }
 
-function getValidImageUrl(url?: string, fallback = "/placeholder.svg") {
-  return url && url.trim() ? url : fallback;
+function getSpaImageUrl(image?: string) {
+  if (!image || !image.trim()) return "/placeholder.svg";
+
+  const trimmed = image.trim();
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  return `http://localhost:5000${
+    trimmed.startsWith("/") ? trimmed : `/${trimmed}`
+  }`;
 }
 
 function getCategoryLabel(category: SpaService["category"]) {
@@ -361,13 +371,11 @@ export default function SpaBookingPage() {
                       <>
                         <div className="relative h-72 bg-pink-50">
                           <Image
-                            src={getValidImageUrl(
-                              service.image,
-                              "/placeholder.svg"
-                            )}
+                            src={getSpaImageUrl(service.image)}
                             alt={service.name}
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                           <div className="absolute top-4 left-4">
                             <span className="bg-pink-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
