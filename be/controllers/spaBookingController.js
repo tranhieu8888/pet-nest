@@ -11,6 +11,8 @@ function generateBookingCode() {
   return `SPA-${Date.now()}-${random}`;
 }
 
+const payOSService = require("../services/payOSService");
+
 // ================= CREATE =================
 exports.createSpaBooking = async (req, res) => {
   try {
@@ -113,6 +115,8 @@ exports.createSpaBooking = async (req, res) => {
       });
     }
 
+    const payOSOrderCode = Number(String(Date.now()).slice(-9));
+
     const booking = await SpaBooking.create({
       bookingCode: generateBookingCode(),
       customerId,
@@ -159,25 +163,31 @@ exports.createSpaBooking = async (req, res) => {
       internalNote: "",
       cancelledAt: null,
       cancellationReason: "",
+
+      // PayOS Default
+      payOSOrderCode: payOSOrderCode,
+      payOSStatus: "PENDING",
     });
 
-    // Gửi thông báo cho tất cả staff khi có booking mới
-    const staffList = await User.find({ role: ROLES.STAFF });
-    const notifyPromises = staffList.map((staff) =>
-      sendNotification({
-        userId: staff._id,
-        title: "Có booking spa mới",
-        description: `Khách hàng ${customer.name} vừa đặt lịch dịch vụ '${service.name}' cho thú cưng '${pet.name}'.`,
-        type: "spa-booking",
-        orderId: booking._id,
-      })
-    );
-    await Promise.all(notifyPromises);
+    // Tạo link thanh toán PayOS
+    const paymentLinkRes = await payOSService.createPaymentLink({
+      orderCode: payOSOrderCode,
+      amount: service.price,
+      description: `BKG ${payOSOrderCode}`,
+      cancelUrl: `http://localhost:3000/my-spa-bookings`,
+      returnUrl: `http://localhost:3000/my-spa-bookings`,
+    });
+
+    if (paymentLinkRes) {
+      booking.payOSPaymentLink = paymentLinkRes.checkoutUrl;
+      await booking.save();
+    }
 
     return res.status(201).json({
       success: true,
       message: "Đặt lịch spa thành công",
       data: booking,
+      checkoutUrl: paymentLinkRes?.checkoutUrl || null,
     });
   } catch (e) {
     console.error("CREATE SPA BOOKING ERROR:", e);
