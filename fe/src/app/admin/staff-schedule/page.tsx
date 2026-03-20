@@ -92,18 +92,17 @@ export default function StaffSchedulePage() {
 
     setLoading(true);
     try {
-      const res = await api.get<ScheduleListResponse>(
-        "/admin/staff-schedules",
-        {
-          params: {
-            page: currentPage,
-            limit: currentLimit,
-          },
-        }
-      );
+      const res = await api.get("/admin/staff-schedules", {
+        params: {
+          page: currentPage,
+          limit: currentLimit,
+        },
+      });
 
-      setSchedules(Array.isArray(res.data?.data) ? res.data.data : []);
-      setTotal(res.data?.total || 0);
+      const payload = res.data as ScheduleListResponse;
+
+      setSchedules(Array.isArray(payload?.data) ? payload.data : []);
+      setTotal(payload?.total || 0);
     } catch (error) {
       console.error("Fetch schedules error:", error);
       toast.error("Không thể tải dữ liệu lịch làm việc nhân viên");
