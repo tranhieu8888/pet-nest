@@ -1,12 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Eye, Trash2, RefreshCcw, Mail } from "lucide-react";
-import { toast } from "sonner";
-import { io, Socket } from "socket.io-client";
-
-import { api, useApi } from "../../../../utils/axios";
-
+import { RefreshCcw, Mail, Eye, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -21,149 +15,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 import SubscriberDetail from "./components/SubscriberDetail";
-import Pagination from "./components/Pagination";
-import { Subscriber } from "./types";
+import AdminPagination from "../components/AdminPagination";
+import { useSubscribers } from "./hooks/useSubscribers";
 
-type NotificationItem = {
-  _id: string;
-  title: string;
-  description?: string;
-  type: string;
-  isRead: boolean;
-  createdAt: string;
-};
+const ITEMS_PER_PAGE = 5;
 
 export default function SubscribersPage() {
-  const { request } = useApi();
-  const socketRef = useRef<Socket | null>(null);
-
-  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const [selectedSubscriber, setSelectedSubscriber] = useState<
-    Subscriber | undefined
-  >();
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  const fetchSubscribers = async () => {
-    try {
-      setLoading(true);
-      const response = await request(() => api.get("/subscribers"));
-
-      if (response?.success) {
-        setSubscribers(response.data || []);
-      } else if (Array.isArray(response?.data)) {
-        setSubscribers(response.data);
-      } else {
-        toast.error(
-          response?.message || "Không thể tải danh sách email đăng ký"
-        );
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Không thể tải danh sách email đăng ký");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSubscribers();
-  }, []);
-
-  useEffect(() => {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
-
-    if (!token) return;
-
-    try {
-      const decoded = JSON.parse(atob(token.split(".")[1]));
-      const adminId = decoded.id || decoded._id;
-
-      if (!adminId) return;
-
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-      const SOCKET_URL = new URL(API_URL).origin;
-
-      const socket = io(SOCKET_URL, {
-        path: "/socket.io",
-        transports: ["websocket"],
-        reconnection: true,
-      });
-
-      socketRef.current = socket;
-
-      socket.on("connect", () => {
-        socket.emit("join", adminId);
-      });
-
-      socket.on("notification", (newNotification: NotificationItem) => {
-        if (newNotification.type === "subscriber") {
-          fetchSubscribers();
-        }
-      });
-
-      return () => {
-        socket.off("connect");
-        socket.off("notification");
-        socket.disconnect();
-      };
-    } catch (error) {
-      console.error("Lỗi socket subscribers:", error);
-    }
-  }, []);
-
-  const filteredSubscribers = subscribers.filter(
-    (subscriber) =>
-      subscriber.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      subscriber.status?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleToggleStatus = async (subscriber: Subscriber) => {
-    try {
-      const endpoint =
-        subscriber.status === "active"
-          ? `/subscribers/${subscriber._id}/unsubscribe`
-          : `/subscribers/${subscriber._id}/activate`;
-
-      const response = await request(() => api.patch(endpoint));
-
-      if (response.success) {
-        await fetchSubscribers();
-        toast.success(
-          subscriber.status === "active"
-            ? "Đã hủy đăng ký email"
-            : "Đã kích hoạt lại email"
-        );
-      } else {
-        toast.error(response.message || "Cập nhật trạng thái thất bại");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Cập nhật trạng thái thất bại");
-    }
-  };
-
-  const handleDeleteSubscriber = async (id: string) => {
-    try {
-      if (!window.confirm("Bạn có chắc muốn xoá email đăng ký này?")) return;
-
-      const response = await request(() => api.delete(`/subscribers/${id}`));
-
-      if (response.success) {
-        await fetchSubscribers();
-        toast.success("Xóa email đăng ký thành công");
-      } else {
-        toast.error(response.message || "Xóa email đăng ký thất bại");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Xóa email đăng ký thất bại");
-    }
-  };
+  const {
+    subscribers,
+    paginatedSubscribers,
+    loading,
+    searchQuery,
+    currentPage,
+    selectedSubscriber,
+    isDetailOpen,
+    setCurrentPage,
+    handleSearchChange,
+    handleOpenDetail,
+    handleCloseDetail,
+    toggleStatus,
+    deleteSubscriber,
+    refresh
+  } = useSubscribers(ITEMS_PER_PAGE);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -171,8 +44,7 @@ export default function SubscribersPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <CardTitle>Quản lý Email đăng ký</CardTitle>
-
-            <Button onClick={fetchSubscribers}>
+            <Button onClick={refresh}>
               <RefreshCcw className="mr-2 h-4 w-4" />
               Làm mới
             </Button>
@@ -184,128 +56,113 @@ export default function SubscribersPage() {
             <Input
               placeholder="Tìm kiếm theo email hoặc trạng thái..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="max-w-sm"
             />
           </div>
 
           {loading ? (
-            <div className="flex justify-center h-32 items-center">
-              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center h-48 items-center">
+              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
-              <Table className="w-full table-fixed">
+              <Table className="w-full table-fixed border rounded-md">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16 text-center">STT</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="w-36 text-center">
-                      Trạng thái
-                    </TableHead>
-                    <TableHead className="w-40 text-center">
-                      Ngày đăng ký
-                    </TableHead>
-                    <TableHead className="w-36 text-right">Hành động</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-16 text-center font-bold">STT</TableHead>
+                    <TableHead className="font-bold">Email</TableHead>
+                    <TableHead className="w-36 text-center font-bold">Trạng thái</TableHead>
+                    <TableHead className="w-40 text-center font-bold">Ngày đăng ký</TableHead>
+                    <TableHead className="w-36 text-right font-bold">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
 
                 <TableBody>
-                  {filteredSubscribers.length === 0 ? (
+                  {paginatedSubscribers.length === 0 ? (
                     <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center py-6 text-gray-500"
-                      >
-                        Không có email đăng ký phù hợp!
+                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">
+                        Không tìm thấy email đăng ký phù hợp!
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredSubscribers
-                      .slice(
-                        (currentPage - 1) * itemsPerPage,
-                        currentPage * itemsPerPage
-                      )
-                      .map((subscriber, index) => (
-                        <TableRow key={subscriber._id}>
-                          <TableCell className="text-center">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </TableCell>
+                    paginatedSubscribers.map((subscriber, index) => (
+                      <TableRow key={subscriber._id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="text-center">
+                          {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                        </TableCell>
 
-                          <TableCell className="truncate">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span>{subscriber.email}</span>
-                            </div>
-                          </TableCell>
+                        <TableCell className="truncate">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-indigo-500" />
+                            <span className="font-medium">{subscriber.email}</span>
+                          </div>
+                        </TableCell>
 
-                          <TableCell className="text-center">
-                            <Badge
-                              variant={
-                                subscriber.status === "active"
-                                  ? "default"
-                                  : "secondary"
-                              }
+                        <TableCell className="text-center">
+                          <Badge
+                            className={`px-2 py-0.5 rounded-full ${
+                              subscriber.status === "active"
+                                ? "bg-green-100 text-green-700 hover:bg-green-200 border-none"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-none"
+                            }`}
+                          >
+                            {subscriber.status === "active" ? "Đang nhận tin" : "Đã hủy"}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell className="text-center text-muted-foreground whitespace-nowrap">
+                          {new Date(subscriber.createdAt).toLocaleDateString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => handleOpenDetail(subscriber)}
+                              title="Xem chi tiết"
                             >
-                              {subscriber.status === "active"
-                                ? "Đang nhận tin"
-                                : "Đã hủy"}
-                            </Badge>
-                          </TableCell>
+                              <Eye size={16} />
+                            </Button>
 
-                          <TableCell className="text-center">
-                            {new Date(subscriber.createdAt).toLocaleDateString(
-                              "vi-VN"
-                            )}
-                          </TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                              onClick={() => toggleStatus(subscriber)}
+                              title="Đổi trạng thái"
+                            >
+                              <RefreshCcw size={16} />
+                            </Button>
 
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedSubscriber(subscriber);
-                                  setIsDetailOpen(true);
-                                }}
-                              >
-                                <Eye size={16} />
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleToggleStatus(subscriber)}
-                              >
-                                <RefreshCcw size={16} />
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600"
-                                onClick={() =>
-                                  handleDeleteSubscriber(subscriber._id)
-                                }
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => deleteSubscriber(subscriber._id)}
+                              title="Xóa"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
                 </TableBody>
               </Table>
 
-              <Pagination
-                items={filteredSubscribers}
-                itemsPerPage={itemsPerPage}
+              <AdminPagination
+                totalItems={subscribers.length}
+                itemsPerPage={ITEMS_PER_PAGE}
                 currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
+                onPageChange={setCurrentPage}
               />
             </>
           )}
@@ -316,10 +173,7 @@ export default function SubscribersPage() {
         <SubscriberDetail
           subscriber={selectedSubscriber}
           isOpen={isDetailOpen}
-          onClose={() => {
-            setIsDetailOpen(false);
-            setSelectedSubscriber(undefined);
-          }}
+          onClose={handleCloseDetail}
         />
       )}
     </div>
