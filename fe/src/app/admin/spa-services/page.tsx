@@ -659,7 +659,7 @@ function SpaServiceFormDialog({
           <div className="overflow-y-auto px-6 py-5">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <Label>Tên dịch vụ</Label>
+                <Label className="mb-3">Tên dịch vụ</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => {
@@ -676,7 +676,7 @@ function SpaServiceFormDialog({
               </div>
 
               <div>
-                <Label>Slug</Label>
+                <Label className="mb-3">Slug</Label>
                 <Input
                   value={form.slug}
                   onChange={(e) =>
@@ -729,7 +729,7 @@ function SpaServiceFormDialog({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <Label>Giá dịch vụ (VNĐ)</Label>
+                  <Label className="mb-3">Giá dịch vụ (VNĐ)</Label>
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -750,7 +750,7 @@ function SpaServiceFormDialog({
                 </div>
 
                 <div>
-                  <Label>Thời lượng (phút)</Label>
+                  <Label className="mb-3">Thời lượng (phút)</Label>
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -887,7 +887,7 @@ function SpaServiceDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
-      <DialogContent className="max-h-[88vh] w-[90vw] max-w-[620px] overflow-y-auto rounded-2xl p-5">
+      <DialogContent className="max-h-[88vh] w-[95vw] max-w-[860px] overflow-y-auto rounded-2xl p-5">
         <DialogHeader>
           <DialogTitle>Chi tiết dịch vụ spa</DialogTitle>
         </DialogHeader>
@@ -899,12 +899,12 @@ function SpaServiceDetailDialog({
               alt={service.name}
               fill
               className="object-cover"
-              sizes="(max-width: 768px) 100vw, 520px"
+              sizes="(max-width: 768px) 100vw, 820px"
               unoptimized
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
             <div>
               <p className="text-sm text-muted-foreground">Tên dịch vụ</p>
               <p className="font-medium">{service.name}</p>

@@ -330,7 +330,6 @@ export default function AdminSpaBookingsPage() {
               Đặt lại
             </button>
           </div>
-
         </div>
 
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
@@ -516,239 +515,241 @@ export default function AdminSpaBookingsPage() {
       </div>
 
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Chi tiết spa booking
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {selectedBooking.bookingCode}
-                </p>
+        <div className="fixed inset-0 z-50 bg-black/40 p-4 overflow-y-auto">
+          <div className="flex min-h-full items-start justify-center py-6">
+            <div className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between border-b px-5 py-4 shrink-0">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Chi tiết spa booking
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {selectedBooking.bookingCode}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setSelectedBooking(null)}
+                  className="rounded-full p-2 transition hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="rounded-full p-2 transition hover:bg-gray-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {loadingDetail ? (
-              <div className="flex items-center justify-center p-10">
-                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-              </div>
-            ) : (
-              <div className="max-h-[75vh] overflow-y-auto p-5">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border p-4">
-                    <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                      <User className="h-5 w-5" />
-                      Khách hàng
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <span className="font-medium">Tên:</span>{" "}
-                        {selectedBooking.customerSnapshot?.name ||
-                          selectedBooking.customerId?.name ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">SĐT:</span>{" "}
-                        {selectedBooking.customerSnapshot?.phone ||
-                          selectedBooking.customerId?.phone ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Email:</span>{" "}
-                        {selectedBooking.customerSnapshot?.email ||
-                          selectedBooking.customerId?.email ||
-                          "-"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border p-4">
-                    <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                      <PawPrint className="h-5 w-5" />
-                      Thú cưng
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <span className="font-medium">Tên:</span>{" "}
-                        {selectedBooking.petSnapshot?.name ||
-                          selectedBooking.petId?.name ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Loại:</span>{" "}
-                        {selectedBooking.petSnapshot?.type ||
-                          selectedBooking.petId?.type ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Giống:</span>{" "}
-                        {selectedBooking.petSnapshot?.breed ||
-                          selectedBooking.petId?.breed ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Tuổi:</span>{" "}
-                        {selectedBooking.petSnapshot?.age ?? "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Cân nặng:</span>{" "}
-                        {selectedBooking.petSnapshot?.weight ?? "-"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border p-4">
-                    <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                      <Scissors className="h-5 w-5" />
-                      Dịch vụ
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <span className="font-medium">Tên:</span>{" "}
-                        {selectedBooking.serviceSnapshot?.name ||
-                          selectedBooking.serviceId?.name ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Danh mục:</span>{" "}
-                        {selectedBooking.serviceSnapshot?.category ||
-                          selectedBooking.serviceId?.category ||
-                          "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Giá:</span>{" "}
-                        {formatCurrency(
-                          selectedBooking.serviceSnapshot?.price ??
-                            selectedBooking.serviceId?.price
-                        )}
-                      </p>
-                      <p>
-                        <span className="font-medium">Thời lượng:</span>{" "}
-                        {selectedBooking.serviceSnapshot?.durationMinutes ??
-                          selectedBooking.serviceId?.durationMinutes ??
-                          "-"}{" "}
-                        phút
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border p-4">
-                    <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                      <CalendarDays className="h-5 w-5" />
-                      Lịch hẹn
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <span className="font-medium">Bắt đầu:</span>{" "}
-                        {formatDateTime(selectedBooking.startAt)}
-                      </p>
-                      <p>
-                        <span className="font-medium">Kết thúc:</span>{" "}
-                        {formatDateTime(selectedBooking.endAt)}
-                      </p>
-                      <p>
-                        <span className="font-medium">Trạng thái:</span>{" "}
-                        {getStatusLabel(selectedBooking.status)}
-                      </p>
-                      <p>
-                        <span className="font-medium">Thanh toán:</span>{" "}
-                        {getPaymentLabel(selectedBooking.paymentStatus)}
-                      </p>
-                      <p>
-                        <span className="font-medium">Nhân viên:</span>{" "}
-                        {selectedBooking.staffSnapshot?.name ||
-                          selectedBooking.staffId?.name ||
-                          "Chưa gán"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border p-4 md:col-span-2">
-                    <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                      <CreditCard className="h-5 w-5" />
-                      Ghi chú
-                    </div>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <p className="font-medium">Ghi chú khách hàng</p>
-                        <p className="mt-1 text-gray-700">
-                          {selectedBooking.note || "-"}
-                        </p>
+              {loadingDetail ? (
+                <div className="flex items-center justify-center p-10">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto p-5">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="rounded-xl border p-4">
+                      <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                        <User className="h-5 w-5" />
+                        Khách hàng
                       </div>
-
-                      <div>
-                        <p className="font-medium">Ghi chú nội bộ</p>
-                        <p className="mt-1 text-gray-700">
-                          {selectedBooking.internalNote || "-"}
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="font-medium">Tên:</span>{" "}
+                          {selectedBooking.customerSnapshot?.name ||
+                            selectedBooking.customerId?.name ||
+                            "-"}
                         </p>
-                      </div>
-
-                      <div>
-                        <p className="font-medium">Lý do hủy</p>
-                        <p className="mt-1 text-gray-700">
-                          {selectedBooking.cancellationReason || "-"}
+                        <p>
+                          <span className="font-medium">SĐT:</span>{" "}
+                          {selectedBooking.customerSnapshot?.phone ||
+                            selectedBooking.customerId?.phone ||
+                            "-"}
                         </p>
-                      </div>
-
-                      <div>
-                        <p className="font-medium">Dị ứng / hành vi</p>
-                        <p className="mt-1 text-gray-700">
-                          Dị ứng:{" "}
-                          {selectedBooking.petSnapshot?.allergies || "-"}
-                        </p>
-                        <p className="text-gray-700">
-                          Hành vi:{" "}
-                          {selectedBooking.petSnapshot?.behaviorNote || "-"}
+                        <p>
+                          <span className="font-medium">Email:</span>{" "}
+                          {selectedBooking.customerSnapshot?.email ||
+                            selectedBooking.customerId?.email ||
+                            "-"}
                         </p>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="rounded-xl border p-4 md:col-span-2">
-                    <div className="mb-3 text-lg font-semibold">
-                      Thời gian hệ thống
+                    <div className="rounded-xl border p-4">
+                      <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                        <PawPrint className="h-5 w-5" />
+                        Thú cưng
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="font-medium">Tên:</span>{" "}
+                          {selectedBooking.petSnapshot?.name ||
+                            selectedBooking.petId?.name ||
+                            "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Loại:</span>{" "}
+                          {selectedBooking.petSnapshot?.type ||
+                            selectedBooking.petId?.type ||
+                            "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Giống:</span>{" "}
+                          {selectedBooking.petSnapshot?.breed ||
+                            selectedBooking.petId?.breed ||
+                            "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Tuổi:</span>{" "}
+                          {selectedBooking.petSnapshot?.age ?? "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Cân nặng:</span>{" "}
+                          {selectedBooking.petSnapshot?.weight ?? "-"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                      <div className="rounded-lg bg-gray-50 p-3">
-                        <p className="font-medium">Tạo lúc</p>
-                        <p className="mt-1 text-gray-700">
-                          {formatDateTime(selectedBooking.createdAt)}
+
+                    <div className="rounded-xl border p-4">
+                      <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                        <Scissors className="h-5 w-5" />
+                        Dịch vụ
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="font-medium">Tên:</span>{" "}
+                          {selectedBooking.serviceSnapshot?.name ||
+                            selectedBooking.serviceId?.name ||
+                            "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Danh mục:</span>{" "}
+                          {selectedBooking.serviceSnapshot?.category ||
+                            selectedBooking.serviceId?.category ||
+                            "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Giá:</span>{" "}
+                          {formatCurrency(
+                            selectedBooking.serviceSnapshot?.price ??
+                              selectedBooking.serviceId?.price
+                          )}
+                        </p>
+                        <p>
+                          <span className="font-medium">Thời lượng:</span>{" "}
+                          {selectedBooking.serviceSnapshot?.durationMinutes ??
+                            selectedBooking.serviceId?.durationMinutes ??
+                            "-"}{" "}
+                          phút
                         </p>
                       </div>
+                    </div>
 
-                      <div className="rounded-lg bg-gray-50 p-3">
-                        <p className="font-medium">Cập nhật lúc</p>
-                        <p className="mt-1 text-gray-700">
-                          {formatDateTime(selectedBooking.updatedAt)}
+                    <div className="rounded-xl border p-4">
+                      <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                        <CalendarDays className="h-5 w-5" />
+                        Lịch hẹn
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="font-medium">Bắt đầu:</span>{" "}
+                          {formatDateTime(selectedBooking.startAt)}
+                        </p>
+                        <p>
+                          <span className="font-medium">Kết thúc:</span>{" "}
+                          {formatDateTime(selectedBooking.endAt)}
+                        </p>
+                        <p>
+                          <span className="font-medium">Trạng thái:</span>{" "}
+                          {getStatusLabel(selectedBooking.status)}
+                        </p>
+                        <p>
+                          <span className="font-medium">Thanh toán:</span>{" "}
+                          {getPaymentLabel(selectedBooking.paymentStatus)}
+                        </p>
+                        <p>
+                          <span className="font-medium">Nhân viên:</span>{" "}
+                          {selectedBooking.staffSnapshot?.name ||
+                            selectedBooking.staffId?.name ||
+                            "Chưa gán"}
                         </p>
                       </div>
+                    </div>
 
-                      <div className="rounded-lg bg-gray-50 p-3">
-                        <p className="font-medium">Đã hủy lúc</p>
-                        <p className="mt-1 text-gray-700">
-                          {formatDateTime(selectedBooking.cancelledAt || "")}
-                        </p>
+                    <div className="rounded-xl border p-4 md:col-span-2">
+                      <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                        <CreditCard className="h-5 w-5" />
+                        Ghi chú
                       </div>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <p className="font-medium">Ghi chú khách hàng</p>
+                          <p className="mt-1 text-gray-700">
+                            {selectedBooking.note || "-"}
+                          </p>
+                        </div>
 
-                      <div className="rounded-lg bg-gray-50 p-3">
-                        <p className="font-medium">Mã booking</p>
-                        <p className="mt-1 break-words text-gray-700">
-                          {selectedBooking.bookingCode}
-                        </p>
+                        <div>
+                          <p className="font-medium">Ghi chú nội bộ</p>
+                          <p className="mt-1 text-gray-700">
+                            {selectedBooking.internalNote || "-"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">Lý do hủy</p>
+                          <p className="mt-1 text-gray-700">
+                            {selectedBooking.cancellationReason || "-"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">Dị ứng / hành vi</p>
+                          <p className="mt-1 text-gray-700">
+                            Dị ứng:{" "}
+                            {selectedBooking.petSnapshot?.allergies || "-"}
+                          </p>
+                          <p className="text-gray-700">
+                            Hành vi:{" "}
+                            {selectedBooking.petSnapshot?.behaviorNote || "-"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border p-4 md:col-span-2">
+                      <div className="mb-3 text-lg font-semibold">
+                        Thời gian hệ thống
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg bg-gray-50 p-3">
+                          <p className="font-medium">Tạo lúc</p>
+                          <p className="mt-1 text-gray-700">
+                            {formatDateTime(selectedBooking.createdAt)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 p-3">
+                          <p className="font-medium">Cập nhật lúc</p>
+                          <p className="mt-1 text-gray-700">
+                            {formatDateTime(selectedBooking.updatedAt)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 p-3">
+                          <p className="font-medium">Đã hủy lúc</p>
+                          <p className="mt-1 text-gray-700">
+                            {formatDateTime(selectedBooking.cancelledAt || "")}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 p-3">
+                          <p className="font-medium">Mã booking</p>
+                          <p className="mt-1 break-words text-gray-700">
+                            {selectedBooking.bookingCode}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

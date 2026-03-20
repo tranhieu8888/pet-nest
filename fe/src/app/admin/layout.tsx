@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   TrendingUp,
   LogOut,
   User,
   Users,
   ChevronUp,
+  ChevronDown,
   Megaphone,
   Gift,
-  Image,
   ListTree,
-  Settings,
-  MessageCircle,
   SlidersHorizontal,
   TicketPercent,
   Mail,
@@ -21,6 +20,7 @@ import {
   ImageIcon,
   ShoppingCart,
   Server,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -43,16 +43,27 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import Link from "next/link";
 import AdminNotificationBell from "./components/AdminNotificationBell";
 
-const menuItems = [
+type MenuChild = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+};
+
+type MenuItemType = {
+  title: string;
+  url?: string;
+  icon: LucideIcon;
+  children?: MenuChild[];
+};
+
+const menuItems: MenuItemType[] = [
   {
-    title: "Admin Dashboard",
+    title: "Nguyện: Admin Dashboard",
     url: "/admin/dashboard",
     icon: TrendingUp,
   },
@@ -67,19 +78,25 @@ const menuItems = [
     icon: Megaphone,
   },
   {
-    title: "Quản lý sản phẩm",
-    url: "/admin/product",
+    title: "Sản phẩm",
     icon: Gift,
-  },
-  {
-    title: "Quản lý danh mục",
-    url: "/admin/category",
-    icon: ListTree,
-  },
-  {
-    title: "Quản lý thuộc tính",
-    url: "/admin/attribute",
-    icon: SlidersHorizontal,
+    children: [
+      {
+        title: "Quản lý sản phẩm",
+        url: "/admin/product",
+        icon: Gift,
+      },
+      {
+        title: "Quản lý danh mục",
+        url: "/admin/category",
+        icon: ListTree,
+      },
+      {
+        title: "Quản lý thuộc tính",
+        url: "/admin/attribute",
+        icon: SlidersHorizontal,
+      },
+    ],
   },
   {
     title: "Quản lý lịch làm việc",
@@ -112,7 +129,7 @@ const menuItems = [
     icon: ImageIcon,
   },
   {
-    title: "Quản lý orders: Minh làm nốt phần này nhé",
+    title: "Minh: Quản lý orders",
     url: "/admin/orders",
     icon: ShoppingCart,
   },
@@ -120,6 +137,24 @@ const menuItems = [
 
 function AdminSidebar({ adminId }: { adminId: string | null }) {
   const pathname = usePathname();
+
+  const isPathActive = (url?: string) => {
+    if (!url) return false;
+    return pathname === url || pathname.startsWith(`${url}/`);
+  };
+
+  const isProductGroupActive =
+    isPathActive("/admin/product") ||
+    isPathActive("/admin/category") ||
+    isPathActive("/admin/attribute");
+
+  const [productMenuOpen, setProductMenuOpen] = useState(isProductGroupActive);
+
+  useEffect(() => {
+    if (isProductGroupActive) {
+      setProductMenuOpen(true);
+    }
+  }, [isProductGroupActive]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -164,7 +199,62 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {menuItems.map((item) => {
-                const isActive = pathname === item.url;
+                if (item.children) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <button
+                        type="button"
+                        onClick={() => setProductMenuOpen((prev) => !prev)}
+                        className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                          isProductGroupActive
+                            ? "bg-indigo-100 text-indigo-600 font-semibold"
+                            : "hover:bg-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon className="size-4" />
+                          <span>{item.title}</span>
+                        </div>
+
+                        <ChevronDown
+                          className={`size-4 transition-transform duration-200 ${
+                            productMenuOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {productMenuOpen && (
+                        <div className="mt-1 ml-6 pl-3 border-l border-gray-200 space-y-1">
+                          {item.children.map((child) => {
+                            const isChildActive = isPathActive(child.url);
+
+                            return (
+                              <SidebarMenuButton
+                                key={child.title}
+                                asChild
+                                className={`transition-all duration-200 rounded-lg ${
+                                  isChildActive
+                                    ? "bg-indigo-100 text-indigo-600 font-semibold"
+                                    : "hover:bg-gray-100"
+                                }`}
+                              >
+                                <Link
+                                  href={child.url}
+                                  className="flex items-center gap-3 px-3 py-2"
+                                >
+                                  <child.icon className="size-4" />
+                                  <span>{child.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                }
+
+                const isActive = isPathActive(item.url);
 
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -177,7 +267,7 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
                       }`}
                     >
                       <Link
-                        href={item.url}
+                        href={item.url!}
                         className="flex items-center gap-3 px-3 py-2"
                       >
                         <item.icon className="size-4" />
@@ -208,20 +298,6 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
-            {/* <DropdownMenuItem
-              onClick={() => (window.location.href = "/profile")}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Hồ sơ
-            </DropdownMenuItem> */}
-
-            {/* <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Cài đặt
-            </DropdownMenuItem> */}
-
-            {/* <DropdownMenuSeparator /> */}
-
             <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Đăng xuất

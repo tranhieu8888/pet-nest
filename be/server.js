@@ -77,6 +77,7 @@ app.use("/api/admin/spa-services", adminSpaServiceRoute);
 app.use("/api/search", searchRoute);
 app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
 
+
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
