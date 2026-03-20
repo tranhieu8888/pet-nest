@@ -21,6 +21,7 @@ import {
   ShoppingCart,
   Server,
   type LucideIcon,
+  MessageCircle,
 } from "lucide-react";
 
 import {
