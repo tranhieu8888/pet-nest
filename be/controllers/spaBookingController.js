@@ -117,10 +117,9 @@ exports.createSpaBooking = async (req, res) => {
 
     const payOSOrderCode = Number(String(Date.now()).slice(-9));
 
-    // Mức giá thanh toán
-    let finalAmount = service.price;
-    // Bỏ comment dòng dưới để TEST với giá cố định (ví dụ 5000đ)
-    // finalAmount = 5000;
+    // Tính toán tiền cọc 50%
+    const totalPrice = service.price;
+    const depositAmount = Math.round(totalPrice * 0.5); // Làm tròn số tiền cọc
 
     const booking = await SpaBooking.create({
       bookingCode: generateBookingCode(),
@@ -151,7 +150,7 @@ exports.createSpaBooking = async (req, res) => {
       serviceSnapshot: {
         name: service.name,
         category: service.category,
-        price: finalAmount, // Sử dụng finalAmount thay vì original price cho snapshot
+        price: totalPrice, // Lưu giá gốc 100%
         durationMinutes: service.durationMinutes,
       },
 
@@ -172,13 +171,17 @@ exports.createSpaBooking = async (req, res) => {
       // PayOS Default
       payOSOrderCode: payOSOrderCode,
       payOSStatus: "PENDING",
+
+      // Financials
+      totalPrice: totalPrice,
+      depositAmount: depositAmount,
     });
 
-    // Tạo link thanh toán PayOS
+    // Tạo link thanh toán PayOS - Chỉ thanh toán số tiền cọc 50%
     const paymentLinkRes = await payOSService.createPaymentLink({
       orderCode: payOSOrderCode,
-      amount: finalAmount,
-      description: `BKG ${payOSOrderCode}`,
+      amount: depositAmount,
+      description: `Coc 50% BKG ${payOSOrderCode}`,
       cancelUrl: `http://localhost:3000/my-spa-bookings`,
       returnUrl: `http://localhost:3000/my-spa-bookings`,
     });
@@ -215,6 +218,7 @@ exports.getMySpaBookings = async (req, res) => {
       });
     }
 
+    // Tạm thời hiển thị TẤT CẢ đơn hàng để debug (cho người dùng thấy đơn ngay cả khi chưa trả tiền hoặc webhook bị chậm)
     const bookings = await SpaBooking.find({ customerId })
       .populate("serviceId", "name slug image")
       .populate("petId", "name type breed")

@@ -98,6 +98,10 @@ const spaBookingSchema = new mongoose.Schema(
     payOSOrderCode: { type: Number, unique: true, sparse: true },
     payOSPaymentLink: { type: String, default: "" },
     payOSStatus: { type: String, default: "PENDING" },
+
+    // Financial details
+    totalPrice: { type: Number, default: 0 },
+    depositAmount: { type: Number, default: 0 },
   },
   {
     timestamps: true,

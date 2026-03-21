@@ -20,6 +20,8 @@ type Booking = {
   paymentStatus: PaymentStatus;
   note?: string;
   cancellationReason?: string;
+  totalPrice?: number;
+  depositAmount?: number;
   petSnapshot?: {
     name?: string;
     type?: "dog" | "cat";
@@ -144,7 +146,9 @@ function BookingCard({
                 )}`}
               >
                 {booking.paymentStatus === "paid"
-                  ? "Đã thanh toán"
+                  ? (booking.depositAmount && booking.serviceSnapshot?.price && booking.depositAmount < booking.serviceSnapshot.price 
+                      ? "Đã cọc 50%" 
+                      : "Đã thanh toán")
                   : "Chưa thanh toán"}
               </span>
             </div>
@@ -170,10 +174,22 @@ function BookingCard({
             </p>
 
             {booking.serviceSnapshot?.price !== undefined && (
-              <p>
-                <span className="font-medium">Giá:</span>{" "}
-                {booking.serviceSnapshot.price.toLocaleString("vi-VN")}đ
-              </p>
+              <div className="flex flex-col gap-1 sm:col-span-1">
+                <p>
+                  <span className="font-medium text-indigo-600">Tổng tiền:</span>{" "}
+                  {booking.serviceSnapshot.price.toLocaleString("vi-VN")}đ
+                </p>
+                {booking.depositAmount && (
+                  <>
+                    <p className="text-xs text-emerald-600 font-medium">
+                      ✓ Đã đặt cọc (50%): {booking.depositAmount.toLocaleString("vi-VN")}đ
+                    </p>
+                    <p className="text-xs text-amber-600 font-medium">
+                      ⌛ Còn lại (tại quầy): {(booking.serviceSnapshot.price - booking.depositAmount).toLocaleString("vi-VN")}đ
+                    </p>
+                  </>
+                )}
+              </div>
             )}
 
             {booking.staffSnapshot?.name && (

@@ -1,4 +1,6 @@
 const User = require("../models/userModel");
+const SpaBooking = require("../models/spaBookingModel");
+const payOSService = require("../services/payOSService");
 const { sendNotification } = require("../services/sendNotification");
 const { ROLES } = require("../config/role");
 
@@ -18,6 +20,13 @@ exports.handlePayOSWebhook = async (req, res) => {
     }
 
     const { orderCode, status } = webhookData.data;
+
+    // Đặc biệt: PayOS sẽ gửi mã 123 để kiểm tra Webhook. 
+    // Chúng ta trả về 200 để xác thực Webhook hoạt động.
+    if (orderCode === 123) {
+      console.log("PayOS Webhook: Test ping received (orderCode 123). Success.");
+      return res.status(200).json({ success: true, message: "Test webhook received" });
+    }
 
     // Tìm booking tương ứng
     const booking = await SpaBooking.findOne({ payOSOrderCode: orderCode });
