@@ -76,6 +76,8 @@ app.use("/api/staff/schedules", staffScheduleRoute);
 app.use("/api/admin/spa-services", adminSpaServiceRoute);
 app.use("/api/search", searchRoute);
 app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
+const paymentRoute = require("./routes/paymentRoute");
+app.use("/api/payments", paymentRoute);
 
 
 app.get("/", (req, res) => {

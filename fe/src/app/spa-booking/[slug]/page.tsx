@@ -289,12 +289,17 @@ export default function SpaBookingPage() {
       });
 
       if (response.data?.success) {
-        // setSuccessMessage(response.data?.message || "Đặt lịch spa thành công.");
+        const checkoutUrl = response.data?.checkoutUrl;
 
-        setTimeout(() => {
-          toast.success("Đặt lịch thành công! Chuyển về trang chủ");
-          router.push("/homepage");
-        }, 1200);
+        if (checkoutUrl) {
+          toast.info("Đang chuyển hướng tới trang thanh toán...");
+          setTimeout(() => {
+            window.location.href = checkoutUrl;
+          }, 1000);
+        } else {
+          toast.success("Yêu cầu đặt lịch đã được ghi nhận!");
+          router.push("/my-spa-bookings");
+        }
       } else {
         setError(response.data?.message || "Đặt lịch thất bại.");
       }

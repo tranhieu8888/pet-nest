@@ -11,6 +11,7 @@ import {
   User,
   ChevronUp,
   Settings,
+  CreditCard
 } from "lucide-react";
 
 import {
@@ -60,6 +61,11 @@ const menuItems = [
     title: "Chăm sóc & cắt tỉa",
     url: "/staff/grooming",
     icon: Scissors,
+  },
+  {
+    title: "Lịch sử thanh toán",
+    url: "/staff/payments",
+    icon: CreditCard,
   },
 ];
 

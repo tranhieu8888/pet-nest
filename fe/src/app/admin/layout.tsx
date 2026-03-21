@@ -21,6 +21,7 @@ import {
   ShoppingCart,
   Server,
   type LucideIcon,
+  MessageCircle,
 } from "lucide-react";
 
 import {
@@ -132,6 +133,11 @@ const menuItems: MenuItemType[] = [
     title: "Minh: Quản lý orders",
     url: "/admin/orders",
     icon: ShoppingCart,
+  },
+  {
+    title: "Quản lý đánh giá",
+    url: "/admin/review",
+    icon: MessageCircle,
   },
 ];
 

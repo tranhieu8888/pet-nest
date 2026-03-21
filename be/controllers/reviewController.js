@@ -161,3 +161,18 @@ exports.getAverageRating = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// GET /api/reviews
+exports.getAllReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find()
+      .populate("userId", "name email avatar")
+      .populate("productId", "name")
+      .sort({ createdAt: -1 });
+    res
+      .status(200)
+      .json({ success: true, count: reviews.length, data: reviews });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
