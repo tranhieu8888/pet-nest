@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 /uploads
+
+# lock files
+be/yarn.lock
+be/package-lock.json
+fe/package-lock.json
