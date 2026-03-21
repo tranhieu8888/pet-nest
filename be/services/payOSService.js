@@ -66,6 +66,30 @@ class PayOSService {
   }
 
   /**
+   * Lấy thông tin thanh toán từ PayOS qua orderCode
+   */
+  async getPaymentLinkInformation(orderCode) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/${orderCode}`, {
+        headers: {
+          "x-client-id": this.clientId,
+          "x-api-key": this.apiKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.code === "00") {
+        return response.data.data;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error("PayOS GET INFO ERROR:", error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  /**
    * Xác thực dữ liệu webhook từ PayOS
    */
   verifyWebhookData(webhookData) {
@@ -81,6 +105,13 @@ class PayOSService {
       .createHmac("sha256", this.checksumKey)
       .update(sortedData)
       .digest("hex");
+
+    console.log("--- PAYOS WEBHOOK VERIFICATION ---");
+    console.log("Sorted Data String:", sortedData);
+    console.log("Expected Signature:", expectedSignature);
+    console.log("Received Signature:", signature);
+    console.log("Match:", expectedSignature === signature);
+    console.log("----------------------------------");
 
     return expectedSignature === signature;
   }

@@ -249,25 +249,43 @@ export default function MySpaBookingsPage() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-
       const res = await request(() => api.get("/spa-bookings/my"));
-
       if (res?.success) {
         setBookings(res.data || []);
       } else {
         setBookings([]);
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Không thể tải booking spa"
-      );
+      toast.error(error?.response?.data?.message || "Không thể tải booking spa");
     } finally {
       setLoading(false);
     }
   };
 
+  // Tự động đồng bộ trạng thái thanh toán từ URL (Back từ PayOS)
   useEffect(() => {
-    fetchBookings();
+    const query = new URLSearchParams(window.location.search);
+    const status = query.get("status");
+    const orderCode = query.get("orderCode");
+
+    if (status === "PAID" && orderCode) {
+      const syncPayment = async () => {
+        try {
+          const res = await api.post("/payments/sync-status", { orderCode: Number(orderCode) });
+          if (res.data?.success) {
+            toast.success("Thanh toán thành công!");
+            fetchBookings(); // Tải lại danh sách sau khi sync
+            // Xóa query params để tránh sync lại khi F5
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (error) {
+          console.error("Sync payment error:", error);
+        }
+      };
+      syncPayment();
+    } else {
+      fetchBookings();
+    }
   }, []);
 
   useEffect(() => {
