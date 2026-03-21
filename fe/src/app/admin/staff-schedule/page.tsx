@@ -469,6 +469,39 @@ function StaffScheduleForm({
             <Label htmlFor="isOff">Nghỉ trong ngày</Label>
           </div>
 
+          {!form.isOff && (
+            <div className="space-y-3 rounded-xl border bg-gray-50 p-3">
+              <Label className="text-xs font-semibold uppercase text-gray-500">
+                Chọn nhanh ca làm việc
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { name: "Ca sáng", start: "08:00", end: "12:00" },
+                  { name: "Ca trưa", start: "12:00", end: "17:00" },
+                  { name: "Ca chiều", start: "17:00", end: "22:00" },
+                ].map((shift) => (
+                  <Button
+                    key={shift.name}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="bg-white hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        shiftStart: shift.start,
+                        shiftEnd: shift.end,
+                        note: shift.name,
+                      }))
+                    }
+                  >
+                    {shift.name} ({shift.start}-{shift.end})
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="text-sm text-muted-foreground">
             Khi chọn <b>Nghỉ trong ngày</b>, nhân viên sẽ được xem là nghỉ cả
             ngày đó và không có ca làm việc. Lúc này giờ bắt đầu và giờ kết thúc
