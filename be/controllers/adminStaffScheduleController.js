@@ -1,24 +1,24 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 const StaffSchedule = require("../models/staffScheduleModel");
 const SpaBooking = require("../models/spaBookingModel");
+const VN_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 function normalizeWorkDate(dateInput) {
-  const date = new Date(dateInput);
-  if (Number.isNaN(date.getTime())) return null;
-
-  date.setHours(0, 0, 0, 0);
-  return date;
+  if (!dateInput) return null;
+  // Tạo moment object từ đầu ngày theo giờ VN, sau đó đưa về UTC để lưu DB đồng nhất
+  // MongoDB Compass sẽ hiển thị là 00:00:00 +00:00 của ngày đó
+  const m = moment.tz(dateInput, VN_TIMEZONE).startOf("day");
+  if (!m.isValid()) return null;
+  return m.toDate();
 }
 
 function getStartAndEndOfDay(dateInput) {
-  const date = new Date(dateInput);
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-
-  return { start, end };
+  const m = moment.tz(dateInput, VN_TIMEZONE);
+  return { 
+    start: m.clone().startOf("day").toDate(),
+    end: m.clone().endOf("day").toDate()
+  };
 }
 
 function isValidTimeFormat(value) {
