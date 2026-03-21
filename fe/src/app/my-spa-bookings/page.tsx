@@ -88,11 +88,11 @@ function formatDateTime(dateString?: string) {
 function BookingCard({
   booking,
   submittingId,
-  onCancel,
+  onRequestCancel,
 }: {
   booking: Booking;
   submittingId: string | null;
-  onCancel: (bookingId: string, reason: string) => Promise<void>;
+  onRequestCancel: (booking: Booking) => void;
 }) {
   const isSubmitting = submittingId === booking._id;
 
@@ -219,16 +219,75 @@ function BookingCard({
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => {
-                const reason =
-                  window.prompt("Nhập lý do hủy booking:", "") || "";
-                onCancel(booking._id, reason);
-              }}
+              onClick={() => onRequestCancel(booking)}
               className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
             >
               Hủy booking
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CancelModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isSubmitting,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+  isSubmitting: boolean;
+}) {
+  const [reason, setReason] = useState("");
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-red-600">
+            Bạn sẽ bị mất tiền thanh toán cọc
+          </h3>
+          <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+            Nếu bạn hủy booking này, số tiền cọc (50%) đã thanh toán sẽ không được hoàn lại. Bạn có chắc chắn muốn tiếp tục?
+          </p>
+          
+          <div className="mt-5">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lý do hủy (không bắt buộc)
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              placeholder="Nhập lý do của bạn tại đây..."
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 bg-gray-50 px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          >
+            Quay lại
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(reason)}
+            disabled={isSubmitting}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {isSubmitting ? "Đang xử lý..." : "Xác nhận hủy"}
+          </button>
         </div>
       </div>
     </div>
@@ -245,6 +304,10 @@ export default function MySpaBookingsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Modal hủy đơn
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   const fetchBookings = async () => {
     try {
@@ -292,16 +355,20 @@ export default function MySpaBookingsPage() {
     setCurrentPage(1);
   }, [statusFilter, searchKeyword]);
 
-  const handleCancelBooking = async (bookingId: string, reason: string) => {
+  const handleCancelBooking = async (reason: string) => {
+    if (!selectedBookingId) return;
+
     try {
-      setSubmittingId(bookingId);
+      setSubmittingId(selectedBookingId);
 
       const res = await request(() =>
-        api.patch(`/spa-bookings/${bookingId}/cancel`, { reason })
+        api.patch(`/spa-bookings/${selectedBookingId}/cancel`, { reason })
       );
 
       if (res?.success) {
         toast.success("Hủy booking thành công");
+        setIsCancelModalOpen(false);
+        setSelectedBookingId(null);
         await fetchBookings();
       }
     } catch (error: any) {
@@ -430,7 +497,10 @@ export default function MySpaBookingsPage() {
                     key={booking._id}
                     booking={booking}
                     submittingId={submittingId}
-                    onCancel={handleCancelBooking}
+                    onRequestCancel={(b) => {
+                      setSelectedBookingId(b._id);
+                      setIsCancelModalOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -475,6 +545,16 @@ export default function MySpaBookingsPage() {
         </div>
       </main>
       <Footer />
+
+      <CancelModal
+        isOpen={isCancelModalOpen}
+        isSubmitting={!!submittingId}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setSelectedBookingId(null);
+        }}
+        onConfirm={handleCancelBooking}
+      />
     </>
   );
 }
