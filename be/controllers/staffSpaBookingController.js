@@ -228,8 +228,23 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    // Nới lỏng kiểm tra: Chỉ cần có lịch làm việc trong ngày là có thể nhận đơn
-    // Điều này giúp nhân viên có thể nhận các đơn lệch ca một chút (vừa hết ca hoặc chuẩn bị vào ca)
+    // 2. Kiểm tra khung giờ nghiêm ngặt: Đơn hàng phải nằm trong ca làm việc
+    const shiftStartMinutes = parseTimeToMinutes(schedule.shiftStart);
+    const shiftEndMinutes = parseTimeToMinutes(schedule.shiftEnd);
+    const bookingStartMinutes = getVNMinutes(booking.startAt);
+    const bookingEndMinutes = getVNMinutes(booking.endAt);
+
+    if (
+      shiftStartMinutes === null ||
+      shiftEndMinutes === null ||
+      bookingStartMinutes < shiftStartMinutes ||
+      bookingEndMinutes > shiftEndMinutes
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Đơn hàng này (${schedule.shiftStart} - ${schedule.shiftEnd}) nằm ngoài ca làm việc của bạn`,
+      });
+    }
 
     const conflictBooking = await SpaBooking.findOne({
       _id: { $ne: booking._id },
