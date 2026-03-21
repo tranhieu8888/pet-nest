@@ -218,8 +218,12 @@ exports.getMySpaBookings = async (req, res) => {
       });
     }
 
-    // Tạm thời hiển thị TẤT CẢ đơn hàng để debug (cho người dùng thấy đơn ngay cả khi chưa trả tiền hoặc webhook bị chậm)
-    const bookings = await SpaBooking.find({ customerId })
+    // Chỉ hiển thị các booking đã thanh toán HOẶC đã hủy (để người dùng theo dõi)
+    // Ẩn các booking "Chưa thanh toán" mà vẫn đang ở trạng thái pending (vì người dùng chưa hoàn tất thanh toán)
+    const bookings = await SpaBooking.find({
+      customerId,
+      $or: [{ paymentStatus: "paid" }, { status: "cancelled" }],
+    })
       .populate("serviceId", "name slug image")
       .populate("petId", "name type breed")
       .populate("staffId", "name phone")
