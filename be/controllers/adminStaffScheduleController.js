@@ -95,13 +95,10 @@ async function hasConfirmedBookingsOutsideNewShift({
   const newShiftEndMinutes = parseTimeToMinutes(shiftEnd);
 
   for (const booking of confirmedBookings) {
-    const bookingStart = new Date(booking.startAt);
-    const bookingEnd = new Date(booking.endAt);
-
-    const bookingStartMinutes =
-      bookingStart.getHours() * 60 + bookingStart.getMinutes();
-    const bookingEndMinutes =
-      bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+    const bookingStartMinutes = moment.tz(booking.startAt, VN_TIMEZONE).hours() * 60 + 
+                               moment.tz(booking.startAt, VN_TIMEZONE).minutes();
+    const bookingEndMinutes = moment.tz(booking.endAt, VN_TIMEZONE).hours() * 60 + 
+                             moment.tz(booking.endAt, VN_TIMEZONE).minutes();
 
     const isOutsideShift =
       bookingStartMinutes < newShiftStartMinutes ||

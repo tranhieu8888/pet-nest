@@ -349,8 +349,10 @@ function StaffScheduleForm({
       }
     };
 
-    fetchStaff();
-  }, []);
+    if (open) {
+      fetchStaff();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
