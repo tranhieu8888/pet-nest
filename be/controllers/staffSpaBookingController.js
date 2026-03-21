@@ -30,6 +30,8 @@ function parseTimeToMinutes(timeStr) {
   return hour * 60 + minute;
 }
 
+const moment = require("moment-timezone");
+
 // STAFF xem danh sách booking
 exports.getStaffSpaBookings = async (req, res) => {
   try {
@@ -42,6 +44,17 @@ exports.getStaffSpaBookings = async (req, res) => {
         message: "Không xác định được nhân viên đăng nhập",
       });
     }
+
+    // 1. Lấy tất cả các ngày làm việc của staff này để filter đơn pending
+    const staffSchedules = await StaffSchedule.find({
+      staffId,
+      isOff: false,
+      isDeleted: false,
+    }).select("workDate");
+
+    const workDates = staffSchedules.map((s) =>
+      moment.tz(s.workDate, VN_TIMEZONE).format("YYYY-MM-DD")
+    );
 
     let filter = {};
 
@@ -78,9 +91,18 @@ exports.getStaffSpaBookings = async (req, res) => {
       .populate("staffId", "name phone email")
       .sort({ createdAt: -1 });
 
+    // 2. Filter thủ công kết quả dựa trên ngày làm việc cho các đơn "pending"
+    // Chỉ những đơn pending có ngày bắt đầu trùng với ngày làm việc mới được hiển thị
+    const filteredBookings = bookings.filter((b) => {
+      if (b.status !== "pending") return true; // Các đơn đã confirm/completed giữ nguyên
+
+      const bookingDate = moment.tz(b.startAt, VN_TIMEZONE).format("YYYY-MM-DD");
+      return workDates.includes(bookingDate);
+    });
+
     return res.status(200).json({
       success: true,
-      data: bookings,
+      data: filteredBookings,
     });
   } catch (e) {
     console.error("GET STAFF SPA BOOKINGS ERROR:", e);
