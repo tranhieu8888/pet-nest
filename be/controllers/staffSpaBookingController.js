@@ -210,51 +210,26 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    const startOfDay = new Date(booking.startAt);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(booking.startAt);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    // 1. Tìm lịch làm việc của staff này trong ngày của booking
+    // Cần normalize ngày của booking giống như cách lưu trong StaffSchedule (VN 00:00)
+    const bookingDateNormalized = moment.tz(booking.startAt, VN_TIMEZONE).startOf("day").toDate();
 
     const schedule = await StaffSchedule.findOne({
       staffId,
+      workDate: bookingDateNormalized,
+      isOff: false,
       isDeleted: false,
-      workDate: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
     });
 
     if (!schedule) {
       return res.status(400).json({
         success: false,
-        message: "Nhân viên chưa có lịch làm việc trong ngày này",
+        message: "Bạn không có lịch làm việc trong ngày này hoặc đã được nghỉ",
       });
     }
 
-    if (schedule.isOff) {
-      return res.status(400).json({
-        success: false,
-        message: "Nhân viên đang nghỉ trong ngày này",
-      });
-    }
-
-    const shiftStartMinutes = parseTimeToMinutes(schedule.shiftStart);
-    const shiftEndMinutes = parseTimeToMinutes(schedule.shiftEnd);
-    const bookingStartMinutes = getVNMinutes(booking.startAt);
-    const bookingEndMinutes = getVNMinutes(booking.endAt);
-
-    if (
-      shiftStartMinutes === null ||
-      shiftEndMinutes === null ||
-      bookingEndMinutes <= shiftStartMinutes ||
-      bookingStartMinutes >= shiftEndMinutes
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Booking không nằm trong khoảng thời gian làm việc",
-      });
-    }
+    // Nới lỏng kiểm tra: Chỉ cần có lịch làm việc trong ngày là có thể nhận đơn
+    // Điều này giúp nhân viên có thể nhận các đơn lệch ca một chút (vừa hết ca hoặc chuẩn bị vào ca)
 
     const conflictBooking = await SpaBooking.findOne({
       _id: { $ne: booking._id },
