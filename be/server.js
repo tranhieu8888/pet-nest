@@ -35,7 +35,7 @@ const adminOrderRoute = require("./routes/adminOrderRoute");
 const { setupSocket, getIO } = require("./config/socket.io");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = Number(process.env.PORT) || 5000;
 
 connectDB();
 
@@ -94,6 +94,26 @@ app.use((err, req, res, next) => {
 });
 
 // Phải dùng server.listen thay vì app.listen để socket hoạt động realtime
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+function startServer(port) {
+  server
+    .listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    })
+    .on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        if (process.env.PORT) {
+          console.error(`Port ${port} đã được sử dụng. Hãy đổi PORT trong file .env.`);
+          process.exit(1);
+        }
+
+        const nextPort = port + 1;
+        console.warn(`Port ${port} đang bận, thử khởi động với port ${nextPort}...`);
+        startServer(nextPort);
+        return;
+      }
+
+      throw err;
+    });
+}
+
+startServer(DEFAULT_PORT);

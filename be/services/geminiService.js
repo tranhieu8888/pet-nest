@@ -1,10 +1,23 @@
 const { GoogleGenAI, Type } = require("@google/genai");
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+let aiClient = null;
+
+function getAiClient() {
+  if (aiClient) return aiClient;
+
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY chưa được cấu hình");
+  }
+
+  aiClient = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+  });
+
+  return aiClient;
+}
 
 async function suggestBlogContent(title) {
+  const ai = getAiClient();
   const prompt = `
 Bạn là chuyên gia viết blog cho website Pet Nest về chăm sóc thú cưng.
 

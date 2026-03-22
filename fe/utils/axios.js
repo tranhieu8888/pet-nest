@@ -5,8 +5,14 @@ import { useState } from 'react';
 // Debug log để kiểm tra env
 
 
+const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+const normalizedApiBaseUrl = rawApiBaseUrl.endsWith('/')
+  ? rawApiBaseUrl.slice(0, -1)
+  : rawApiBaseUrl;
+
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: normalizedApiBaseUrl,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

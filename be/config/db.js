@@ -2,12 +2,16 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(
-      process.env.MONGO_URI || "mongodb://localhost:27017/pet-nest",
+    const mongoUri =
+      process.env.MONGO_URI || "mongodb://127.0.0.1:27017/PetNest_DB";
+
+    const conn = await mongoose.connect(mongoUri);
+
+    console.log(
+      `MongoDB Connected: ${conn.connection.host} | DB: ${conn.connection.name}`,
     );
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    console.error(`MongoDB connect error: ${error.message}`);
     process.exit(1);
   }
 };
