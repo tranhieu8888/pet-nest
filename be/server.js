@@ -30,6 +30,7 @@ const staffScheduleRoute = require("./routes/staffScheduleRoute");
 const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
 const searchRoute = require("./routes/searchRoute");
 const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
+const adminDashboardRoute = require("./routes/adminDashboardRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -76,6 +77,7 @@ app.use("/api/staff/schedules", staffScheduleRoute);
 app.use("/api/admin/spa-services", adminSpaServiceRoute);
 app.use("/api/search", searchRoute);
 app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
+app.use("/api/admin", adminDashboardRoute);
 const paymentRoute = require("./routes/paymentRoute");
 app.use("/api/payments", paymentRoute);
 
