@@ -113,8 +113,9 @@
 
 .blog-card-image {
   position: relative;
-  height: 14rem;
+  height: 18rem;
   overflow: hidden;
+  background: #f8fafc;
 }
 
 .blog-card-image img {
@@ -122,7 +123,21 @@
 }
 
 .blog-card:hover .blog-card-image img {
-  transform: scale(1.08);
+  transform: scale(1.06);
+}
+
+.blog-detail-image {
+  position: relative;
+  width: 100%;
+  height: clamp(360px, 62vh, 760px);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.blog-detail-image img {
+  object-fit: contain;
 }
 
 .blog-card-tag {

@@ -17,7 +17,7 @@ interface BlogImage {
 interface BlogPost {
   _id: string;
   title: string;
-  slug: string;
+  slug?: string;
   description: string;
   tag: string;
   image?: BlogImage;
@@ -131,12 +131,15 @@ export default function BlogDetailPage() {
         {/* 1 ảnh */}
         {post.image?.url ? (
           <div style={{ marginBottom: "2rem" }}>
-            <div className="blog-card-image" style={{ height: "500px" }}>
+            <div className="blog-detail-image">
               <Image
                 src={post.image.url}
                 alt={post.title}
                 fill
-                className="object-cover"
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 1280px"
+                quality={100}
+                priority
               />
             </div>
           </div>
@@ -181,14 +184,14 @@ export default function BlogDetailPage() {
 
                   <div className="blog-card-content">
                     <h2 className="blog-card-title">
-                      <Link href={`/blog/${rp.slug}`}>{rp.title}</Link>
+                      <Link href={`/blog/${rp.slug || rp._id}`}>{rp.title}</Link>
                     </h2>
 
                     <p className="blog-card-description">
                       {decodeHTML(stripHtml(rp.description))}
                     </p>
 
-                    <Link href={`/blog/${rp.slug}`} className="blog-card-link">
+                    <Link href={`/blog/${rp.slug || rp._id}`} className="blog-card-link">
                       Đọc thêm →
                     </Link>
                   </div>
