@@ -760,11 +760,12 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    // Validate new password length
-    if (newPassword.length < 6) {
+    // Validate new password pattern: >=8, có chữ hoa, số, ký tự đặc biệt
+    const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordPattern.test(newPassword)) {
       return res.status(400).json({
         success: false,
-        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+        message: 'Mật khẩu mới phải có ít nhất 8 ký tự, gồm 1 chữ hoa, 1 số và 1 ký tự đặc biệt'
       });
     }
 
