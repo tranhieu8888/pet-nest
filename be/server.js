@@ -31,6 +31,7 @@ const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
 const searchRoute = require("./routes/searchRoute");
 const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
 const adminOrderRoute = require("./routes/adminOrderRoute");
+const aiChatRoute = require("./routes/aiChatRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -79,6 +80,7 @@ app.use("/api/search", searchRoute);
 app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
 const paymentRoute = require("./routes/paymentRoute");
 app.use("/api/payments", paymentRoute);
+app.use("/api/ai", aiChatRoute);
 
 app.use("/api/admin/orders", adminOrderRoute);
 

@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { CartProvider } from "@/context/CartContext";
+import CustomerChatWidget from "@/components/chat/CustomerChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
               closeButton
               duration={3000}
             />
+            <CustomerChatWidget />
           </LanguageProvider>
         </GoogleOAuthProvider>
       </body>
