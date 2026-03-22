@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, CircleAlert, CircleCheck } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -236,12 +235,15 @@ function LoginForm() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-100">
-      <div className="absolute inset-0 -z-10">
-        <Image src="/images/background.jpg" alt="Background" fill priority className="object-cover" />
-        <div className="absolute inset-0 bg-slate-900/70" />
-      </div>
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(15,23,42,0.28), rgba(15,23,42,0.28)), url('/images/pet-bg-auth.jpg')",
+        }}
+      />
 
-      <div className={`mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-8 px-4 py-8 transition-all duration-500 md:grid-cols-2 md:px-8 ${
+      <div className={`relative z-10 mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-8 px-4 py-8 transition-all duration-500 md:grid-cols-2 md:px-8 ${
         isLeaving
           ? 'translate-y-2 opacity-0'
           : isEntering
@@ -344,7 +346,7 @@ function LoginForm() {
           </div>
 
           <div className="flex justify-center">
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} useOneTap theme="filled_blue" text="signin_with" shape="rectangular" />
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} theme="filled_blue" text="signin_with" shape="rectangular" />
           </div>
 
           <p className="mt-5 text-center text-sm text-slate-600">

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { User, Mail, Phone, Lock, Eye, EyeOff, CircleAlert, CircleCheck } from 'lucide-react';
 import { api } from '../../../utils/axios';
 import { useLanguage } from '@/context/LanguageContext';
@@ -164,12 +163,15 @@ export default function RegisterPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-100">
-      <div className="absolute inset-0 -z-10">
-        <Image src="/images/background.jpg" alt="Background" fill priority className="object-cover" />
-        <div className="absolute inset-0 bg-slate-900/70" />
-      </div>
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(15,23,42,0.28), rgba(15,23,42,0.28)), url('/images/pet-bg-auth.jpg')",
+        }}
+      />
 
-      <div className={`mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-8 px-4 py-8 transition-all duration-500 md:grid-cols-2 md:px-8 ${
+      <div className={`relative z-10 mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-8 px-4 py-8 transition-all duration-500 md:grid-cols-2 md:px-8 ${
         isLeaving
           ? 'translate-y-2 opacity-0'
           : isEntering

@@ -596,6 +596,7 @@ export default function HomePage() {
                       src={getValidImageUrl(category.image)}
                       alt={category.name}
                       fill
+                      priority={index === 0}
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />

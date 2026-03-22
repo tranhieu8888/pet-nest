@@ -33,7 +33,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { io, Socket } from "socket.io-client";
-import axios from "axios";
 import pagesConfigEn from "../../../utils/petPagesConfig.en.js";
 import pagesConfigVi from "../../../utils/petPagesConfig.vi.js";
 import { jwtDecode } from "jwt-decode";
@@ -658,15 +657,12 @@ export default function Header({
           return;
         }
 
-        const axiosInstance = axios.create({
-          baseURL: "http://localhost:5000",
+        const response = await api.get("/auth/myprofile", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-
-        const response = await axiosInstance.get("/api/auth/myprofile");
         if (response.data.success) {
           setUser(response.data.user);
           setIsLoggedIn(true);
@@ -677,13 +673,14 @@ export default function Header({
         }
       } catch (error) {
         console.error("Error checking auth:", error);
-        if (axios.isAxiosError(error)) {
-          if (
-            error.response?.status === 401 ||
-            error.response?.status === 403
-          ) {
-            sessionStorage.removeItem("token");
-          }
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          ((error as { response?: { status?: number } }).response?.status === 401 ||
+            (error as { response?: { status?: number } }).response?.status === 403)
+        ) {
+          sessionStorage.removeItem("token");
         }
         setIsLoggedIn(false);
         setUser(null);
@@ -834,10 +831,9 @@ export default function Header({
         const token = sessionStorage.getItem("token");
         if (!userId || !token) return;
 
-        const res = await axios.get(
-          `http://localhost:5000/conversation/${userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await api.get(`/conversation/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const totalUnread = Array.isArray(res.data)
           ? res.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)

@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   description: "Pet Nest - Your pet care companion",
 };
 
-const clientId = process.env.GOOGLE_CLIENT_ID || "";
+const clientId =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "";
 
 export default function RootLayout({
   children,
@@ -34,7 +35,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GoogleOAuthProvider clientId={clientId}>
+        {clientId ? (
+          <GoogleOAuthProvider clientId={clientId}>
+            <LanguageProvider>
+              <CartProvider>{children}</CartProvider>
+              <Toaster
+                position="top-right"
+                richColors
+                closeButton
+                duration={3000}
+              />
+              <CustomerChatWidget />
+            </LanguageProvider>
+          </GoogleOAuthProvider>
+        ) : (
           <LanguageProvider>
             <CartProvider>{children}</CartProvider>
             <Toaster
@@ -45,7 +59,7 @@ export default function RootLayout({
             />
             <CustomerChatWidget />
           </LanguageProvider>
-        </GoogleOAuthProvider>
+        )}
       </body>
     </html>
   );
