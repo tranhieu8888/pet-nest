@@ -73,7 +73,10 @@ exports.handlePayOSWebhook = async (req, res) => {
  */
 exports.getPaymentHistory = async (req, res) => {
   try {
-    const payments = await SpaBooking.find({ paymentStatus: "paid" })
+    const payments = await SpaBooking.find({ 
+      paymentStatus: "paid",
+      status: "completed"
+    })
       .populate("customerId", "name email phone")
       .populate("serviceId", "name")
       .sort({ updatedAt: -1 });
