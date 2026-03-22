@@ -11,7 +11,9 @@ import {
   User,
   ChevronUp,
   Settings,
-  CreditCard
+  CreditCard,
+  LayoutDashboard,
+  MessageCircle,
 } from "lucide-react";
 
 import {
@@ -43,6 +45,11 @@ import StaffNotificationBell from "./components/StaffNotificationBell";
 
 const menuItems = [
   {
+    title: "Dashboard",
+    url: "/staff/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
     title: "Lịch làm việc",
     url: "/staff/schedule",
     icon: CalendarDays,
@@ -67,6 +74,11 @@ const menuItems = [
     url: "/staff/payments",
     icon: CreditCard,
   },
+  {
+    title: "Tin nhắn CSKH",
+    url: "/staff/messages",
+    icon: MessageCircle,
+  },
 ];
 
 function StaffSidebar({ staffId }: { staffId: string | null }) {
@@ -85,7 +97,7 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <Link href="/staff/schedule">
+                <Link href="/staff/dashboard">
                   <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
                     <Scissors className="size-5" />
                   </div>

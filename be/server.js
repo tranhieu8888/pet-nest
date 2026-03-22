@@ -32,6 +32,7 @@ const searchRoute = require("./routes/searchRoute");
 const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
 const adminOrderRoute = require("./routes/adminOrderRoute");
 const aiChatRoute = require("./routes/aiChatRoute");
+const chatRoute = require("./routes/chatRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -46,10 +47,8 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const server = http.createServer(app);
 
-// Khởi tạo socket.io đúng trên server HTTP
 setupSocket(server);
 
-// Middleware để dùng io trong req nếu cần
 app.use((req, res, next) => {
   req.io = getIO();
   next();
@@ -81,7 +80,7 @@ app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
 const paymentRoute = require("./routes/paymentRoute");
 app.use("/api/payments", paymentRoute);
 app.use("/api/ai", aiChatRoute);
-
+app.use("/api/chat", chatRoute);
 app.use("/api/admin/orders", adminOrderRoute);
 
 app.get("/", (req, res) => {
@@ -95,7 +94,6 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Phải dùng server.listen thay vì app.listen để socket hoạt động realtime
 function startServer(port) {
   server
     .listen(port, () => {

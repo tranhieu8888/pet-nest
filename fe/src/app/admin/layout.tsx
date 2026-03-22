@@ -22,6 +22,9 @@ import {
   Server,
   type LucideIcon,
   MessageCircle,
+  Calendar,
+  LayoutDashboard,
+  Star,
 } from "lucide-react";
 
 import {
@@ -55,89 +58,66 @@ type MenuChild = {
   icon: LucideIcon;
 };
 
-type MenuItemType = {
-  title: string;
-  url?: string;
-  icon: LucideIcon;
-  children?: MenuChild[];
+type MenuGroup = {
+  label: string;
+  items: {
+    title: string;
+    url?: string;
+    icon: LucideIcon;
+    children?: MenuChild[];
+  }[];
 };
 
-const menuItems: MenuItemType[] = [
+const menuGroups: MenuGroup[] = [
   {
-    title: "Nguyện: Admin Dashboard",
-    url: "/admin/dashboard",
-    icon: TrendingUp,
+    label: "Tổng quan",
+    items: [
+      { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+    ],
   },
   {
-    title: "Quản lý người dùng",
-    url: "/admin/users",
-    icon: Users,
-  },
-  {
-    title: "Quản lý bài viết",
-    url: "/admin/blog",
-    icon: Megaphone,
-  },
-  {
-    title: "Sản phẩm",
-    icon: Gift,
-    children: [
+    label: "Hàng hóa",
+    items: [
       {
-        title: "Quản lý sản phẩm",
-        url: "/admin/product",
+        title: "Sản phẩm",
         icon: Gift,
-      },
-      {
-        title: "Quản lý danh mục",
-        url: "/admin/category",
-        icon: ListTree,
-      },
-      {
-        title: "Quản lý thuộc tính",
-        url: "/admin/attribute",
-        icon: SlidersHorizontal,
+        children: [
+          { title: "Quản lý sản phẩm", url: "/admin/product", icon: Gift },
+          { title: "Quản lý danh mục", url: "/admin/category", icon: ListTree },
+          { title: "Quản lý thuộc tính", url: "/admin/attribute", icon: SlidersHorizontal },
+        ],
       },
     ],
   },
   {
-    title: "Quản lý lịch làm việc",
-    url: "/admin/staff-schedule",
-    icon: Workflow,
+    label: "Dịch vụ Spa",
+    items: [
+      { title: "Dịch vụ Spa", url: "/admin/spa-services", icon: Server },
+      { title: "Đặt lịch Spa", url: "/admin/spa-bookings", icon: Calendar },
+      { title: "Lịch làm việc nhân viên", url: "/admin/staff-schedule", icon: Workflow },
+    ],
   },
   {
-    title: "Quản lý email đăng ký",
-    url: "/admin/subscribers",
-    icon: Mail,
+    label: "Đơn hàng",
+    items: [
+      { title: "Quản lý đơn hàng", url: "/admin/orders", icon: ShoppingCart },
+    ],
   },
   {
-    title: "Quản lý quảng cáo",
-    url: "/admin/banner",
-    icon: ImageIcon,
+    label: "Người dùng",
+    items: [
+      { title: "Quản lý người dùng", url: "/admin/users", icon: Users },
+      { title: "Quản lý đánh giá", url: "/admin/review", icon: Star },
+    ],
   },
   {
-    title: "Quản lý mã giảm giá",
-    url: "/admin/voucher",
-    icon: TicketPercent,
-  },
-  {
-    title: "Quản lý dịch vụ spa",
-    url: "/admin/spa-services",
-    icon: Server,
-  },
-  {
-    title: "Quản lý đặt lịch spa",
-    url: "/admin/spa-bookings",
-    icon: ImageIcon,
-  },
-  {
-    title: "Minh: Quản lý orders",
-    url: "/admin/orders",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Quản lý đánh giá",
-    url: "/admin/review",
-    icon: MessageCircle,
+    label: "Marketing",
+    items: [
+      { title: "Quảng cáo / Banner", url: "/admin/banner", icon: ImageIcon },
+      { title: "Mã giảm giá", url: "/admin/voucher", icon: TicketPercent },
+      { title: "Bài viết / Blog", url: "/admin/blog", icon: Megaphone },
+      { title: "Email đăng ký", url: "/admin/subscribers", icon: Mail },
+    ],
   },
 ];
 
@@ -168,6 +148,80 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
     window.location.href = "/";
   };
 
+  const renderItem = (item: MenuGroup["items"][0]) => {
+    if (item.children) {
+      const isGroupActive = item.children.some((c) => isPathActive(c.url));
+      return (
+        <SidebarMenuItem key={item.title}>
+          <button
+            type="button"
+            onClick={() => setProductMenuOpen((prev) => !prev)}
+            className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+              isGroupActive
+                ? "bg-indigo-100 text-indigo-600 font-semibold"
+                : "hover:bg-gray-100"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className="size-4" />
+              <span>{item.title}</span>
+            </div>
+            <ChevronDown
+              className={`size-4 transition-transform duration-200 ${
+                productMenuOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {productMenuOpen && (
+            <div className="mt-1 ml-6 pl-3 border-l border-gray-200 space-y-1">
+              {item.children.map((child) => (
+                <SidebarMenuButton
+                  key={child.title}
+                  asChild
+                  className={`transition-all duration-200 rounded-lg ${
+                    isPathActive(child.url)
+                      ? "bg-indigo-100 text-indigo-600 font-semibold"
+                      : "hover:bg-gray-100"
+                  }`}
+                >
+                  <Link
+                    href={child.url}
+                    className="flex items-center gap-3 px-3 py-2"
+                  >
+                    <child.icon className="size-4" />
+                    <span>{child.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              ))}
+            </div>
+          )}
+        </SidebarMenuItem>
+      );
+    }
+
+    const isActive = isPathActive(item.url);
+    return (
+      <SidebarMenuItem key={item.title}>
+        <SidebarMenuButton
+          asChild
+          className={`transition-all duration-200 rounded-lg ${
+            isActive
+              ? "bg-indigo-100 text-indigo-600 font-semibold"
+              : "hover:bg-gray-100"
+          }`}
+        >
+          <Link
+            href={item.url!}
+            className="flex items-center gap-3 px-3 py-2"
+          >
+            <item.icon className="size-4" />
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <Sidebar className="border-r bg-white shadow-xl overflow-visible">
       <SidebarHeader className="border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white overflow-visible">
@@ -196,96 +250,19 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-400 uppercase text-xs tracking-wider px-3">
-            Quản lý hệ thống
-          </SidebarGroupLabel>
-
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => {
-                if (item.children) {
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <button
-                        type="button"
-                        onClick={() => setProductMenuOpen((prev) => !prev)}
-                        className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
-                          isProductGroupActive
-                            ? "bg-indigo-100 text-indigo-600 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                        </div>
-
-                        <ChevronDown
-                          className={`size-4 transition-transform duration-200 ${
-                            productMenuOpen ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
-
-                      {productMenuOpen && (
-                        <div className="mt-1 ml-6 pl-3 border-l border-gray-200 space-y-1">
-                          {item.children.map((child) => {
-                            const isChildActive = isPathActive(child.url);
-
-                            return (
-                              <SidebarMenuButton
-                                key={child.title}
-                                asChild
-                                className={`transition-all duration-200 rounded-lg ${
-                                  isChildActive
-                                    ? "bg-indigo-100 text-indigo-600 font-semibold"
-                                    : "hover:bg-gray-100"
-                                }`}
-                              >
-                                <Link
-                                  href={child.url}
-                                  className="flex items-center gap-3 px-3 py-2"
-                                >
-                                  <child.icon className="size-4" />
-                                  <span>{child.title}</span>
-                                </Link>
-                              </SidebarMenuButton>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </SidebarMenuItem>
-                  );
-                }
-
-                const isActive = isPathActive(item.url);
-
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className={`transition-all duration-200 rounded-lg ${
-                        isActive
-                          ? "bg-indigo-100 text-indigo-600 font-semibold"
-                          : "hover:bg-gray-100"
-                      }`}
-                    >
-                      <Link
-                        href={item.url!}
-                        className="flex items-center gap-3 px-3 py-2"
-                      >
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="py-2">
+        {menuGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-gray-400 uppercase text-[10px] tracking-widest font-semibold px-3 pt-3 pb-1">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-0.5">
+                {group.items.map(renderItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t p-3">

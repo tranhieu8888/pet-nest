@@ -831,13 +831,15 @@ export default function Header({
         const token = sessionStorage.getItem("token");
         if (!userId || !token) return;
 
-        const res = await api.get(`/conversation/${userId}`, {
+        const res = await api.get(`/chat/conversations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const totalUnread = Array.isArray(res.data)
-          ? res.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)
-          : 0;
+        const conversations = Array.isArray(res.data?.data) ? res.data.data : [];
+        const totalUnread = conversations.reduce(
+          (sum: number, conv: { unreadCount?: number }) => sum + (conv.unreadCount || 0),
+          0
+        );
 
         setUnreadChatCount(totalUnread);
       } catch {
