@@ -31,6 +31,8 @@ const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
 const searchRoute = require("./routes/searchRoute");
 const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
 const adminOrderRoute = require("./routes/adminOrderRoute");
+const adminDashboardRoute = require("./routes/adminDashboardRoute");
+const staffDashboardRoute = require("./routes/staffDashboardRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
