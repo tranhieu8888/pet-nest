@@ -1,506 +1,389 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '../../../utils/axios';
 import Image from 'next/image';
-import styles from './LoginPage.module.css';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, CircleAlert, CircleCheck } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
+import { api } from '../../../utils/axios';
+import { useLanguage } from '@/context/LanguageContext';
+import viConfig from '../../../utils/petPagesConfig.vi';
+import enConfig from '../../../utils/petPagesConfig.en';
 
 interface ErrorResponse {
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }
 
 function LoginForm() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
-    const [showVerificationModal, setShowVerificationModal] = useState(false);
-    const [resendLoading, setResendLoading] = useState(false);
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const registered = searchParams.get('registered') === 'true';
-    const redirect = searchParams.get("redirect");
-    const [showVerifyNotice, setShowVerifyNotice] = useState(registered);
+  const { lang } = useLanguage();
+  const text = (lang === 'vi' ? viConfig : enConfig).authPages.login;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsLoading(true);
-      setError("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
-      try {
-        const response = await api.post("/auth/login", { email, password });
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const registered = searchParams.get('registered') === 'true';
+  const redirect = searchParams.get('redirect');
+  const [showVerifyNotice, setShowVerifyNotice] = useState(registered);
 
-        if (response.data.success) {
-          const { token } = response.data;
+  useEffect(() => {
+    const t = setTimeout(() => setIsEntering(true), 20);
+    return () => clearTimeout(t);
+  }, []);
 
-          if (rememberMe) {
-            localStorage.setItem("token", token);
-            sessionStorage.removeItem("token");
-          } else {
-            sessionStorage.setItem("token", token);
-            localStorage.removeItem("token");
-          }
+  const commonErrors = (lang === 'vi' ? viConfig : enConfig).authPages.commonErrors;
 
-          try {
-            const decoded = jwtDecode<{ role: number }>(token);
-            const role = decoded.role;
+  const mapLoginError = (raw?: string) => {
+    const message = (raw || '').toLowerCase();
+    if (!message) return commonErrors.default;
+    if (
+      message.includes('email hoặc mật khẩu') ||
+      message.includes('invalid') ||
+      message.includes('credential') ||
+      message.includes('password')
+    ) {
+      return commonErrors.invalidCredentials;
+    }
+    if (message.includes('xác minh') || message.includes('verify')) {
+      return commonErrors.notVerified;
+    }
+    if (message.includes('google')) {
+      return commonErrors.googleFailed;
+    }
+    return raw || commonErrors.default;
+  };
 
-            const isAdmin = role === 0;
-            const isStaff = (role & 2) === 2;
-            const isCustomer = (role & 1) === 1;
+  const pushWithTransition = (path: string) => {
+    setPendingRoute(path);
+    setIsLeaving(true);
+  };
 
-            if (redirect && isCustomer && !isAdmin && !isStaff) {
-              router.push(redirect);
-              return;
-            }
+  useEffect(() => {
+    if (!isLeaving || !pendingRoute) return;
+    const t = setTimeout(() => router.push(pendingRoute), 220);
+    return () => clearTimeout(t);
+  }, [isLeaving, pendingRoute, router]);
 
-            if (isAdmin) {
-              router.push("/admin/blog");
-              return;
-            }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
-            if (isStaff) {
-              router.push("/staff/schedule");
-              return;
-            }
+    try {
+      const response = await api.post('/auth/login', { email, password });
 
-            if (isCustomer) {
-              router.push(redirect || "/homepage");
-              return;
-            }
+      if (response.data.success) {
+        const { token } = response.data;
 
-            router.push(redirect || "/homepage");
-          } catch {
-            router.push(redirect || "/homepage");
-          }
+        if (rememberMe) {
+          localStorage.setItem('token', token);
+          sessionStorage.removeItem('token');
         } else {
-          setError(
-            response.data.message || "Đăng nhập thất bại. Vui lòng thử lại."
-          );
+          sessionStorage.setItem('token', token);
+          localStorage.removeItem('token');
         }
-      } catch (error: unknown) {
-        const axiosError = error as { response?: { data?: ErrorResponse } };
 
-        if (
-          axiosError.response?.data?.message?.includes(
-            "chưa được xác minh email"
-          )
-        ) {
-          setShowVerificationModal(true);
-        } else {
-          setError(
-            axiosError.response?.data?.message ||
-              "Đăng nhập thất bại. Vui lòng thử lại."
-          );
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const handleResendVerification = async () => {
         try {
-            setResendLoading(true);
-            const response = await api.post('/auth/resend-verification', { email });
-            if (response.data.success) {
-                setError('Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.');
-                setShowVerificationModal(false);
-            } else {
-                setError(response.data.message || 'Không thể gửi lại email xác thực. Vui lòng thử lại sau.');
-            }
-        } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: ErrorResponse } };
-            setError(axiosError.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại sau');
-        } finally {
-            setResendLoading(false);
+          const decoded = jwtDecode<{ role: number }>(token);
+          const role = decoded.role;
+
+          const isAdmin = role === 0;
+          const isStaff = (role & 2) === 2;
+          const isCustomer = (role & 1) === 1;
+
+          if (redirect && isCustomer && !isAdmin && !isStaff) {
+            router.push(redirect);
+            return;
+          }
+
+          if (isAdmin) {
+            router.push('/admin/blog');
+            return;
+          }
+
+          if (isStaff) {
+            router.push('/staff/schedule');
+            return;
+          }
+
+          if (isCustomer) {
+            router.push(redirect || '/homepage');
+            return;
+          }
+
+          router.push(redirect || '/homepage');
+        } catch {
+          router.push(redirect || '/homepage');
         }
-    };
-
-    const handleGoogleSuccess = async (credentialResponse: {
-      credential?: string;
-    }) => {
-      if (!credentialResponse.credential) {
-        setError("Không thể xác thực với Google. Vui lòng thử lại.");
-        return;
+      } else {
+        setError(mapLoginError(response.data.message));
       }
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: ErrorResponse } };
 
-      try {
-        setIsLoading(true);
-        setError("");
+      if (axiosError.response?.data?.message?.includes('chưa được xác minh email')) {
+        setShowVerificationModal(true);
+      } else {
+        setError(mapLoginError(axiosError.response?.data?.message));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        const response = await api.post("/auth/google", {
-          credential: credentialResponse.credential,
-        });
+  const handleResendVerification = async () => {
+    try {
+      setResendLoading(true);
+      const response = await api.post('/auth/resend-verification', { email });
+      if (response.data.success) {
+        setError(lang === 'vi' ? 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.' : 'Verification email was resent. Please check your inbox.');
+        setShowVerificationModal(false);
+      } else {
+        setError(mapLoginError(response.data.message));
+      }
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: ErrorResponse } };
+      setError(mapLoginError(axiosError.response?.data?.message));
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
-        if (response.data.success) {
-          const { token } = response.data;
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+    if (!credentialResponse.credential) {
+      setError(commonErrors.googleFailed);
+      return;
+    }
 
-          if (rememberMe) {
-            localStorage.setItem("token", token);
-            sessionStorage.removeItem("token");
-          } else {
-            sessionStorage.setItem("token", token);
-            localStorage.removeItem("token");
-          }
+    try {
+      setIsLoading(true);
+      setError('');
 
-          try {
-            const decoded = jwtDecode<{ role: number }>(token);
-            const role = decoded.role;
+      const response = await api.post('/auth/google', {
+        credential: credentialResponse.credential,
+      });
 
-            const isAdmin = role === 0;
-            const isStaff = (role & 2) === 2;
-            const isCustomer = (role & 1) === 1;
+      if (response.data.success) {
+        const { token } = response.data;
 
-            if (redirect && isCustomer && !isAdmin && !isStaff) {
-              router.push(redirect);
-              return;
-            }
-
-            if (isAdmin) {
-              router.push("/admin/blog");
-              return;
-            }
-
-            if (isStaff) {
-              router.push("/staff/schedule");
-              return;
-            }
-
-            if (isCustomer) {
-              router.push(redirect || "/homepage");
-              return;
-            }
-
-            router.push(redirect || "/homepage");
-          } catch {
-            router.push(redirect || "/homepage");
-          }
+        if (rememberMe) {
+          localStorage.setItem('token', token);
+          sessionStorage.removeItem('token');
         } else {
-          setError(
-            response.data.message || "Đăng nhập thất bại. Vui lòng thử lại."
-          );
+          sessionStorage.setItem('token', token);
+          localStorage.removeItem('token');
         }
-      } catch (error: unknown) {
-        const axiosError = error as { response?: { data?: ErrorResponse } };
-        setError(
-          axiosError.response?.data?.message ||
-            "Có lỗi xảy ra, vui lòng thử lại sau"
-        );
-      } finally {
-        setIsLoading(false);
+
+        try {
+          const decoded = jwtDecode<{ role: number }>(token);
+          const role = decoded.role;
+
+          const isAdmin = role === 0;
+          const isStaff = (role & 2) === 2;
+          const isCustomer = (role & 1) === 1;
+
+          if (redirect && isCustomer && !isAdmin && !isStaff) {
+            router.push(redirect);
+            return;
+          }
+
+          if (isAdmin) {
+            router.push('/admin/blog');
+            return;
+          }
+
+          if (isStaff) {
+            router.push('/staff/schedule');
+            return;
+          }
+
+          if (isCustomer) {
+            router.push(redirect || '/homepage');
+            return;
+          }
+
+          router.push(redirect || '/homepage');
+        } catch {
+          router.push(redirect || '/homepage');
+        }
+      } else {
+        setError(mapLoginError(response.data.message));
       }
-    };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: ErrorResponse } };
+      setError(mapLoginError(axiosError.response?.data?.message));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleGoogleError = () => {
-        setError('Đăng nhập bằng Google thất bại. Vui lòng thử lại.');
-    };
+  const handleGoogleError = () => {
+    setError(commonErrors.googleFailed);
+  };
 
-    return (
-      <div className={styles.container}>
-        {/* Left side - Pet Image */}
-        <div className={styles.left + " relative"}>
-          <Image
-            src="/images/background.jpg"
-            alt="Pet Shop Background"
-            fill
-            priority
-          />
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-slate-100">
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/background.jpg" alt="Background" fill priority className="object-cover" />
+        <div className="absolute inset-0 bg-slate-900/70" />
+      </div>
+
+      <div className={`mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-8 px-4 py-8 transition-all duration-500 md:grid-cols-2 md:px-8 ${
+        isLeaving
+          ? 'translate-y-2 opacity-0'
+          : isEntering
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-3 opacity-0'
+      }`}>
+        <div className="hidden text-white md:block">
+          <p className="mb-3 inline-flex rounded-full border border-white/30 px-3 py-1 text-xs font-semibold tracking-widest">PET NEST</p>
+          <h1 className="text-4xl font-extrabold leading-tight">{text.heroTitle}</h1>
+          <p className="mt-3 max-w-md text-slate-200">{text.heroDescription}</p>
         </div>
 
-        {/* Right side - Login Form */}
-        <div className={styles.right}>
-          <div className={styles.formBox}>
-            <div className="text-center">
-              <h2 className={styles.title}>Chào mừng trở lại!</h2>
-              <p
-                style={{
-                  marginTop: "0.5rem",
-                  fontSize: "0.875rem",
-                  color: "#718096",
-                }}
-              >
-                Đăng nhập để tiếp tục
-              </p>
+        <div className="rounded-3xl border border-white/30 bg-white/95 p-6 shadow-2xl backdrop-blur md:p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-slate-900">{text.title}</h2>
+            <p className="mt-1 text-sm text-slate-500">{text.subtitle}</p>
+          </div>
+
+          {showVerifyNotice && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                {text.registerSuccessNotice}
+                <button className="ml-2 underline" onClick={() => setShowVerifyNotice(false)} type="button">
+                  {text.close}
+                </button>
+              </div>
             </div>
+          )}
 
-            {showVerifyNotice && (
-              <div className={styles.success}>
-                Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài
-                khoản trước khi đăng nhập.
-                <button
-                  type="button"
-                  style={{
-                    marginLeft: "0.5rem",
-                    color: "#2563eb",
-                    textDecoration: "underline",
-                    fontSize: "0.875rem",
-                  }}
-                  onClick={() => setShowVerifyNotice(false)}
-                >
-                  Đóng
-                </button>
-              </div>
-            )}
+          {error && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
-            <form style={{ marginTop: "2rem" }} onSubmit={handleSubmit}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.5rem",
-                }}
-              >
-                {error && <div className={styles.error}>{error}</div>}
-                <div>
-                  <label
-                    htmlFor="email"
-                    style={{
-                      display: "block",
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                      color: "#4A5568",
-                    }}
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={styles.input}
-                    placeholder="your@email.com"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="password"
-                    style={{
-                      display: "block",
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                      color: "#4A5568",
-                    }}
-                  >
-                    Mật khẩu
-                  </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={styles.input}
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: "0.5rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={() => setRememberMe(!rememberMe)}
-                    style={{ height: "1rem", width: "1rem" }}
-                  />
-                  <label
-                    htmlFor="remember-me"
-                    style={{
-                      marginLeft: "0.5rem",
-                      fontSize: "0.875rem",
-                      color: "#4A5568",
-                    }}
-                  >
-                    Ghi nhớ đăng nhập
-                  </label>
-                </div>
-                <div>
-                  <a
-                    href="/forgetpass"
-                    className={styles.link}
-                    style={{ fontSize: "0.875rem" }}
-                  >
-                    Quên mật khẩu?
-                  </a>
-                </div>
-              </div>
-
-              <div style={{ marginTop: "1.5rem" }}>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={styles.button}
-                >
-                  {isLoading ? (
-                    <div
-                      style={{
-                        width: "1.25rem",
-                        height: "1.25rem",
-                        border: "2px solid #4A5568",
-                        borderTopColor: "transparent",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                        margin: "0 auto",
-                      }}
-                    />
-                  ) : (
-                    "Đăng nhập"
-                  )}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => router.push("/homepage")}
-                style={{
-                  marginTop: "1rem",
-                  width: "100%",
-                  padding: "0.75rem",
-                  border: "1px solid #ccc",
-                  borderRadius: "8px",
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                ← Quay lại trang chủ
-              </button>
-
-              <div style={{ textAlign: "center" }}>
-                <Link
-                  href="/register"
-                  className={styles.link}
-                  style={{
-                    display: "inline-block",
-                    marginTop: "1rem",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  Chưa có tài khoản? Đăng ký ngay
-                </Link>
-              </div>
-            </form>
-
-            <div style={{ marginTop: "1.5rem" }}>
-              <div style={{ position: "relative" }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <div
-                    style={{ width: "100%", borderTop: "1px solid #e2e8f0" }}
-                  />
-                </div>
-                <div
-                  style={{
-                    position: "relative",
-                    display: "flex",
-                    justifyContent: "center",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      padding: "0 0.5rem",
-                      background: "#fff",
-                      color: "#718096",
-                    }}
-                  >
-                    Hoặc đăng nhập với
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ marginTop: "1.5rem" }}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap
-                  theme="filled_blue"
-                  text="signin_with"
-                  shape="rectangular"
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.email}</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Verification Modal */}
-        {showVerificationModal && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.modalBox}>
-              <h3 className={styles.modalTitle}>
-                Tài khoản chưa được xác minh
-              </h3>
-              <p className={styles.modalText}>
-                Tài khoản của bạn chưa được xác minh email. Vui lòng kiểm tra
-                hộp thư của bạn để kích hoạt tài khoản.
-                <br />
-                Nếu chưa nhận được email, bạn có thể gửi lại bên dưới.
-              </p>
-              <div className={styles.modalActions}>
-                <button
-                  onClick={() => setShowVerificationModal(false)}
-                  className={styles.modalCloseBtn}
-                >
-                  Đóng
-                </button>
-                <button
-                  onClick={handleResendVerification}
-                  disabled={resendLoading}
-                  className={styles.modalResendBtn}
-                >
-                  {resendLoading ? (
-                    <div
-                      style={{
-                        width: "1.25rem",
-                        height: "1.25rem",
-                        border: "2px solid #fff",
-                        borderTopColor: "transparent",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                        margin: "0 auto",
-                      }}
-                    />
-                  ) : (
-                    "Gửi lại email xác thực"
-                  )}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.password}</label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <label className="inline-flex items-center gap-2 text-slate-600">
+                <input type="checkbox" checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} />
+                {text.rememberMe}
+              </label>
+              <Link href="/forgetpass" className="font-medium text-blue-600 hover:underline">
+                {text.forgotPassword}
+              </Link>
+            </div>
+
+            <button type="submit" disabled={isLoading} className="w-full rounded-xl bg-slate-900 py-2.5 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">
+              {isLoading ? text.loading : text.submit}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => pushWithTransition('/homepage')}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2.5 font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {text.backHome}
+            </button>
+          </form>
+
+          <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
+            <div className="h-px flex-1 bg-slate-200" />
+            {text.orLoginWith}
+            <div className="h-px flex-1 bg-slate-200" />
           </div>
-        )}
+
+          <div className="flex justify-center">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} useOneTap theme="filled_blue" text="signin_with" shape="rectangular" />
+          </div>
+
+          <p className="mt-5 text-center text-sm text-slate-600">
+            {text.noAccount}{' '}
+            <button
+              type="button"
+              onClick={() => pushWithTransition('/register')}
+              className="font-semibold text-pink-600 hover:underline"
+            >
+              {text.registerNow}
+            </button>
+          </p>
+        </div>
       </div>
-    );
+
+      {showVerificationModal && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/55 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-slate-900">{text.notVerifiedTitle}</h3>
+            <p className="mt-2 text-sm text-slate-600">{text.notVerifiedDescription}</p>
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setShowVerificationModal(false)} className="w-full rounded-xl border border-slate-300 py-2 text-slate-700">
+                {text.close}
+              </button>
+              <button onClick={handleResendVerification} disabled={resendLoading} className="w-full rounded-xl bg-slate-900 py-2 font-semibold text-white disabled:opacity-60">
+                {resendLoading ? text.resending : text.resendEmail}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function LoginPage() {
-    return (
-        <Suspense fallback={null}>
-            <LoginForm />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
 }
