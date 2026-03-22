@@ -22,6 +22,7 @@ import {
   Server,
   type LucideIcon,
   MessageCircle,
+  Calendar,
 } from "lucide-react";
 
 import {
@@ -64,7 +65,7 @@ type MenuItemType = {
 
 const menuItems: MenuItemType[] = [
   {
-    title: "Nguyện: Admin Dashboard",
+    title: "Admin Dashboard",
     url: "/admin/dashboard",
     icon: TrendingUp,
   },
@@ -100,7 +101,7 @@ const menuItems: MenuItemType[] = [
     ],
   },
   {
-    title: "Quản lý lịch làm việc",
+    title: "Quản lý lịch làm việc nhân viên",
     url: "/admin/staff-schedule",
     icon: Workflow,
   },
@@ -127,10 +128,10 @@ const menuItems: MenuItemType[] = [
   {
     title: "Quản lý đặt lịch spa",
     url: "/admin/spa-bookings",
-    icon: ImageIcon,
+    icon: Calendar,
   },
   {
-    title: "Minh: Quản lý orders",
+    title: "Quản lý đơn hàng",
     url: "/admin/orders",
     icon: ShoppingCart,
   },
