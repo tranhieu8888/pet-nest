@@ -24,6 +24,7 @@ interface ModalCoreProps {
   cancelText?: string;
   type?: "danger" | "info" | "success" | "warning";
   isLoading?: boolean;
+  children?: React.ReactNode;
 }
 
 export const ModalCore: React.FC<ModalCoreProps> = ({
@@ -36,6 +37,7 @@ export const ModalCore: React.FC<ModalCoreProps> = ({
   cancelText = "Hủy bỏ",
   type = "info",
   isLoading = false,
+  children,
 }) => {
   const getTypeStyles = () => {
     switch (type) {
@@ -65,23 +67,41 @@ export const ModalCore: React.FC<ModalCoreProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[440px] rounded-4xl p-0 overflow-hidden border-0 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-8 flex flex-col items-center text-center gap-6">
-          <div className={cn(
-            "p-5 rounded-full transition-all duration-500 scale-100 hover:scale-110",
-            getTypeStyles()
-          )}>
-            {getIcon()}
-          </div>
-          
-          <div className="space-y-3">
-            <DialogTitle className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
-              {title}
-            </DialogTitle>
-            <DialogDescription className="text-gray-500 text-base leading-relaxed px-2">
-              {description}
-            </DialogDescription>
-          </div>
+      <DialogContent className="sm:max-w-[500px] rounded-4xl p-0 overflow-hidden border-0 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <div className="p-8 flex flex-col gap-6">
+          {children ? (
+            <div className="space-y-4">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
+                  {title}
+                </DialogTitle>
+                {description && (
+                  <DialogDescription className="text-gray-500 text-base leading-relaxed px-2">
+                    {description}
+                  </DialogDescription>
+                )}
+              </DialogHeader>
+              <div className="mt-2">{children}</div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center text-center gap-6">
+              <div className={cn(
+                "p-5 rounded-full transition-all duration-500 scale-100 hover:scale-110",
+                getTypeStyles()
+              )}>
+                {getIcon()}
+              </div>
+              
+              <div className="space-y-3">
+                <DialogTitle className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
+                  {title}
+                </DialogTitle>
+                <DialogDescription className="text-gray-500 text-base leading-relaxed px-2">
+                  {description}
+                </DialogDescription>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="bg-gray-50 p-6 flex flex-col sm:flex-row gap-3">
