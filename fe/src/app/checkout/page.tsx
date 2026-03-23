@@ -56,6 +56,11 @@ export default function CheckoutPage() {
   const [provinces, setProvinces] = useState<any[]>([])
   const [wards, setWards] = useState<any[]>([])
 
+  const [voucherCode, setVoucherCode] = useState("")
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null)
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false)
+  const [voucherError, setVoucherError] = useState("")
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -122,10 +127,46 @@ export default function CheckoutPage() {
     return 0;
   }
 
-  const calculateTotal = () => calculateSubTotal() + getShippingFee()
+  const getVoucherDiscount = () => {
+    return appliedVoucher ? appliedVoucher.discountValue : 0;
+  }
+
+  const calculateTotal = () => Math.max(0, calculateSubTotal() + getShippingFee() - getVoucherDiscount())
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Math.round(price)) + "đ"
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError("Vui lòng nhập mã voucher");
+      return;
+    }
+    
+    try {
+      setIsApplyingVoucher(true);
+      setVoucherError("");
+      const subTotal = calculateSubTotal();
+      
+      const res = await axiosInstance.post("/vouchers/validate", {
+        code: voucherCode,
+        orderValue: subTotal
+      });
+      
+      setAppliedVoucher(res.data.voucher);
+      setVoucherError("");
+    } catch (err: any) {
+      setAppliedVoucher(null);
+      setVoucherError(err.response?.data?.message || err.response?.data?.errors?.code || "Mã voucher không hợp lệ");
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  }
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode("");
+    setVoucherError("");
+  }
 
   const handlePlaceOrder = async () => {
     if (!name.trim()) return alert("Vui lòng nhập tên người nhận")
@@ -154,6 +195,7 @@ export default function CheckoutPage() {
         name,
         email,
         paymentMethod,
+        voucherCode: appliedVoucher ? appliedVoucher.code : undefined,
       }
 
       const response = await api.post("/orders", payload)
@@ -413,7 +455,7 @@ export default function CheckoutPage() {
                     <div key={item._id} className="flex gap-4 group">
                       <div className="relative flex-shrink-0">
                         <img
-                          src={item.product.selectedVariant?.images?.[0]?.url || "/placeholder.svg"}
+                          src={(item.product as any).selectedVariant?.images?.[0]?.url || (item.product as any).images?.[0] || "/placeholder.svg"}
                           alt={item.product.name}
                           className="w-16 h-16 rounded-xl object-cover border border-gray-100 shadow-sm group-hover:shadow transition-all"
                         />
@@ -427,7 +469,7 @@ export default function CheckoutPage() {
                         </h4>
                         <div className="text-[13px] text-gray-500 font-medium mb-1.5 flex flex-wrap gap-1">
                           {item.product.selectedVariant?.attributes
-                            ?.map((a) => (
+                            ?.map((a: any) => (
                               <span key={a.value} className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] text-gray-600 lowercase first-letter:uppercase">{a.value}</span>
                             ))}
                         </div>
@@ -439,7 +481,37 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                <div className="p-6 bg-gray-50/50 border-t border-gray-100 space-y-4 rounded-b-[2rem]">
+                {/* VOUCHER SECTION */}
+                <div className="px-6 pb-6">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-gray-700 font-bold text-sm">Mã Tích Lũy / Phiếu giảm giá</Label>
+                    <div className="flex gap-2">
+                       <Input 
+                         value={voucherCode}
+                         onChange={(e) => {
+                           setVoucherCode(e.target.value.toUpperCase());
+                           setVoucherError("");
+                         }}
+                         disabled={!!appliedVoucher || isApplyingVoucher}
+                         placeholder="Nhập mã voucher..." 
+                         className="h-11 rounded-xl uppercase"
+                       />
+                       {appliedVoucher ? (
+                         <Button type="button" variant="destructive" className="h-11 rounded-xl px-4 w-[100px] shrink-0" onClick={handleRemoveVoucher}>
+                            Hủy
+                         </Button>
+                       ) : (
+                         <Button type="button" onClick={handleApplyVoucher} disabled={isApplyingVoucher || !voucherCode.trim()} className="h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-5 w-[100px] shrink-0 font-medium">
+                            {isApplyingVoucher ? "Đợi..." : "Áp dụng"}
+                         </Button>
+                       )}
+                    </div>
+                    {voucherError && <p className="text-red-500 text-xs font-semibold">{voucherError}</p>}
+                    {appliedVoucher && <p className="text-emerald-500 text-xs font-semibold">Ting ting! Áp dụng giảm thêm {formatPrice(appliedVoucher.discountValue)}</p>}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-gray-50/50 border-t border-gray-100 space-y-3.5 rounded-b-[2rem]">
                   <div className="flex justify-between text-gray-600 font-medium text-sm">
                     <span>Giá sản phẩm</span>
                     <span className="text-gray-900">{formatPrice(calculateSubTotal())}</span>
@@ -452,6 +524,12 @@ export default function CheckoutPage() {
                       <span className="text-gray-400 text-xs italic">-</span>
                     )}
                   </div>
+                  {getVoucherDiscount() > 0 && (
+                    <div className="flex justify-between items-center text-emerald-600 font-medium text-sm">
+                      <span>Giảm giá (Voucher)</span>
+                      <span className="font-bold">-{formatPrice(getVoucherDiscount())}</span>
+                    </div>
+                  )}
 
                   <Separator className="my-2 bg-gray-200" />
 
