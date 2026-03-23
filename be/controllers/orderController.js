@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
 exports.createOrder = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { cartItemIds, address, paymentMethod, phone } = req.body;
+        const { cartItemIds, address, paymentMethod, phone, voucherCode } = req.body;
 
         if (!cartItemIds || !cartItemIds.length || !address || !paymentMethod) {
             return res.status(400).json({ success: false, message: 'Thiếu thông tin đặt hàng.' });
@@ -72,16 +72,52 @@ exports.createOrder = async (req, res) => {
             newOrderItems.push(orderItem._id);
         }
 
+        const shippingFee = address && (address.province || address.district || address.ward || address.street) ? 30000 : 0;
+        
+        let discount = 0;
+        let voucherDoc = null;
+
+        if (voucherCode) {
+            const Voucher = require('../models/voucherModel');
+            voucherDoc = await Voucher.findOne({ code: String(voucherCode).trim().toUpperCase(), isDelete: false });
+            
+            if (!voucherDoc) {
+                return res.status(400).json({ success: false, message: 'Mã voucher không tồn tại.' });
+            }
+
+            const now = new Date();
+            if (now < voucherDoc.validFrom || now > voucherDoc.validTo) {
+                return res.status(400).json({ success: false, message: 'Voucher đã hết hạn hoặc chưa đến thời gian sử dụng.' });
+            }
+
+            if (voucherDoc.usageLimit > 0 && voucherDoc.usedCount >= voucherDoc.usageLimit) {
+                return res.status(400).json({ success: false, message: 'Voucher đã hết lượt sử dụng.' });
+            }
+
+            if (total < (voucherDoc.minOrderValue || 0)) {
+                return res.status(400).json({ success: false, message: `Đơn hàng chưa đạt giá trị tối thiểu ${voucherDoc.minOrderValue}đ để sử dụng voucher này.` });
+            }
+
+            const rawDiscount = (total * (voucherDoc.discountPercent || 0)) / 100;
+            discount = Math.min(rawDiscount, (voucherDoc.maxDiscountAmount || 0));
+
+            // Tăng số lượt sử dụng voucher
+            voucherDoc.usedCount += 1;
+            await voucherDoc.save();
+        }
+
+        const finalTotal = Math.max(0, total + shippingFee - discount);
         const orderCode = Date.now();
 
         const order = new Order({
             userId,
             OrderItems: newOrderItems,
-            total,
+            total: finalTotal,
             address: orderAddress,
             paymentMethod,
             status: 'processing',
-            payOSOrderCode: orderCode
+            payOSOrderCode: orderCode,
+            voucher: voucherDoc ? [voucherDoc._id] : undefined
         });
 
         await order.save();
@@ -99,7 +135,7 @@ exports.createOrder = async (req, res) => {
             const YOUR_DOMAIN = process.env.BASE_URL || 'http://localhost:3000';
             const checkoutData = {
                 orderCode: orderCode,
-                amount: total,
+                amount: finalTotal,
                 description: `Thanh toan SP ${order._id.toString().substring(0, 6)}`,
                 returnUrl: `${YOUR_DOMAIN}/order-success?orderId=${order._id}`,
                 cancelUrl: `${YOUR_DOMAIN}/checkout?payment=cancelled`
