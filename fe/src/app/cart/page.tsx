@@ -25,6 +25,10 @@ interface CartItem {
     _id: string
     name: string
     description: string
+    category: {
+      _id: string
+      name: string
+    }[]
     selectedVariant: {
       _id: string
       price: number
@@ -33,7 +37,9 @@ interface CartItem {
         url: string
       }[]
       attributes: {
+        _id: string
         value: string
+        parentId: string | null
       }[]
       importedQuantity?: number
       orderedQuantity?: number
@@ -294,8 +300,15 @@ export default function ShoppingCart() {
                       {/* Thông tin */}
                       <div className="flex-1 min-w-0 py-1 pb-2 flex flex-col justify-between h-full">
                         <div>
-                           <div className="flex justify-between items-start">
-                              <h3 className="font-bold text-gray-900 text-base sm:text-lg lg:text-[19px] leading-tight mb-2 line-clamp-2 pr-4">{item.product.name}</h3>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {item.product.category?.map((cat) => (
+                                <span key={cat._id} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase tracking-tight">
+                                  {cat.name}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex justify-between items-start">
+                               <h3 className="font-bold text-gray-900 text-base sm:text-lg lg:text-[19px] leading-tight mb-2 line-clamp-2 pr-4">{item.product.name}</h3>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -306,13 +319,21 @@ export default function ShoppingCart() {
                               </Button>
                            </div>
                            
-                           <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium mb-3">
-                             {item.product.selectedVariant.attributes.map((attr, index) => (
-                               <span key={index} className="bg-gray-100/80 px-2.5 py-1 rounded-md border border-gray-200/60 lowercase first-letter:uppercase">
-                                 {attr.value}
-                               </span>
-                             ))}
-                           </div>
+                            <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium mb-3">
+                             {item.product.selectedVariant.attributes
+                               // Chỉ hiển thị các attribute có parentId (là các giá trị được chọn)
+                               // Nếu có cả parent trong list (parentId === null), ta dùng nó để làm label
+                               .filter(attr => attr.parentId !== null)
+                               .map((attr, index) => {
+                                 const parent = item.product.selectedVariant.attributes.find(p => p._id === attr.parentId);
+                                 return (
+                                   <span key={index} className="bg-gray-100/80 px-2.5 py-1 rounded-lg border border-gray-200/60 flex items-center gap-1.5 shadow-sm">
+                                     {parent && <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{parent.value}:</span>}
+                                     <span className="text-gray-700 font-bold lowercase first-letter:uppercase">{attr.value}</span>
+                                   </span>
+                                 );
+                               })}
+                            </div>
                         </div>
 
                         {/* Controls & Price */}

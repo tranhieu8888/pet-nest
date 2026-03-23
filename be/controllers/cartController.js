@@ -90,11 +90,19 @@ await newCartItem.save();
                 populate: [
                     {
                         path: 'productId',
-                        model: 'Product'
+                        model: 'Product',
+                        populate: {
+                            path: 'category',
+                            model: 'Category'
+                        }
                     },
                     {
                         path: 'productVariantId',
-                        model: 'ProductVariant'
+                        model: 'ProductVariant',
+                        populate: {
+                            path: 'attribute',
+                            model: 'Attribute'
+                        }
                     }
                 ]
             });
@@ -176,7 +184,11 @@ const updateCart = async (req, res) => {
                 path: 'cartItems',
                 populate: {
                     path: 'productId',
-                    model: 'Product'
+                    model: 'Product',
+                    populate: {
+                        path: 'category',
+                        model: 'Category'
+                    }
                 }
             });
 
@@ -215,7 +227,12 @@ const getCart = async (req, res) => {
                     {
                         path: 'productId',
                         model: 'Product',
-                        select: 'name description price images variants'
+                        select: 'name description price images variants category',
+                        populate: {
+                            path: 'category',
+                            model: 'Category',
+                            select: 'name'
+                        }
                     },
                     {
                         path: 'productVariantId',
@@ -224,7 +241,7 @@ const getCart = async (req, res) => {
                         populate: {
                             path: 'attribute',
                             model: 'Attribute',
-                            select: 'value description'
+                            select: 'value description parentId'
                         }
                     }
                 ]
@@ -313,11 +330,17 @@ _id: '$orderItemDetail.productVariant',
                                 orderedQuantity: ordered,
                                 availableQuantity: available,
                                 attributes: cartItem.productVariantId.attribute.map(attr => ({
+                                    _id: attr._id,
                                     value: attr.value,
-                                    description: attr.description
+                                    description: attr.description,
+                                    parentId: attr.parentId
                                 }))
                             }
                         }),
+                        category: cartItem.productId.category ? cartItem.productId.category.map(cat => ({
+                            _id: cat._id,
+                            name: cat.name
+                        })) : [],
                         variants: cartItem.productId.variants
                     }
                 };

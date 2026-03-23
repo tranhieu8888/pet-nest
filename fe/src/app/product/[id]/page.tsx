@@ -130,13 +130,12 @@ function StarRating({
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`${cls} transition-colors ${
-            star <= Math.floor(rating)
+          className={`${cls} transition-colors ${star <= Math.floor(rating)
               ? "fill-amber-400 text-amber-400"
               : star <= rating
                 ? "fill-amber-400/50 text-amber-400"
                 : "fill-gray-200 text-gray-200"
-          }`}
+            }`}
         />
       ))}
     </div>
@@ -232,7 +231,7 @@ export default function ProductPage() {
       try {
         const response = await api.get(`/reviews/unreviewed/${params.id}`);
         if (response.data.success) setUnreviewedData(response.data.data);
-      } catch {}
+      } catch { }
     };
     if (params.id) fetchUnreviewedProducts();
   }, [params.id]);
@@ -246,7 +245,7 @@ export default function ProductPage() {
             res.data.products.some((p: any) => p._id === product?._id),
           );
         }
-      } catch {}
+      } catch { }
     };
     if (product?._id) fetchWishlist();
   }, [product?._id]);
@@ -323,7 +322,7 @@ export default function ProductPage() {
         await api.post("/wishlist/add", { productId: product._id });
         setIsWishlisted(true);
       }
-    } catch {}
+    } catch { }
     setWishlistLoading(false);
   };
 
@@ -624,11 +623,10 @@ export default function ProductPage() {
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                      selectedImage === i
+                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${selectedImage === i
                         ? "border-primary shadow-md scale-105"
                         : "border-transparent hover:border-gray-300 opacity-60 hover:opacity-100"
-                    }`}
+                      }`}
                   >
                     <Image
                       src={img.url || "/placeholder.svg"}
@@ -718,11 +716,10 @@ export default function ProductPage() {
                     <button
                       key={opt.value}
                       onClick={() => setSelectedVariant(opt.variantIndex)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
-                        selectedVariant === opt.variantIndex
+                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${selectedVariant === opt.variantIndex
                           ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
                           : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
-                      }`}
+                        }`}
                     >
                       {opt.value}
                     </button>
@@ -771,7 +768,7 @@ export default function ProductPage() {
                     className={cn(
                       "flex-1 h-[52px]",
                       addToCartSuccess &&
-                        "bg-emerald-500 border-emerald-500 text-white shadow-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600",
+                      "bg-emerald-500 border-emerald-500 text-white shadow-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600",
                     )}
                     leftIcon={
                       !addToCartSuccess && <ShoppingCart className="w-4 h-4" />
@@ -825,7 +822,7 @@ export default function ProductPage() {
                     className={cn(
                       "w-[52px] h-[52px] p-0 shrink-0",
                       isWishlisted &&
-                        "text-red-500 border-red-100 bg-red-50 hover:bg-red-100 hover:border-red-200",
+                      "text-red-500 border-red-100 bg-red-50 hover:bg-red-100 hover:border-red-200",
                     )}
                     title={isWishlisted ? "Đã yêu thích" : "Thêm vào yêu thích"}
                   >
@@ -882,11 +879,10 @@ export default function ProductPage() {
                   <button
                     onClick={handleToggleWishlist}
                     disabled={wishlistLoading}
-                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                      isWishlisted
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isWishlisted
                         ? "text-red-500"
                         : "text-gray-400 hover:text-red-400"
-                    }`}
+                      }`}
                   >
                     <Heart
                       className={`w-4 h-4 ${isWishlisted ? "fill-red-500" : ""}`}
@@ -1000,11 +996,10 @@ export default function ProductPage() {
                             className="focus:outline-none transition-transform hover:scale-110"
                           >
                             <Star
-                              className={`w-9 h-9 transition-colors ${
-                                star <= (hoveredStar || reviewForm.rating)
+                              className={`w-9 h-9 transition-colors ${star <= (hoveredStar || reviewForm.rating)
                                   ? "fill-amber-400 text-amber-400"
                                   : "text-gray-200 fill-gray-200"
-                              }`}
+                                }`}
                             />
                           </button>
                         ))}
@@ -1152,11 +1147,10 @@ export default function ProductPage() {
                 onClick={() =>
                   setActiveTab(tab.key as "description" | "reviews")
                 }
-                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
-                  activeTab === tab.key
+                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.key
                     ? "border-primary text-primary"
                     : "border-transparent text-gray-400 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -1314,14 +1308,14 @@ export default function ProductPage() {
                                   review.userId ||
                                   review.user?._id) ||
                                 currentUser?.role === 0) && (
-                                <button
-                                  onClick={() => handleDeleteReview(review._id)}
-                                  className="text-red-500 hover:text-red-700 transition-colors p-1"
-                                  title="Xóa đánh giá"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
+                                  <button
+                                    onClick={() => handleDeleteReview(review._id)}
+                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                    title="Xóa đánh giá"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
                             </div>
                             <div className="flex items-center gap-2">
                               <StarRating rating={review.rating} size="sm" />

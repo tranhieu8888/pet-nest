@@ -464,14 +464,28 @@ export default function CheckoutPage() {
                         </span>
                       </div>
                       <div className="flex-1 min-w-0 pr-1">
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {(item.product as any).category?.map((cat: any) => (
+                            <span key={cat._id} className="text-[9px] font-extrabold text-blue-500 bg-blue-50/50 px-1.5 py-0 rounded border border-blue-100/50 uppercase tracking-tighter">
+                              {cat.name}
+                            </span>
+                          ))}
+                        </div>
                         <h4 className="text-[15px] font-bold text-gray-900 line-clamp-2 leading-tight mb-1">
                           {item.product.name}
                         </h4>
                         <div className="text-[13px] text-gray-500 font-medium mb-1.5 flex flex-wrap gap-1">
                           {item.product.selectedVariant?.attributes
-                            ?.map((a: any) => (
-                              <span key={a.value} className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] text-gray-600 lowercase first-letter:uppercase">{a.value}</span>
-                            ))}
+                            ?.filter((a: any) => a.parentId !== null)
+                            ?.map((a: any) => {
+                              const parent = item.product.selectedVariant.attributes.find((p: any) => p._id === a.parentId);
+                              return (
+                                <span key={a._id} className="bg-gray-50 px-1.5 py-0.5 rounded text-[11px] text-gray-600 border border-gray-100 flex items-center gap-1">
+                                  {parent && <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{parent.value}:</span>}
+                                  <span className="lowercase first-letter:uppercase">{a.value}</span>
+                                </span>
+                              )
+                            })}
                         </div>
                         <div className="text-sm font-black text-emerald-600">
                           {formatPrice(item.product.selectedVariant.price * item.quantity)}
