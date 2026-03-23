@@ -71,7 +71,15 @@ function OrderSuccessContent() {
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500">Trạng thái</span>
-                <span className="font-semibold text-amber-600">Đang xử lý</span>
+                <span className={`font-semibold ${
+                  order.status === 'completed' ? 'text-emerald-600' :
+                  order.status === 'cancelled' ? 'text-red-600' :
+                  order.status === 'shipping' ? 'text-blue-600' : 'text-amber-600'
+                }`}>
+                  {order.status === 'completed' ? 'Hoàn thành' :
+                   order.status === 'cancelled' ? 'Đã hủy' :
+                   order.status === 'shipping' ? 'Đang giao hàng' : 'Đang xử lý'}
+                </span>
               </div>
               <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-gray-600 font-medium">Tổng tiền</span>

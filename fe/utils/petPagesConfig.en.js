@@ -359,6 +359,21 @@ const pagesConfig = {
       short: "P",
       full: "Pet Nest"
     },
+    spa: {
+      trigger: "Spa Services",
+      title: "Pet Spa Services",
+      activeCount: "{count} services active",
+      loading: "Loading services...",
+      error: "Error fetching services",
+      noServices: "No services available",
+      categories: {
+        spa: "General Spa",
+        cleaning: "Cleaning",
+        grooming: "Grooming",
+        coloring: "Hair Coloring",
+      },
+      suitableFor: "Suitable for pets needing {category}"
+    },
     search: {
       placeholder: "Search for products, brands, and more...",
       mobilePlaceholder: "Search for products..."
@@ -1256,6 +1271,39 @@ const pagesConfig = {
     manageCategory: "Manage Category",
     manageAttribute: "Manage Attribute",
     search: "Search"
+  },
+  orderHistory: {
+    title: "My Orders",
+    description: "View and track your order history",
+    searchPlaceholder: "Search by order ID, product name...",
+    allStatus: "All status",
+    noOrders: "You have no orders yet",
+    loading: "Loading data...",
+    table: {
+      orderId: "Order ID",
+      date: "Order Date",
+      total: "Total",
+      status: "Status",
+      actions: "Actions",
+      viewDetails: "Details"
+    },
+    status: {
+      pending: "Pending Payment",
+      processing: "Processing",
+      shipping: "Shipping",
+      completed: "Completed",
+      cancelled: "Cancelled",
+      returned: "Returned"
+    },
+    pagination: {
+      previous: "Previous",
+      next: "Next",
+      showing: "Showing {start} - {end} / {total} orders"
+    },
+    item: {
+      quantity: "Quantity: {count}",
+      price: "{price}₫"
+    }
   }
 };
 

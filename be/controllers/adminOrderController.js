@@ -183,6 +183,39 @@ const updateOrderStatus = async (req, res) => {
     order.status = status;
     order.updateAt = Date.now();
     await order.save();
+
+    // 4. Create Notification and Emit via Socket
+    try {
+      const { getIO } = require("../config/socket.io");
+      const io = getIO();
+      const Notification = require("../models/notificationModel");
+
+      // Optional helper for Vietnamese status label
+      const statusLabels = {
+        processing: "đang xử lý",
+        shipping: "đang giao hàng",
+        completed: "đã hoàn thành",
+        cancelled: "đã bị hủy",
+      };
+
+      const newNotification = new Notification({
+        userId: order.userId,
+        orderId: order._id,
+        title: "Cập nhật đơn hàng",
+        description: `Đơn hàng #${order._id.toString().slice(-8).toUpperCase()} ${statusLabels[status] || status}.`,
+        type: "order-update",
+        isRead: false,
+      });
+
+      await newNotification.save();
+      
+      // Emit to the user's room
+      if (io) {
+        io.to(order.userId.toString()).emit("notification", newNotification);
+      }
+    } catch (notifError) {
+      console.error("Lỗi khi gửi thông báo cập nhật đơn hàng:", notifError);
+    }
     
     res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
   } catch (error) {

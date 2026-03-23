@@ -361,6 +361,21 @@ const pagesConfig = {
       short: "P",
       full: "Pet Nest"
     },
+    spa: {
+      trigger: "Dịch vụ Spa",
+      title: "Dịch vụ Spa cho thú cưng",
+      activeCount: "{count} dịch vụ đang hoạt động",
+      loading: "Đang tải dịch vụ...",
+      error: "Lỗi lấy dịch vụ spa",
+      noServices: "Chưa có dịch vụ nào",
+      categories: {
+        spa: "Spa tổng quát",
+        cleaning: "Vệ sinh",
+        grooming: "Tạo kiểu",
+        coloring: "Nhuộm lông",
+      },
+      suitableFor: "Phù hợp cho pet cần {category}"
+    },
     search: {
       placeholder: "Tìm kiếm sản phẩm, thương hiệu và nhiều hơn nữa...",
       mobilePlaceholder: "Tìm kiếm sản phẩm..."
@@ -1259,6 +1274,39 @@ const pagesConfig = {
     manageAttribute: "Quản lý Thuộc tính",
     settings: "Cài đặt",
     search: "Tìm kiếm"
+  },
+  orderHistory: {
+    title: "Đơn hàng của tôi",
+    description: "Xem và theo dõi lịch sử đơn hàng của bạn",
+    searchPlaceholder: "Tìm kiếm theo mã đơn hàng, tên sản phẩm...",
+    allStatus: "Tất cả trạng thái",
+    noOrders: "Bạn chưa có đơn hàng nào",
+    loading: "Đang tải dữ liệu...",
+    table: {
+      orderId: "Mã đơn hàng",
+      date: "Ngày đặt",
+      total: "Tổng tiền",
+      status: "Trạng thái",
+      actions: "Thao tác",
+      viewDetails: "Chi tiết"
+    },
+    status: {
+      pending: "Chờ thanh toán",
+      processing: "Đang xử lý",
+      shipping: "Đang giao hàng",
+      completed: "Đã hoàn thành",
+      cancelled: "Đã hủy",
+      returned: "Đã trả hàng"
+    },
+    pagination: {
+      previous: "Trước",
+      next: "Tiếp",
+      showing: "Hiển thị {start} - {end} / {total} đơn hàng"
+    },
+    item: {
+      quantity: "Số lượng: {count}",
+      price: "{price}₫"
+    }
   }
 };
 
