@@ -160,7 +160,14 @@ const pagesConfig = {
         three: "3 Sao",
         two: "2 Sao",
         one: "1 Sao"
-      }
+      },
+      delete: "Xóa",
+      deleteConfirm: "Bạn có chắc chắn muốn xóa đánh giá này?",
+      successDelete: "Xóa đánh giá thành công!",
+      errorDelete: "Lỗi khi xóa đánh giá.",
+      noComments: "Không có bình luận nào.",
+      images: "Hình ảnh",
+      cancel: "Hủy"
     },
     pagination: {
       showing: "Hiển thị {start} đến {end} trong tổng số {total} sản phẩm",
@@ -238,6 +245,7 @@ const pagesConfig = {
       exportFail: "Xuất CSV thất bại: "
     },
     pagination: {
+      showing: "Hiển thị {start} đến {end} trong tổng số {total} người dùng",
       previous: "Trước",
       next: "Tiếp"
     },

@@ -15,6 +15,7 @@ import { ROLES } from "../../../../role.config";
 import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../../utils/petPagesConfig.vi';
 import enConfig from '../../../../utils/petPagesConfig.en';
+import { PaginationCore } from "@/components/core/PaginationCore";
 
 export interface Address {
     _id?: string;
@@ -698,61 +699,17 @@ export default function UserPage() {
                     )}
                 </DialogContent>
             </Dialog>
-            <Pagination
-                filteredUsers={filteredUsers}
+            <PaginationCore
+                totalItems={filteredUsers.length}
                 itemsPerPage={itemsPerPage}
                 currentPage={currentPage}
-                setItemsPerPage={setItemsPerPage}
-                setCurrentPage={setCurrentPage}
-                config={config}
+                onPageChange={setCurrentPage}
+                previousLabel={config.pagination.previous}
+                nextLabel={config.pagination.next}
+                showingLabel={config.pagination.showing}
             />
         </div>
     );
 }
 
-interface PaginationProps {
-    filteredUsers: User[];
-    itemsPerPage: number;
-    currentPage: number;
-    setItemsPerPage: (value: number) => void;
-    setCurrentPage: (value: number) => void;
-}
 
-function Pagination({ filteredUsers, itemsPerPage, currentPage, setItemsPerPage, setCurrentPage, config }: PaginationProps & { config: any }) {
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-
-    return (
-        <div className="flex items-center justify-between px-2 py-4">
-            <div className="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                    disabled={currentPage === 1}
-                >
-                    {config.pagination.previous}
-                </Button>
-                <div className="flex items-center gap-1">
-                    {[...Array(totalPages)].map((_, index) => (
-                        <Button
-                            key={index + 1}
-                            variant={currentPage === index + 1 ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentPage(index + 1)}
-                        >
-                            {index + 1}
-                        </Button>
-                    ))}
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                >
-                    {config.pagination.next}
-                </Button>
-            </div>
-        </div>
-    );
-}

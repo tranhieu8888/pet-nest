@@ -10,7 +10,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Info, AlertTriangle, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  AlertTriangle,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ButtonCore } from "./ButtonCore";
 
@@ -24,6 +30,7 @@ interface ModalCoreProps {
   cancelText?: string;
   type?: "danger" | "info" | "success" | "warning";
   isLoading?: boolean;
+  showCancel?: boolean;
   children?: React.ReactNode;
 }
 
@@ -37,6 +44,7 @@ export const ModalCore: React.FC<ModalCoreProps> = ({
   cancelText = "Hủy bỏ",
   type = "info",
   isLoading = false,
+  showCancel = true,
   children,
 }) => {
   const getTypeStyles = () => {
@@ -67,8 +75,8 @@ export const ModalCore: React.FC<ModalCoreProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] rounded-4xl p-0 overflow-hidden border-0 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-8 flex flex-col gap-6">
+      <DialogContent className="sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-0 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <div className="p-6 flex flex-col gap-4">
           {children ? (
             <div className="space-y-4">
               <DialogHeader>
@@ -85,13 +93,15 @@ export const ModalCore: React.FC<ModalCoreProps> = ({
             </div>
           ) : (
             <div className="flex flex-col items-center text-center gap-6">
-              <div className={cn(
-                "p-5 rounded-full transition-all duration-500 scale-100 hover:scale-110",
-                getTypeStyles()
-              )}>
+              <div
+                className={cn(
+                  "p-5 rounded-full transition-all duration-500 scale-100 hover:scale-110",
+                  getTypeStyles(),
+                )}
+              >
                 {getIcon()}
               </div>
-              
+
               <div className="space-y-3">
                 <DialogTitle className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
                   {title}
@@ -103,22 +113,24 @@ export const ModalCore: React.FC<ModalCoreProps> = ({
             </div>
           )}
         </div>
-        
-        <div className="bg-gray-50 p-6 flex flex-col sm:flex-row gap-3">
-          <ButtonCore
-            variantType="ghost"
-            onClick={onClose}
-            isLoading={isLoading}
-            className="flex-1 h-14 bg-white hover:shadow-sm"
-          >
-            {cancelText}
-          </ButtonCore>
+
+        <div className="bg-gray-50 p-5 flex flex-col sm:flex-row gap-3">
+          {showCancel && (
+            <ButtonCore
+              variantType="ghost"
+              onClick={onClose}
+              isLoading={isLoading}
+              className="flex-1 h-12 bg-white hover:shadow-sm"
+            >
+              {cancelText}
+            </ButtonCore>
+          )}
           <ButtonCore
             variantType={type}
             onClick={onConfirm}
             isLoading={isLoading}
             loadingText="Đang xử lý..."
-            className="flex-1 h-14"
+            className="flex-1 h-12"
           >
             {confirmText}
           </ButtonCore>
