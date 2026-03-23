@@ -158,7 +158,14 @@ const pagesConfig = {
         three: "3 Stars",
         two: "2 Stars",
         one: "1 Star"
-      }
+      },
+      delete: "Delete",
+      deleteConfirm: "Are you sure you want to delete this review?",
+      successDelete: "Review deleted successfully!",
+      errorDelete: "Error deleting review.",
+      noComments: "No comments available.",
+      images: "Images",
+      cancel: "Cancel"
     },
     pagination: {
       showing: "Showing {start} to {end} of {total} products",
@@ -236,6 +243,7 @@ const pagesConfig = {
       exportFail: "Export failed: "
     },
     pagination: {
+      showing: "Showing {start} to {end} of {total} users",
       previous: "Previous",
       next: "Next"
     },
