@@ -22,4 +22,7 @@ router.get(
 // GET /api/reviews/average/:productId
 router.get("/average/:productId", reviewController.getAverageRating);
 
+// DELETE /api/reviews/:id
+router.delete("/:id", verifyToken, reviewController.deleteReview);
+
 module.exports = router;

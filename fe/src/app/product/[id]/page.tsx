@@ -17,6 +17,7 @@ import {
   Minus,
   Plus,
   ZoomIn,
+  Trash2,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
@@ -40,6 +41,7 @@ import { api } from "../../../../utils/axios";
 import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../../utils/petPagesConfig.vi";
 import enConfig from "../../../../utils/petPagesConfig.en";
+import { ModalCore } from "@/components/core/ModalCore";
 
 interface Product {
   _id: string;
@@ -161,6 +163,29 @@ export default function ProductPage() {
   const [hoveredStar, setHoveredStar] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // States for deletion modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (token) {
+          const response = await api.get("/auth/myprofile");
+          if (response.data.success) {
+            setCurrentUser(response.data.user);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -333,6 +358,37 @@ export default function ProductPage() {
     }
   };
 
+  const handleDeleteReview = async (reviewId: string) => {
+    setReviewToDelete(reviewId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!reviewToDelete) return;
+    try {
+      setDeletingLoading(true);
+      const response = await api.delete(`/reviews/${reviewToDelete}`);
+      if (response.data.success) {
+        setProduct((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            reviews: prev.reviews.filter((r) => r._id !== reviewToDelete),
+            totalReviews: Math.max(0, prev.totalReviews - 1),
+          };
+        });
+        setIsDeleteModalOpen(false);
+        setReviewToDelete(null);
+      } else {
+        alert(response.data.error || "Không thể xóa đánh giá");
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Lỗi khi xóa đánh giá");
+    } finally {
+      setDeletingLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString(lang === "vi" ? "vi-VN" : "en-US", {
       year: "numeric", month: "long", day: "numeric",
@@ -485,7 +541,7 @@ export default function ProductPage() {
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${selectedImage === i
+                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${selectedImage === i
                       ? "border-primary shadow-md scale-105"
                       : "border-transparent hover:border-gray-300 opacity-60 hover:opacity-100"
                       }`}
@@ -591,7 +647,7 @@ export default function ProductPage() {
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="px-5 py-2 font-bold text-gray-900 min-w-[3rem] text-center border-x-2 border-gray-200">
+                    <span className="px-5 py-2 font-bold text-gray-900 min-w-12 text-center border-x-2 border-gray-200">
                       {quantity}
                     </span>
                     <button
@@ -751,7 +807,7 @@ export default function ProductPage() {
               </div>
               <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
                 <DialogTrigger asChild>
-                  <button className="relative flex-shrink-0 bg-white text-violet-700 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
+                  <button className="relative shrink-0 bg-white text-violet-700 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                     {config.unreviewedSection.writeReview}
                   </button>
                 </DialogTrigger>
@@ -910,7 +966,7 @@ export default function ProductPage() {
                   { icon: RotateCcw, label: "Đổi trả 30 ngày", desc: "Hoàn tiền nếu không hài lòng", color: "text-violet-600", bg: "bg-violet-50" },
                 ].map(({ icon: Icon, label, desc, color, bg }) => (
                   <div key={label} className={`flex items-start gap-3 ${bg} rounded-2xl p-4`}>
-                    <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${color}`} />
+                    <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${color}`} />
                     <div>
                       <p className={`text-sm font-semibold ${color}`}>{label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
@@ -945,7 +1001,7 @@ export default function ProductPage() {
                         {ratingCounts.map(({ star, count }) => (
                           <div key={star} className="flex items-center gap-2 text-sm">
                             <span className="text-gray-500 w-4 text-right">{star}</span>
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
                             <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-amber-400 transition-all"
@@ -974,11 +1030,23 @@ export default function ProductPage() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-gray-900">{review.user?.name}</span>
-                              <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium border border-emerald-100">
-                                {config.verifiedPurchase}
-                              </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900">{review.userId?.name || review.user?.name || "Người dùng"}</span>
+                                <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium border border-emerald-100">
+                                  {config.verifiedPurchase}
+                                </span>
+                              </div>
+                              
+                              {(currentUser?._id === (review.userId?._id || review.userId || review.user?._id) || currentUser?.role === 0) && (
+                                <button
+                                  onClick={() => handleDeleteReview(review._id)}
+                                  className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                  title="Xóa đánh giá"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <StarRating rating={review.rating} size="sm" />
@@ -1008,6 +1076,18 @@ export default function ProductPage() {
           )}
         </div>
       </div>
+
+      <ModalCore
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteReview}
+        title="Xóa đánh giá"
+        description="Bạn có thực sự muốn xóa đánh giá này? Hành động này không thể hoàn tác."
+        confirmText="Xác nhận xóa"
+        cancelText="Để tôi xem lại"
+        type="danger"
+        isLoading={deletingLoading}
+      />
     </div>
   );
 }
