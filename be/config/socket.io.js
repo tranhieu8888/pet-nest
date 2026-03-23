@@ -26,6 +26,11 @@ function setupSocket(server) {
       console.log("[Socket] User joined room:", socket.userId);
     });
 
+    socket.on("joinStaffCare", () => {
+      socket.join("staff-care");
+      console.log("[Socket] Staff joined room: staff-care");
+    });
+
     socket.on("disconnect", () => {
       if (socket.userId) {
         userSockets.delete(socket.userId);

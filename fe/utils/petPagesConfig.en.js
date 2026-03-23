@@ -294,6 +294,66 @@ const pagesConfig = {
     joinDate: "Join Date",
     save: "Save Changes"
   },
+  authPages: {
+    login: {
+      heroTitle: "Welcome back",
+      heroDescription: "Sign in to track your orders, book spa services, and get exclusive offers for your pet.",
+      title: "Sign in to your account",
+      subtitle: "Continue your pet care journey with Pet Nest",
+      email: "Email",
+      password: "Password",
+      rememberMe: "Remember me",
+      forgotPassword: "Forgot password?",
+      submit: "Sign in",
+      loading: "Signing in...",
+      backHome: "Back to homepage",
+      orLoginWith: "OR SIGN IN WITH",
+      noAccount: "Don’t have an account?",
+      registerNow: "Register now",
+      registerSuccessNotice: "Registration successful! Please verify your email before signing in.",
+      close: "Close",
+      notVerifiedTitle: "Account not verified",
+      notVerifiedDescription: "Your account has not been verified yet. Please check your email inbox to activate it.",
+      resendEmail: "Resend email",
+      resending: "Sending..."
+    },
+    register: {
+      heroTitle: "Start your journey with Pet Nest",
+      heroDescription: "Create an account to shop faster, book services easier, and unlock exclusive offers.",
+      title: "Create a new account",
+      subtitle: "Fill in your details to get started",
+      fullName: "Full name",
+      phone: "Phone number",
+      email: "Email",
+      password: "Password",
+      confirmPassword: "Confirm password",
+      submit: "Register",
+      loading: "Creating account...",
+      hasAccount: "Already have an account?",
+      loginNow: "Sign in now",
+      success: "Registration successful! Please verify your email before signing in. Redirecting...",
+      passwordRuleTitle: "Password should include:",
+      ruleMinLength: "At least 6 characters",
+      ruleUpper: "At least 1 uppercase letter",
+      ruleLower: "At least 1 lowercase letter",
+      ruleNumber: "At least 1 number",
+      strengthWeak: "Weak",
+      strengthMedium: "Medium",
+      strengthStrong: "Strong",
+      errors: {
+        default: "Registration failed",
+        emailExists: "Email is already in use",
+        invalidPhone: "Invalid phone number",
+        weakPassword: "Password is too weak"
+      }
+    },
+    commonErrors: {
+      default: "Something went wrong, please try again later",
+      invalidCredentials: "Invalid email or password",
+      notVerified: "Your account is not verified",
+      googleFailed: "Google sign-in failed"
+    }
+  },
   header: {
     brand: {
       short: "P",

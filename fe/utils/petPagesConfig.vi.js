@@ -296,6 +296,66 @@ const pagesConfig = {
     joinDate: "Ngày tham gia",
     save: "Lưu thay đổi"
   },
+  authPages: {
+    login: {
+      heroTitle: "Chào mừng bạn quay lại",
+      heroDescription: "Đăng nhập để theo dõi đơn hàng, đặt lịch spa và nhận ưu đãi dành riêng cho thú cưng của bạn.",
+      title: "Đăng nhập tài khoản",
+      subtitle: "Tiếp tục hành trình chăm sóc boss cùng Pet Nest",
+      email: "Email",
+      password: "Mật khẩu",
+      rememberMe: "Ghi nhớ đăng nhập",
+      forgotPassword: "Quên mật khẩu?",
+      submit: "Đăng nhập",
+      loading: "Đang đăng nhập...",
+      backHome: "Quay lại trang chủ",
+      orLoginWith: "HOẶC ĐĂNG NHẬP VỚI",
+      noAccount: "Chưa có tài khoản?",
+      registerNow: "Đăng ký ngay",
+      registerSuccessNotice: "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.",
+      close: "Đóng",
+      notVerifiedTitle: "Tài khoản chưa được xác minh",
+      notVerifiedDescription: "Tài khoản của bạn chưa được xác minh email. Vui lòng kiểm tra hộp thư của bạn để kích hoạt.",
+      resendEmail: "Gửi lại email",
+      resending: "Đang gửi..."
+    },
+    register: {
+      heroTitle: "Bắt đầu hành trình cùng Pet Nest",
+      heroDescription: "Tạo tài khoản để mua sắm nhanh hơn, đặt lịch dịch vụ tiện hơn và nhận nhiều ưu đãi độc quyền.",
+      title: "Tạo tài khoản mới",
+      subtitle: "Điền thông tin để bắt đầu trải nghiệm",
+      fullName: "Họ và tên",
+      phone: "Số điện thoại",
+      email: "Email",
+      password: "Mật khẩu",
+      confirmPassword: "Xác nhận mật khẩu",
+      submit: "Đăng ký",
+      loading: "Đang tạo tài khoản...",
+      hasAccount: "Đã có tài khoản?",
+      loginNow: "Đăng nhập ngay",
+      success: "Đăng ký thành công! Vui lòng xác minh email để đăng nhập. Đang chuyển hướng...",
+      passwordRuleTitle: "Mật khẩu nên có:",
+      ruleMinLength: "Tối thiểu 6 ký tự",
+      ruleUpper: "Ít nhất 1 chữ hoa",
+      ruleLower: "Ít nhất 1 chữ thường",
+      ruleNumber: "Ít nhất 1 chữ số",
+      strengthWeak: "Yếu",
+      strengthMedium: "Trung bình",
+      strengthStrong: "Mạnh",
+      errors: {
+        default: "Đăng ký thất bại",
+        emailExists: "Email đã được sử dụng",
+        invalidPhone: "Số điện thoại không hợp lệ",
+        weakPassword: "Mật khẩu chưa đủ mạnh"
+      }
+    },
+    commonErrors: {
+      default: "Có lỗi xảy ra, vui lòng thử lại sau",
+      invalidCredentials: "Email hoặc mật khẩu không đúng",
+      notVerified: "Tài khoản chưa được xác minh email",
+      googleFailed: "Đăng nhập Google thất bại"
+    }
+  },
   header: {
     brand: {
       short: "P",

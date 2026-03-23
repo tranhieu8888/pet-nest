@@ -3,18 +3,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Truck, Clock, Shield, Heart } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  Truck,
+  Clock,
+  Shield,
+  Heart,
+  Sparkles,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Scissors,
+} from "lucide-react";
+import { useState, useEffect, type MouseEvent } from "react";
 import { api } from "../../../utils/axios";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { AxiosError } from "axios";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../utils/petPagesConfig.vi";
 import enConfig from "../../../utils/petPagesConfig.en";
-import ChatBot from "@/components/chatbot/ChatBot";
 
 interface Category {
   _id: string;
@@ -95,62 +102,83 @@ interface SpaService {
   image?: string;
 }
 
+function SectionHeading({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-10 text-center md:mb-12">
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 md:text-4xl">{title}</h2>
+      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 md:text-base">{description}</p>
+    </div>
+  );
+}
+
+function SectionSkeleton({ cols = 4 }: { cols?: 2 | 3 | 4 }) {
+  const gridCols = {
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+  };
+
+  return (
+    <div className={`grid gap-5 ${gridCols[cols]}`}>
+      {Array.from({ length: cols * 2 }).map((_, i) => (
+        <div key={i} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="aspect-[16/10] rounded-xl bg-slate-200" />
+          <div className="mt-4 h-4 w-2/3 rounded bg-slate-200" />
+          <div className="mt-2 h-3 w-full rounded bg-slate-100" />
+          <div className="mt-2 h-3 w-4/5 rounded bg-slate-100" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { lang } = useLanguage();
   const pagesConfig = lang === "vi" ? viConfig : enConfig;
   const homepageConfig = pagesConfig.homepage;
+
   const [popularCategories, setPopularCategories] = useState<Category[]>([]);
-  const [parentCategories, setParentCategories] = useState<ParentCategory[]>(
-    []
-  );
+  const [parentCategories, setParentCategories] = useState<ParentCategory[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [topSellingProducts, setTopSellingProducts] = useState<
-    TopSellingProduct[]
-  >([]);
+  const [topSellingProducts, setTopSellingProducts] = useState<TopSellingProduct[]>([]);
+  const [spaServices, setSpaServices] = useState<SpaService[]>([]);
+
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [activeSection, setActiveSection] = useState("banners");
+
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingParents, setIsLoadingParents] = useState(true);
   const [isLoadingBanners, setIsLoadingBanners] = useState(true);
   const [isLoadingTopSelling, setIsLoadingTopSelling] = useState(true);
+  const [isLoadingSpaServices, setIsLoadingSpaServices] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
   const [parentError, setParentError] = useState<string | null>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [topSellingError, setTopSellingError] = useState<string | null>(null);
-
-  const [spaServices, setSpaServices] = useState<SpaService[]>([]);
-  const [isLoadingSpaServices, setIsLoadingSpaServices] = useState(true);
   const [spaServicesError, setSpaServicesError] = useState<string | null>(null);
-  const now = new Date();
 
   useEffect(() => {
     const fetchPopularCategories = async () => {
       try {
         setIsLoading(true);
         const response = await api.get("/categories/popular");
-        // Ensure response.data is an array
-        const data = Array.isArray(response.data) ? response.data : [];
-        setPopularCategories(data as Category[]);
+        setPopularCategories(Array.isArray(response.data) ? response.data : []);
       } catch (err: unknown) {
-        console.error("Error fetching popular categories:", err);
         if (err instanceof AxiosError) {
-          setError(
-            err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching categories"
-          );
+          setError(err.response?.data?.message || err.message || "Failed to fetch categories");
         } else if (err instanceof Error) {
           setError(err.message);
         } else {
-          setError("An error occurred while fetching categories");
+          setError("Failed to fetch categories");
         }
-        // Set empty array on error to prevent map errors
         setPopularCategories([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchPopularCategories();
+    void fetchPopularCategories();
   }, []);
 
   useEffect(() => {
@@ -158,33 +186,22 @@ export default function HomePage() {
       try {
         setIsLoadingParents(true);
         const response = await api.get("/categories/parent");
-        // Ensure response.data is an array
-        const data = Array.isArray(response.data.data)
-          ? response.data.data
-          : [];
-
-        setParentCategories(data as ParentCategory[]);
+        setParentCategories(Array.isArray(response.data?.data) ? response.data.data : []);
       } catch (err: unknown) {
-        console.error("Error fetching parent categories:", err);
         if (err instanceof AxiosError) {
-          setParentError(
-            err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching parent categories"
-          );
+          setParentError(err.response?.data?.message || err.message || "Failed to fetch parent categories");
         } else if (err instanceof Error) {
           setParentError(err.message);
         } else {
-          setParentError("An error occurred while fetching parent categories");
+          setParentError("Failed to fetch parent categories");
         }
-        // Set empty array on error to prevent map errors
         setParentCategories([]);
       } finally {
         setIsLoadingParents(false);
       }
     };
 
-    fetchParentCategories();
+    void fetchParentCategories();
   }, []);
 
   useEffect(() => {
@@ -192,32 +209,23 @@ export default function HomePage() {
       try {
         setIsLoadingBanners(true);
         const response = await api.get("/banners");
-        // Ensure response.data is an array
-        const bannersData = Array.isArray(response.data) ? response.data : [];
-        // Filter active banners based on status and start date - end date
-        const activeBanners = bannersData.filter((banner) => {
+        const list = Array.isArray(response.data) ? response.data : [];
+        const now = new Date();
+        const active = list.filter((banner) => {
           if (banner.status !== "active") return false;
-
           const start = new Date(banner.startDate);
           const end = new Date(banner.endDate);
-
           return start <= now && end >= now;
         });
-        setBanners(activeBanners);
+        setBanners(active);
       } catch (err: unknown) {
-        console.error("Error fetching banners:", err);
         if (err instanceof AxiosError) {
-          setBannerError(
-            err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching banners"
-          );
+          setBannerError(err.response?.data?.message || err.message || "Failed to fetch banners");
         } else if (err instanceof Error) {
           setBannerError(err.message);
         } else {
-          setBannerError("An error occurred while fetching banners");
+          setBannerError("Failed to fetch banners");
         }
-        // Set empty array on error to prevent map errors
         setBanners([]);
       } finally {
         setIsLoadingBanners(false);
@@ -232,31 +240,19 @@ export default function HomePage() {
       try {
         setIsLoadingTopSelling(true);
         const response = await api.get("/products/best-selling");
-        if (response.data.success) {
-          // Ensure response.data.data is an array
-          const productsData = Array.isArray(response.data.data)
-            ? response.data.data
-            : [];
-          setTopSellingProducts(productsData);
+        if (response.data?.success) {
+          setTopSellingProducts(Array.isArray(response.data.data) ? response.data.data : []);
         } else {
-          throw new Error("Failed to fetch top selling products");
+          setTopSellingProducts([]);
         }
       } catch (err: unknown) {
-        console.error("Error fetching top selling products:", err);
         if (err instanceof AxiosError) {
-          setTopSellingError(
-            err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching top selling products"
-          );
+          setTopSellingError(err.response?.data?.message || err.message || "Failed to fetch best-selling products");
         } else if (err instanceof Error) {
           setTopSellingError(err.message);
         } else {
-          setTopSellingError(
-            "An error occurred while fetching top selling products"
-          );
+          setTopSellingError("Failed to fetch best-selling products");
         }
-        // Set empty array on error to prevent map errors
         setTopSellingProducts([]);
       } finally {
         setIsLoadingTopSelling(false);
@@ -271,30 +267,20 @@ export default function HomePage() {
       try {
         setIsLoadingSpaServices(true);
         const response = await api.get("/spa-services");
-
-        const servicesData = Array.isArray(response.data?.data)
+        const services = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
           ? response.data
           : [];
 
-        const activeServices = servicesData.filter(
-          (service: SpaService) => service.isActive
-        );
-
-        setSpaServices(activeServices);
+        setSpaServices(services.filter((service: SpaService) => service.isActive));
       } catch (err: unknown) {
-        console.error("Error fetching spa services:", err);
         if (err instanceof AxiosError) {
-          setSpaServicesError(
-            err.response?.data?.message ||
-              err.message ||
-              "An error occurred while fetching spa services"
-          );
+          setSpaServicesError(err.response?.data?.message || err.message || "Failed to fetch spa services");
         } else if (err instanceof Error) {
           setSpaServicesError(err.message);
         } else {
-          setSpaServicesError("An error occurred while fetching spa services");
+          setSpaServicesError("Failed to fetch spa services");
         }
         setSpaServices([]);
       } finally {
@@ -305,643 +291,579 @@ export default function HomePage() {
     void fetchSpaServices();
   }, []);
 
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible[0]?.target?.id) {
+          setActiveSection(visible[0].target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "-110px 0px -45% 0px",
+        threshold: [0.2, 0.4, 0.6],
+      }
+    );
+
+    quickNavItems.forEach((item) => {
+      const section = document.getElementById(item.id);
+      if (section) observer.observe(section);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleQuickNavClick = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    if (!target) return;
+
+    const headerOffset = 145;
+    const elementTop = target.getBoundingClientRect().top + window.pageYOffset;
+    const offsetTop = elementTop - headerOffset;
+
+    window.scrollTo({
+      top: offsetTop,
+      behavior: "smooth",
+    });
+
+    setActiveSection(id);
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <Header />
-      {/* Banner Carousel */}
-      <section className="relative w-full h-[600px] overflow-hidden bg-gradient-to-b from-gray-50 to-white">
-        {isLoadingBanners ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-pink-600 border-t-transparent"></div>
-          </div>
-        ) : bannerError ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="bg-red-50 p-6 rounded-xl shadow-lg">
-              <p className="text-red-600 text-lg font-medium">
-                Có lỗi xảy ra khi tải banner. Vui lòng thử lại sau.
+
+      <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900">
+        <div className="pointer-events-none absolute -top-24 right-10 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-10 h-60 w-60 rounded-full bg-cyan-400/20 blur-3xl" />
+
+        <div className="container mx-auto px-4 py-10 md:py-14">
+          <div className="grid gap-8 md:grid-cols-2 md:items-center">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur">
+                <Sparkles className="h-3.5 w-3.5" />
+                Pet Nest Premium Experience
+              </div>
+              <h1 className="text-3xl font-extrabold leading-tight text-white md:text-5xl">
+                Không gian mua sắm & chăm sóc thú cưng hiện đại
+              </h1>
+              <p className="mt-4 max-w-xl text-sm text-slate-200 md:text-base">
+                Từ sản phẩm chất lượng đến dịch vụ spa chuyên nghiệp, mọi thứ bạn cần cho boss đều có tại Pet Nest.
               </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/spa-services"
+                  className="rounded-xl bg-pink-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-pink-700"
+                >
+                  Đặt lịch spa ngay
+                </Link>
+                <Link
+                  href="/products"
+                  className="rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                >
+                  Mua sắm sản phẩm
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Khách hàng tin tưởng", value: "10,000+" },
+                { label: "Sản phẩm & dịch vụ", value: "500+" },
+                { label: "Đánh giá tích cực", value: "4.9/5" },
+                { label: "Hỗ trợ", value: "24/7" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                  <div className="text-2xl font-bold text-white">{item.value}</div>
+                  <div className="mt-1 text-xs text-slate-200">{item.label}</div>
+                </div>
+              ))}
             </div>
           </div>
-        ) : banners.length > 0 ? (
-          <>
-            {/* Carousel Container */}
-            <div className="relative w-full h-full">
-              {Array.isArray(banners) &&
-                banners.map((banner, index) => (
-                  <motion.div
-                    key={banner._id}
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    animate={{
-                      opacity: currentBannerIndex === index ? 1 : 0,
-                      scale: currentBannerIndex === index ? 1 : 1.1,
-                      x: `${(index - currentBannerIndex) * 100}%`,
-                    }}
-                    transition={{
-                      duration: 0.7,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute top-0 left-0 w-full h-full"
-                  >
-                    <Link
-                      href={banner.link}
-                      className="block w-full h-full group"
-                    >
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={banner.imageUrl}
-                          alt={banner.title}
-                          fill
-                          className="object-cover transform group-hover:scale-105 transition-transform duration-700"
-                          priority={index === 0}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent">
-                          <div className="container mx-auto px-16 md:px-24 h-full flex items-center">
-                            <motion.div
-                              initial={{ opacity: 0, x: -50 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.3, duration: 0.5 }}
-                              className="max-w-2xl text-white"
-                            >
-                              <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.4, duration: 0.5 }}
-                                className="text-5xl md:text-6xl font-bold mb-6 leading-tight"
-                              >
-                                {banner.title}
-                              </motion.h2>
-                              <motion.p
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5, duration: 0.5 }}
-                                className="text-xl md:text-2xl mb-8 text-gray-100 leading-relaxed"
-                              >
-                                {banner.description}
-                              </motion.p>
-                              <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6, duration: 0.5 }}
-                              >
-                                <button className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-4 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-lg font-semibold flex items-center gap-2 group">
-                                  {banner.buttonText || "Xem ngay"}
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5 transform group-hover:translate-x-1 transition-transform"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                </button>
-                              </motion.div>
-                            </motion.div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 md:px-8 z-10">
-              <button
-                onClick={() =>
-                  setCurrentBannerIndex((prev) =>
-                    prev === 0 ? banners.length - 1 : prev - 1
-                  )
-                }
-                className="bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-xl backdrop-blur-sm"
-                aria-label="Previous slide"
-              >
-                <ArrowBackIosNewIcon className="text-2xl" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentBannerIndex((prev) =>
-                    prev === banners.length - 1 ? 0 : prev + 1
-                  )
-                }
-                className="bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-xl backdrop-blur-sm"
-                aria-label="Next slide"
-              >
-                <ArrowForwardIosIcon className="text-2xl" />
-              </button>
-            </div>
-
-            {/* Dots Indicator */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-3 z-10">
-              {Array.isArray(banners) &&
-                banners.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentBannerIndex(index)}
-                    className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${
-                      currentBannerIndex === index
-                        ? "bg-pink-600 scale-110 shadow-lg shadow-pink-600/50"
-                        : "bg-white/50 hover:bg-white/80"
-                    }`}
-                    aria-label={`Go to slide ${index + 1}`}
-                  />
-                ))}
-            </div>
-
-            {/* Progress Bar */}
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-200/30">
-              <motion.div
-                className="h-full bg-pink-600"
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 5, ease: "linear" }}
-                onAnimationComplete={() => {
-                  setCurrentBannerIndex((prev) =>
-                    prev === banners.length - 1 ? 0 : prev + 1
-                  );
-                }}
-                key={currentBannerIndex}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="bg-gray-50 p-8 rounded-xl shadow-lg text-center">
-              <p className="text-gray-600 text-lg">
-                Không có banner nào để hiển thị
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
       </section>
 
-      {/* Spa Services Section */}
-      <section className="py-20 bg-gradient-to-b from-pink-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Dịch vụ Spa thú cưng</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Chăm sóc toàn diện cho thú cưng của bạn với các dịch vụ tắm, vệ
-              sinh, cắt tỉa và làm đẹp chuyên nghiệp.
-            </p>
+      <section className="sticky top-[72px] z-30 border-y border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="container mx-auto overflow-x-auto px-4 py-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-max items-center gap-2 text-xs font-semibold md:text-sm">
+            {quickNavItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  onClick={(event) => handleQuickNavClick(event, item.id)}
+                  className={`rounded-full border px-3 py-1.5 transition ${
+                    isActive
+                      ? "border-pink-200 bg-pink-50 text-pink-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-pink-300 hover:text-pink-600"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </div>
+        </div>
+      </section>
+
+      <section id="banners" className="container mx-auto px-4 py-8 md:py-10">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          {isLoadingBanners ? (
+            <div className="flex h-[420px] items-center justify-center">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-pink-600" />
+            </div>
+          ) : bannerError ? (
+            <div className="flex h-[420px] items-center justify-center px-4 text-center text-red-600">{bannerError}</div>
+          ) : banners.length > 0 ? (
+            <div className="relative h-[420px] md:h-[520px]">
+              {banners.map((banner, index) => (
+                <motion.div
+                  key={banner._id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: currentBannerIndex === index ? 1 : 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute inset-0"
+                >
+                  <Link href={banner.link} className="relative block h-full w-full">
+                    <Image src={banner.imageUrl} alt={banner.title} fill className="object-cover" priority={index === 0} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-transparent" />
+                    <div className="absolute inset-0 flex items-end p-6 md:p-10">
+                      <div className="max-w-2xl text-white">
+                        <h3 className="text-2xl font-bold md:text-4xl">{banner.title}</h3>
+                        <p className="mt-3 text-sm text-slate-100 md:text-base">{banner.description}</p>
+                        <span className="mt-5 inline-flex items-center gap-2 rounded-xl bg-pink-600 px-4 py-2 text-sm font-semibold">
+                          {banner.buttonText || "Xem ngay"}
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+
+              <button
+                onClick={() => setCurrentBannerIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1))}
+                className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-700 shadow transition hover:bg-white"
+                aria-label="Previous banner"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentBannerIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1))
+                }
+                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-700 shadow transition hover:bg-white"
+                aria-label="Next banner"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+
+              <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+                {banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIndex(idx)}
+                    className={`h-2.5 rounded-full transition-all ${
+                      currentBannerIndex === idx ? "w-8 bg-pink-600" : "w-2.5 bg-white/70"
+                    }`}
+                    aria-label={`Go to banner ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-[420px] items-center justify-center text-slate-500">Không có banner để hiển thị</div>
+          )}
+        </div>
+      </section>
+
+      <section id="spa-services" className="container mx-auto px-4 py-8 md:py-14">
+        <div className="rounded-3xl border border-pink-100 bg-gradient-to-b from-pink-50 to-white p-6 md:p-8">
+          <SectionHeading
+            title="Dịch vụ Spa thú cưng"
+            description="Chăm sóc toàn diện với quy trình chuyên nghiệp, an toàn và phù hợp từng giống loài."
+          />
 
           {isLoadingSpaServices ? (
-            <div className="text-center py-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Đang tải dịch vụ spa...</p>
-            </div>
+            <SectionSkeleton cols={4} />
           ) : spaServicesError ? (
-            <div className="text-center py-10">
-              <p className="text-red-600">
-                Có lỗi xảy ra khi tải dịch vụ spa. Vui lòng thử lại sau.
-              </p>
-            </div>
+            <div className="rounded-xl bg-red-50 p-4 text-center text-red-600">{spaServicesError}</div>
           ) : spaServices.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {spaServices.slice(0, 8).map((service, index) => (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {spaServices.slice(0, 8).map((service) => (
                   <motion.div
                     key={service._id}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 12 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.08 }}
-                    className="group"
+                    transition={{ duration: 0.35 }}
+                    className="group overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-pink-100"
                   >
-                    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col border border-pink-100">
-                      <div className="relative h-52 bg-pink-50">
-                        <Image
-                          src={getSpaImageUrl(service.image)}
-                          alt={service.name}
-                          fill
-                          unoptimized
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-pink-600 text-white text-xs font-semibold px-3 py-1 rounded-full capitalize">
-                            {service.category}
-                          </span>
-                        </div>
+                    <div className="relative h-44 overflow-hidden bg-pink-50">
+                      <Image
+                        src={getSpaImageUrl(service.image)}
+                        alt={service.name}
+                        fill
+                        unoptimized
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-pink-700 shadow">
+                        {service.category}
+                      </span>
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="line-clamp-2 text-sm font-bold text-slate-900 md:text-base">{service.name}</h3>
+                      <p className="mt-2 line-clamp-2 text-xs text-slate-600 md:text-sm">{service.description}</p>
+
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>{service.durationMinutes} phút</span>
+                        <span className="font-bold text-pink-600">{service.price.toLocaleString("vi-VN")}đ</span>
                       </div>
 
-                      <div className="p-5 flex flex-col flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-pink-600 transition-colors mb-2 line-clamp-2">
-                          {service.name}
-                        </h3>
-
-                        <p className="text-sm text-gray-600 line-clamp-3 mb-4">
-                          {service.description}
-                        </p>
-
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {service.petTypes?.map((petType) => (
-                            <span
-                              key={petType}
-                              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
-                            >
-                              {petType === "dog" ? "Chó" : "Mèo"}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="mt-auto space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-pink-600 font-bold text-xl">
-                              {service.price.toLocaleString("vi-VN")}đ
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {service.durationMinutes} phút
-                            </span>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Link
-                              href={`/spa-services/${service.slug}`}
-                              className="flex-1 text-center border border-pink-600 text-pink-600 hover:bg-pink-50 px-4 py-2 rounded-xl font-medium transition"
-                            >
-                              Xem chi tiết
-                            </Link>
-                            <Link
-                              href={`/spa-booking/${service.slug}`}
-                              className="flex-1 text-center bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl font-medium transition"
-                            >
-                              Đặt lịch
-                            </Link>
-                          </div>
-                        </div>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <Link
+                          href={`/spa-services/${service.slug}`}
+                          className="rounded-lg border border-pink-200 px-3 py-2 text-center text-xs font-semibold text-pink-700 transition hover:bg-pink-50"
+                        >
+                          Chi tiết
+                        </Link>
+                        <Link
+                          href={`/spa-booking/${service.slug}`}
+                          className="rounded-lg bg-pink-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-pink-700"
+                        >
+                          Đặt lịch
+                        </Link>
                       </div>
                     </div>
                   </motion.div>
                 ))}
               </div>
 
-              <div className="text-center mt-10">
+              <div className="mt-8 text-center">
                 <Link
                   href="/spa-services"
-                  className="inline-flex items-center bg-pink-600 hover:bg-pink-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
+                  <Scissors className="h-4 w-4" />
                   Xem tất cả dịch vụ spa
                 </Link>
               </div>
             </>
           ) : (
-            <div className="text-center py-10">
-              <p className="text-gray-600">
-                Hiện chưa có dịch vụ spa nào để hiển thị
-              </p>
-            </div>
+            <div className="rounded-xl bg-slate-100 p-4 text-center text-slate-500">Hiện chưa có dịch vụ spa</div>
           )}
         </div>
       </section>
 
-      {/* Shop by Pet Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-4">
-            {homepageConfig.shopByPet.title}
-          </h2>
-          <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-            {homepageConfig.shopByPet.description}
-          </p>
+      <section id="shop-by-pet" className="container mx-auto px-4 py-8 md:py-14">
+        <SectionHeading
+          title={homepageConfig.shopByPet.title}
+          description={homepageConfig.shopByPet.description}
+        />
 
-          {isLoadingParents ? (
-            <div className="text-center py-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Đang tải danh mục...</p>
-            </div>
-          ) : parentError ? (
-            <div className="text-center py-10">
-              <p className="text-red-600">
-                Có lỗi xảy ra khi tải danh mục. Vui lòng thử lại sau.
-              </p>
-            </div>
+        {isLoadingParents ? (
+          <SectionSkeleton cols={4} />
+        ) : parentError ? (
+          <div className="rounded-xl bg-red-50 p-4 text-center text-red-600">{parentError}</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+            {parentCategories.map((category, index) => (
+              <motion.div
+                key={category._id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.06 }}
+              >
+                <Link href={`/category/${category._id}`} className="group block">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
+                    <Image
+                      src={getValidImageUrl(category.image)}
+                      alt={category.name}
+                      fill
+                      priority={index === 0}
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-4 text-center">
+                      <h3 className="text-lg font-bold text-white md:text-2xl">{category.name}</h3>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section id="popular" className="container mx-auto px-4 py-8 md:py-14">
+        <SectionHeading
+          title={homepageConfig.popularCategories.title}
+          description={homepageConfig.popularCategories.description}
+        />
+
+        {isLoading ? (
+          <SectionSkeleton cols={3} />
+        ) : error ? (
+          <div className="rounded-xl bg-red-50 p-4 text-center text-red-600">{error}</div>
+        ) : popularCategories.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {popularCategories.map((category, index) => (
+              <motion.div
+                key={category._id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.06 }}
+              >
+                <Link
+                  href={`/category/${category._id}`}
+                  className="group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-xl bg-slate-100">
+                    <Image src={getValidImageUrl(category.image)} alt={category.name} fill className="object-cover" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-pink-600">{category.name}</h3>
+                  <p className="mt-2 line-clamp-2 text-sm text-slate-600">{category.description}</p>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl bg-slate-100 p-4 text-center text-slate-500">Không có danh mục phổ biến</div>
+        )}
+      </section>
+
+      <section id="best-selling" className="container mx-auto px-4 py-8 md:py-14">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+          <SectionHeading
+            title={homepageConfig.bestSelling.title}
+            description={homepageConfig.bestSelling.description}
+          />
+
+          {isLoadingTopSelling ? (
+            <SectionSkeleton cols={4} />
+          ) : topSellingError ? (
+            <div className="rounded-xl bg-red-50 p-4 text-center text-red-600">{topSellingError}</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {Array.isArray(parentCategories) &&
-                parentCategories.map((category, index) => (
-                  <motion.div
-                    key={category._id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="group"
-                  >
-                    <Link href={`/category/${category._id}`} className="block">
-                      <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300">
-                        <Image
-                          src={getValidImageUrl(category.image)}
-                          alt={category.name}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover:from-black/80 transition-colors" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <h3 className="text-3xl font-bold text-white transform group-hover:scale-105 transition-transform">
-                            {category.name}
-                          </h3>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-            </div>
-          )}
-        </div>
-      </section>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {topSellingProducts.slice(0, 8).map((product) => {
+                const minPriceVariant =
+                  Array.isArray(product.variants) && product.variants.length > 0
+                    ? product.variants.reduce((min, v) => (v.sellPrice < min.sellPrice ? v : min), product.variants[0])
+                    : null;
 
-      {/* Popular Categories */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-4">
-            {homepageConfig.popularCategories.title}
-          </h2>
-          <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-            {homepageConfig.popularCategories.description}
-          </p>
+                let firstImage = "/placeholder.svg";
+                if (Array.isArray(product.variants)) {
+                  for (const v of product.variants) {
+                    if (Array.isArray(v.images) && v.images[0]?.url) {
+                      firstImage = v.images[0].url;
+                      break;
+                    }
+                  }
+                }
 
-          {isLoading ? (
-            <div className="text-center py-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Đang tải danh mục...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-10">
-              <p className="text-red-600">
-                Có lỗi xảy ra khi tải danh mục. Vui lòng thử lại sau.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.isArray(popularCategories) &&
-              popularCategories.length > 0 ? (
-                popularCategories.map((category) => (
-                  <motion.div
-                    key={category._id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="group"
-                  >
-                    <Link
-                      href={`/category/${category._id}`}
-                      className="block bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                    >
-                      <div className="relative aspect-square rounded-xl bg-gray-100 overflow-hidden mb-4">
-                        <Image
-                          src={getValidImageUrl(category.image)}
-                          alt={category.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <h3 className="font-semibold text-lg text-gray-900 group-hover:text-pink-600 transition-colors">
-                          {category.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                          {category.description}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-10">
-                  <p className="text-gray-600">
-                    Không có danh mục phổ biến nào để hiển thị
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
+                const isOutOfStock =
+                  Array.isArray(product.variants) && product.variants.length > 0
+                    ? product.variants.every((v) => v.availableQuantity <= 0)
+                    : false;
 
-      {/* Best Selling Products */}
-      <section className="py-20 bg-gradient-to-b from-blue-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row gap-10">
-            {/* Promotional Banner */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="w-full md:w-1/3 flex-shrink-0 rounded-2xl overflow-hidden shadow-xl"
-            >
-              <div className="relative h-96">
-                <Image
-                  src="https://petshopsaigon.vn/wp-content/uploads/2019/08/pet-shop-sai-gon-1.jpg"
-                  alt="Sản phẩm bán chạy nhất"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-8 text-white">
-                  <h3 className="text-3xl font-bold mb-3">
-                    {homepageConfig.bestSelling.title}
-                  </h3>
-                  <p className="text-base mb-6 opacity-90">
-                    {homepageConfig.bestSelling.description}
-                  </p>
+                return (
                   <Link
-                    href="/products/best-selling"
-                    className="inline-flex items-center text-white font-bold hover:underline group"
+                    href={`/product/${product._id}`}
+                    key={product._id}
+                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                   >
-                    {homepageConfig.bestSelling.linkText}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 ml-2 transform group-hover:translate-x-1 transition-transform"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <div className="relative aspect-square bg-slate-50">
+                      {isOutOfStock && (
+                        <span className="absolute left-3 top-3 z-10 rounded-full bg-red-600 px-2 py-1 text-[11px] font-semibold text-white">
+                          Hết hàng
+                        </span>
+                      )}
+                      <Image src={getValidImageUrl(firstImage)} alt={product.name} fill className="object-contain p-3" />
+                    </div>
+
+                    <div className="p-4">
+                      <p className="line-clamp-1 text-xs font-semibold uppercase tracking-wider text-pink-600">
+                        {product.brand || "THƯƠNG HIỆU"}
+                      </p>
+                      <h3 className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 md:text-base">{product.name}</h3>
+                      <p className="mt-2 line-clamp-2 text-xs text-slate-600 md:text-sm">{product.description}</p>
+                      <p className="mt-4 text-lg font-extrabold text-red-600">
+                        {(minPriceVariant?.sellPrice || 0).toLocaleString("vi-VN")}đ
+                      </p>
+                    </div>
                   </Link>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Product List */}
-            <div className="flex-1 overflow-x-auto pb-6 no-scrollbar">
-              {isLoadingTopSelling ? (
-                <div className="flex items-center justify-center h-48">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
-                </div>
-              ) : topSellingError ? (
-                <div className="text-center py-10">
-                  <p className="text-red-600">
-                    Có lỗi xảy ra khi tải sản phẩm. Vui lòng thử lại sau.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex space-x-6 pr-4 pb-4 items-stretch">
-                  {Array.isArray(topSellingProducts) &&
-                    topSellingProducts.map((product, index) => {
-                      // Lấy variant có giá thấp nhất và có ảnh
-                      const minPriceVariant =
-                        Array.isArray(product.variants) &&
-                        product.variants.length > 0
-                          ? product.variants.reduce(
-                              (min, v) =>
-                                v.sellPrice < min.sellPrice ? v : min,
-                              product.variants[0]
-                            )
-                          : null;
-
-                      let firstImage = "/placeholder.svg";
-                      if (Array.isArray(product.variants)) {
-                        for (const v of product.variants) {
-                          if (
-                            Array.isArray(v.images) &&
-                            v.images.length > 0 &&
-                            v.images[0].url &&
-                            v.images[0].url.trim() !== ""
-                          ) {
-                            firstImage = v.images[0].url;
-                            break;
-                          }
-                        }
-                      }
-
-                      const isOutOfStock =
-                        Array.isArray(product.variants) &&
-                        product.variants.length > 0
-                          ? product.variants.every(
-                              (v) => v.availableQuantity <= 0
-                            )
-                          : false;
-
-                      return (
-                        <Link
-                          href={`/product/${product._id}`}
-                          key={product._id}
-                          className="w-64 shrink-0 bg-white rounded-2xl shadow-md overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1"
-                        >
-                          <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center p-4">
-                            {isOutOfStock && (
-                              <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-20 shadow-sm">
-                                Hết hàng
-                              </span>
-                            )}
-                            <Image
-                              src={getValidImageUrl(
-                                firstImage,
-                                "/placeholder.svg"
-                              )}
-                              alt={product.name}
-                              fill
-                              className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
-                            />
-                          </div>
-                          <div className="flex-1 flex flex-col justify-between p-4">
-                            <span className="uppercase text-xs text-pink-500 font-bold mb-1 tracking-widest line-clamp-1">
-                              {product.brand || "THƯƠNG HIỆU"}
-                            </span>
-                            <h3 className="font-bold text-gray-900 group-hover:text-pink-600 transition-colors line-clamp-2 leading-snug mb-2">
-                              {product.name}
-                            </h3>
-                            <div className="text-sm text-gray-500 line-clamp-2 mb-4">
-                              {product.description}
-                            </div>
-                            <div className="mt-auto flex items-end">
-                              <span className="text-xl font-extrabold text-red-600">
-                                {minPriceVariant &&
-                                minPriceVariant.sellPrice !== undefined &&
-                                minPriceVariant.sellPrice !== null
-                                  ? minPriceVariant.sellPrice.toLocaleString(
-                                      "vi-VN"
-                                    )
-                                  : "0"}
-                                <span className="text-sm font-normal text-gray-500 ml-1">
-                                  đ
-                                </span>
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                </div>
-              )}
+                );
+              })}
             </div>
+          )}
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/products/best-selling"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-200"
+            >
+              {homepageConfig.bestSelling.linkText}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Why Shop With Us */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-4">
-            {homepageConfig.whyShop.title}
-          </h2>
-          <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-            {homepageConfig.whyShop.description}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+      <section className="container mx-auto px-4 py-10 md:py-14">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+          <SectionHeading
+            title={homepageConfig.whyShop.title}
+            description={homepageConfig.whyShop.description}
+          />
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {benefits.map((benefit, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-center group"
+                transition={{ duration: 0.4, delay: index * 0.06 }}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center"
               >
-                <div className="text-pink-600 mb-6 flex justify-center transform group-hover:scale-110 transition-transform">
-                  {benefit.icon}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-pink-600 transition-colors">
-                  {benefit.title}
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {benefit.description}
-                </p>
+                <div className="mb-4 inline-flex rounded-xl bg-pink-100 p-3 text-pink-600">{benefit.icon}</div>
+                <h3 className="text-base font-bold text-slate-900 md:text-lg">{benefit.title}</h3>
+                <p className="mt-2 text-sm text-slate-600">{benefit.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Newsletter Section */}
+      <section className="container mx-auto px-4 pb-8 md:pb-12">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {testimonials.map((item, index) => (
+            <motion.div
+              key={item.name}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: index * 0.07 }}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <p className="text-sm leading-relaxed text-slate-700">“{item.quote}”</p>
+              <div className="mt-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                  <p className="text-xs text-slate-500">{item.role}</p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  {item.rating}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
-      {/* <ChatBot /> */}
+      <section className="container mx-auto px-4 pb-12 md:pb-16">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-700 via-fuchsia-600 to-pink-600 p-7 text-white shadow-lg md:p-10">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/20 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-14 -left-10 h-44 w-44 rounded-full bg-indigo-400/30 blur-2xl" />
+
+          <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">Pet Nest Membership</p>
+              <h3 className="mt-2 text-2xl font-extrabold md:text-3xl">Nhận ưu đãi độc quyền mỗi tuần cho boss của bạn</h3>
+              <p className="mt-2 max-w-2xl text-sm text-white/90 md:text-base">
+                Đăng ký thành viên để nhận mã giảm giá, lịch nhắc chăm sóc thú cưng và quyền đặt lịch ưu tiên.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/register"
+                className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-fuchsia-700 transition hover:bg-slate-100"
+              >
+                Đăng ký ngay
+              </Link>
+              <Link
+                href="/spa-services"
+                className="rounded-xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              >
+                Xem dịch vụ
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
 }
 
-// Data
+const quickNavItems = [
+  { id: "banners", label: "Banner" },
+  { id: "spa-services", label: "Spa Services" },
+  { id: "shop-by-pet", label: "Shop by Pet" },
+  { id: "popular", label: "Popular" },
+  { id: "best-selling", label: "Best Selling" },
+];
+
+const testimonials = [
+  {
+    name: "Linh Trần",
+    role: "Khách hàng thân thiết",
+    quote: "Dịch vụ spa ở Pet Nest rất chuyên nghiệp, bé nhà mình đi về lúc nào cũng thơm và vui vẻ.",
+    rating: "5.0 ★",
+  },
+  {
+    name: "Minh Quân",
+    role: "Chủ nuôi 2 bé mèo",
+    quote: "Giao diện mới dễ dùng, đặt lịch nhanh. Nhân viên tư vấn cực kỳ nhiệt tình.",
+    rating: "4.9 ★",
+  },
+  {
+    name: "Hà Phương",
+    role: "Khách hàng mới",
+    quote: "Sản phẩm đa dạng, giá rõ ràng. Mình rất thích trải nghiệm mua sắm tại đây.",
+    rating: "4.9 ★",
+  },
+];
 
 const benefits = [
   {
-    icon: <Truck size={32} />,
+    icon: <Truck size={24} />,
     title: "Giao hàng nhanh chóng",
     description: "Miễn phí vận chuyển cho đơn hàng từ 500.000đ",
   },
   {
-    icon: <Clock size={32} />,
+    icon: <Clock size={24} />,
     title: "Giao hàng đúng giờ",
     description: "Cam kết giao hàng trong vòng 24h",
   },
   {
-    icon: <Shield size={32} />,
+    icon: <Shield size={24} />,
     title: "Sản phẩm chính hãng",
     description: "100% sản phẩm được bảo hành chính hãng",
   },
   {
-    icon: <Heart size={32} />,
+    icon: <Heart size={24} />,
     title: "Chăm sóc khách hàng",
     description: "Hỗ trợ 24/7 với đội ngũ tư vấn chuyên nghiệp",
   },
 ];
 
-// Helper to ensure valid image URL
 function getValidImageUrl(url?: string, fallback = "/placeholder.svg") {
   return url && url.trim() ? url : fallback;
 }
@@ -950,12 +872,9 @@ function getSpaImageUrl(image?: string) {
   if (!image || !image.trim()) return "/placeholder.svg";
 
   const trimmed = image.trim();
-
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
 
-  return `http://localhost:5000${
-    trimmed.startsWith("/") ? trimmed : `/${trimmed}`
-  }`;
+  return `http://localhost:5000${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
 }

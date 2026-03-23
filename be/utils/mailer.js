@@ -6,6 +6,9 @@ const nodemailer = require("nodemailer");
 //   process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.length : 0
 // );
 
+const hasEmailConfig =
+  Boolean(process.env.EMAIL_USER) && Boolean(process.env.EMAIL_PASSWORD);
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -14,13 +17,19 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-transporter.verify((error) => {
-  if (error) {
-    console.error("SMTP verify error:", error.message);
-  } else {
-    console.log("SMTP server is ready");
-  }
-});
+if (hasEmailConfig) {
+  transporter.verify((error) => {
+    if (error) {
+      console.error("SMTP verify error:", error.message);
+    } else {
+      console.log("SMTP server is ready");
+    }
+  });
+} else {
+  console.warn(
+    "SMTP chưa cấu hình EMAIL_USER/EMAIL_PASSWORD, tạm thời bỏ qua verify mail"
+  );
+}
 
 exports.sendSubscribeEmail = async (email) => {
   const unsubscribeUrl = `http://localhost:5000/api/subscribers/unsubscribe?email=${encodeURIComponent(

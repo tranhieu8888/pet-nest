@@ -30,11 +30,16 @@ const staffScheduleRoute = require("./routes/staffScheduleRoute");
 const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
 const searchRoute = require("./routes/searchRoute");
 const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
+const adminOrderRoute = require("./routes/adminOrderRoute");
+const aiChatRoute = require("./routes/aiChatRoute");
+const chatRoute = require("./routes/chatRoute");
+const orderRoute = require("./routes/orderRoute");
+const cartRoute = require("./routes/cartRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = Number(process.env.PORT) || 5000;
 
 connectDB();
 
@@ -44,10 +49,8 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const server = http.createServer(app);
 
-// Khởi tạo socket.io đúng trên server HTTP
 setupSocket(server);
 
-// Middleware để dùng io trong req nếu cần
 app.use((req, res, next) => {
   req.io = getIO();
   next();
@@ -76,7 +79,13 @@ app.use("/api/staff/schedules", staffScheduleRoute);
 app.use("/api/admin/spa-services", adminSpaServiceRoute);
 app.use("/api/search", searchRoute);
 app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
-
+const paymentRoute = require("./routes/paymentRoute");
+app.use("/api/payments", paymentRoute);
+app.use("/api/ai", aiChatRoute);
+app.use("/api/chat", chatRoute);
+app.use("/api/admin/orders", adminOrderRoute);
+app.use("/api/orders", orderRoute);
+app.use("/api/cart", cartRoute);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
@@ -89,7 +98,26 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Phải dùng server.listen thay vì app.listen để socket hoạt động realtime
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+function startServer(port) {
+  server
+    .listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    })
+    .on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        if (process.env.PORT) {
+          console.error(`Port ${port} đã được sử dụng. Hãy đổi PORT trong file .env.`);
+          process.exit(1);
+        }
+
+        const nextPort = port + 1;
+        console.warn(`Port ${port} đang bận, thử khởi động với port ${nextPort}...`);
+        startServer(nextPort);
+        return;
+      }
+
+      throw err;
+    });
+}
+
+startServer(DEFAULT_PORT);

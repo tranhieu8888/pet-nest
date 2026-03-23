@@ -34,7 +34,7 @@ interface Author {
 interface BlogPost {
   _id: string;
   title: string;
-  slug: string; // dùng slug để đi detail
+  slug?: string;
   description: string;
   tag: string;
   image?: BlogImage;
@@ -161,7 +161,9 @@ export default function BlogPage() {
 
         {/* BLOG GRID */}
         <div className="blog-grid">
-          {paginatedPosts.map((post) => (
+          {paginatedPosts.map((post) => {
+            const detailSlug = post.slug || post._id;
+            return (
             <article key={post._id} className="blog-card">
               <div className="blog-card-image">
                 {post.image?.url ? (
@@ -185,19 +187,20 @@ export default function BlogPage() {
 
               <div className="blog-card-content">
                 <h2 className="blog-card-title">
-                  <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+                  <Link href={`/blog/${detailSlug}`}>{post.title}</Link>
                 </h2>
 
                 <p className="blog-card-description">
                   {decodeHTML(stripHtml(post.description))}
                 </p>
 
-                <Link href={`/blog/${post.slug}`} className="blog-card-link">
+                <Link href={`/blog/${detailSlug}`} className="blog-card-link">
                   {blogConfig.readMore} →
                 </Link>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
 
         {/* PAGINATION */}

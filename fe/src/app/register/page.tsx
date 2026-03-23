@@ -1,223 +1,334 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { User, Mail, Phone, Lock, Eye, EyeOff, CircleAlert, CircleCheck } from 'lucide-react';
 import { api } from '../../../utils/axios';
-import Image from 'next/image';
-import styles from './RegisterPage.module.css';
+import { useLanguage } from '@/context/LanguageContext';
+import viConfig from '../../../utils/petPagesConfig.vi';
+import enConfig from '../../../utils/petPagesConfig.en';
 
 interface ErrorResponse {
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }
 
 interface FormData {
-    fullName: string;
-    email: string;
-    phone: string;
-    password: string;
-    confirmPassword: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
 }
 
 export default function RegisterPage() {
-    const [formData, setFormData] = useState<FormData>({
-        fullName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const router = useRouter();
+  const { lang } = useLanguage();
+  const text = (lang === 'vi' ? viConfig : enConfig).authPages.register;
 
-    const validatePhoneNumber = (phone: string): boolean => {
-        const phoneRegex = /^0[0-9]{9,10}$/;
-        return phoneRegex.test(phone);
+  const [formData, setFormData] = useState<FormData>({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsEntering(true), 20);
+    return () => clearTimeout(t);
+  }, []);
+
+  const pushWithTransition = (path: string) => {
+    setPendingRoute(path);
+    setIsLeaving(true);
+  };
+
+  useEffect(() => {
+    if (!isLeaving || !pendingRoute) return;
+    const t = setTimeout(() => router.push(pendingRoute), 220);
+    return () => clearTimeout(t);
+  }, [isLeaving, pendingRoute, router]);
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    const phoneRegex = /^0[0-9]{9,10}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const rules = useMemo(() => {
+    const pwd = formData.password;
+    return {
+      minLength: pwd.length >= 6,
+      upper: /[A-Z]/.test(pwd),
+      lower: /[a-z]/.test(pwd),
+      number: /\d/.test(pwd),
     };
+  }, [formData.password]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+    setIsLoading(true);
 
-        if (formData.password !== formData.confirmPassword) {
-            setError('Mật khẩu xác nhận không khớp');
-            setIsLoading(false);
-            return;
-        }
+    if (formData.password !== formData.confirmPassword) {
+      setError(lang === 'vi' ? 'Mật khẩu xác nhận không khớp' : 'Confirmation password does not match');
+      setIsLoading(false);
+      return;
+    }
 
-        if (!validatePhoneNumber(formData.phone)) {
-            setError('Số điện thoại không hợp lệ.');
-            setIsLoading(false);
-            return;
-        }
+    if (formData.password.length < 6) {
+      setError(lang === 'vi' ? 'Mật khẩu phải có ít nhất 6 ký tự' : 'Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
+    }
 
-        try {
-            const response = await api.post('/auth/register', {
-                name: formData.fullName,
-                email: formData.email,
-                password: formData.password,
-                phone: formData.phone
-            });
+    if (!validatePhoneNumber(formData.phone)) {
+      setError(lang === 'vi' ? 'Số điện thoại không hợp lệ.' : 'Invalid phone number.');
+      setIsLoading(false);
+      return;
+    }
 
-            if (response.data.success) {
-                setSuccessMessage('Đăng ký thành công! Vui lòng xác minh email để đăng nhập. Đang chuyển hướng đến trang đăng nhập...');
-                setTimeout(() => {
-                    router.push('/login?registered=true');
-                }, 2000);
-                return;
-            }
-        } catch (error: unknown) {
-            const axiosError = error as { response?: { data?: ErrorResponse } };
-            setError(axiosError.response?.data?.message || 'Đăng ký thất bại');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    try {
+      const response = await api.post('/auth/register', {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+      });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        if (name === 'phone' && !/^\d*$/.test(value)) return;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+      if (response.data.success) {
+        setSuccessMessage(text.success);
+        setTimeout(() => {
+          pushWithTransition('/login?registered=true');
+        }, 1800);
+        return;
+      }
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: ErrorResponse } };
+      const backendMessage = axiosError.response?.data?.message;
+      setError(mapRegisterError(backendMessage));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return (
-        <div className={styles.container}>
-            {/* Left side - Pet Image */}
-            <div className={styles.left + ' relative'}>
-                <Image
-                    src="/images/background.jpg"
-                    alt="Background"
-                    fill
-                    sizes="100vw"
-                    style={{ objectFit: 'cover' }}
-                    priority
-                />
-            </div>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'phone' && !/^\d*$/.test(value)) return;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-            {/* Right side - Register Form */}
-            <div className={styles.right}>
-                <div className={styles.formBox}>
-                    <div className="text-center">
-                        <h2 className={styles.title}>Tạo tài khoản mới</h2>
-                    </div>
+  const ruleClass = (ok: boolean) =>
+    `rounded-lg border px-2 py-1 text-xs ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`;
 
-                    {successMessage && (
-                        <div className={styles.success}>{successMessage}</div>
-                    )}
+  const strengthScore = Number(rules.minLength) + Number(rules.upper) + Number(rules.lower) + Number(rules.number);
+  const strengthLabel =
+    strengthScore <= 1
+      ? text.strengthWeak
+      : strengthScore <= 3
+        ? text.strengthMedium
+        : text.strengthStrong;
 
-                    <form style={{ marginTop: '2rem' }} onSubmit={handleSubmit}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            <div>
-                                <label htmlFor="fullName" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#4A5568' }}>
-                                    Họ và tên
-                                </label>
-                                <input
-                                    id="fullName"
-                                    name="fullName"
-                                    type="text"
-                                    required
-                                    value={formData.fullName}
-                                    onChange={handleChange}
-                                    className={styles.input}
-                                    placeholder="Nguyễn Văn A"
-                                />
-                            </div>
+  const strengthBarClass =
+    strengthScore <= 1
+      ? 'bg-rose-500'
+      : strengthScore <= 3
+        ? 'bg-amber-500'
+        : 'bg-emerald-500';
 
-                            <div>
-                                <label htmlFor="email" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#4A5568' }}>
-                                    Email
-                                </label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className={styles.input}
-                                    placeholder="your@email.com"
-                                />
-                            </div>
+  const mapRegisterError = (raw?: string) => {
+    const message = (raw || '').toLowerCase();
+    if (!message) return text.errors.default;
+    if (message.includes('email') && (message.includes('exist') || message.includes('đã tồn tại') || message.includes('already'))) {
+      return text.errors.emailExists;
+    }
+    if (message.includes('phone') || message.includes('số điện thoại')) {
+      return text.errors.invalidPhone;
+    }
+    if (message.includes('password') && (message.includes('weak') || message.includes('yếu'))) {
+      return text.errors.weakPassword;
+    }
+    return raw || text.errors.default;
+  };
 
-                            <div>
-                                <label htmlFor="phone" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#4A5568' }}>
-                                    Số điện thoại
-                                </label>
-                                <input
-                                    id="phone"
-                                    name="phone"
-                                    type="tel"
-                                    required
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className={styles.input}
-                                    placeholder="0123456789"
-                                />
-                            </div>
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-slate-100">
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(15,23,42,0.28), rgba(15,23,42,0.28)), url('/images/pet-bg-auth.jpg')",
+        }}
+      />
 
-                            <div>
-                                <label htmlFor="password" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#4A5568' }}>
-                                    Mật khẩu
-                                </label>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className={styles.input}
-                                    placeholder="••••••••"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#4A5568' }}>
-                                    Xác nhận mật khẩu
-                                </label>
-                                <input
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    type="password"
-                                    required
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    className={styles.input}
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ marginTop: '1.25rem' }}>
-                            <button type="submit" disabled={isLoading} className={styles.button}>
-                                {isLoading ? (
-                                    <div style={{
-                                        width: '1.25rem', height: '1.25rem', border: '2px solid #4A5568',
-                                        borderTopColor: 'transparent', borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite', margin: '0 auto'
-                                    }} />
-                                ) : (
-                                    'Đăng ký'
-                                )}
-                            </button>
-                        </div>
-
-                        {error && (
-                            <div className={styles.error}>{error}</div>
-                        )}
-
-                        <div style={{ textAlign: 'center' }}>
-                            <Link href="/login" className={styles.link} style={{ display: 'inline-block', marginTop: '1rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                                Đã có tài khoản? Đăng nhập ngay
-                            </Link>
-                        </div>
-                    </form>
-                </div>
-            </div>
+      <div className={`relative z-10 mx-auto grid min-h-screen max-w-6xl grid-cols-1 items-center gap-8 px-4 py-8 transition-all duration-500 md:grid-cols-2 md:px-8 ${
+        isLeaving
+          ? 'translate-y-2 opacity-0'
+          : isEntering
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-3 opacity-0'
+      }`}>
+        <div className="hidden text-white md:block">
+          <p className="mb-3 inline-flex rounded-full border border-white/30 px-3 py-1 text-xs font-semibold tracking-widest">PET NEST</p>
+          <h1 className="text-4xl font-extrabold leading-tight">{text.heroTitle}</h1>
+          <p className="mt-3 max-w-md text-slate-200">{text.heroDescription}</p>
         </div>
-    );
+
+        <div className="rounded-3xl border border-white/30 bg-white/95 p-6 shadow-2xl backdrop-blur md:p-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-slate-900">{text.title}</h2>
+            <p className="mt-1 text-sm text-slate-500">{text.subtitle}</p>
+          </div>
+
+          {successMessage && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.fullName}</label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  name="fullName"
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder={lang === 'vi' ? 'Nguyễn Văn A' : 'John Doe'}
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.email}</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="your@email.com"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.phone}</label>
+              <div className="relative">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="0123456789"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.password}</label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="mt-2">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-600">{text.passwordRuleTitle}</p>
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${strengthScore <= 1 ? 'bg-rose-50 text-rose-700' : strengthScore <= 3 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                    {strengthLabel}
+                  </span>
+                </div>
+                <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className={`h-full transition-all duration-300 ${strengthBarClass}`}
+                    style={{ width: `${Math.max(10, (strengthScore / 4) * 100)}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={ruleClass(rules.minLength)}>{text.ruleMinLength}</div>
+                  <div className={ruleClass(rules.upper)}>{text.ruleUpper}</div>
+                  <div className={ruleClass(rules.lower)}>{text.ruleLower}</div>
+                  <div className={ruleClass(rules.number)}>{text.ruleNumber}</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{text.confirmPassword}</label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={isLoading} className="w-full rounded-xl bg-slate-900 py-2.5 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">
+              {isLoading ? text.loading : text.submit}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-sm text-slate-600">
+            {text.hasAccount}{' '}
+            <button
+              type="button"
+              onClick={() => pushWithTransition('/login')}
+              className="font-semibold text-pink-600 hover:underline"
+            >
+              {text.loginNow}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -20,6 +20,8 @@ type Booking = {
   paymentStatus: PaymentStatus;
   note?: string;
   cancellationReason?: string;
+  totalPrice?: number;
+  depositAmount?: number;
   petSnapshot?: {
     name?: string;
     type?: "dog" | "cat";
@@ -86,11 +88,11 @@ function formatDateTime(dateString?: string) {
 function BookingCard({
   booking,
   submittingId,
-  onCancel,
+  onRequestCancel,
 }: {
   booking: Booking;
   submittingId: string | null;
-  onCancel: (bookingId: string, reason: string) => Promise<void>;
+  onRequestCancel: (booking: Booking) => void;
 }) {
   const isSubmitting = submittingId === booking._id;
 
@@ -144,7 +146,9 @@ function BookingCard({
                 )}`}
               >
                 {booking.paymentStatus === "paid"
-                  ? "Đã thanh toán"
+                  ? (booking.depositAmount && booking.serviceSnapshot?.price && booking.depositAmount < booking.serviceSnapshot.price 
+                      ? "Đã cọc 50%" 
+                      : "Đã thanh toán")
                   : "Chưa thanh toán"}
               </span>
             </div>
@@ -170,10 +174,22 @@ function BookingCard({
             </p>
 
             {booking.serviceSnapshot?.price !== undefined && (
-              <p>
-                <span className="font-medium">Giá:</span>{" "}
-                {booking.serviceSnapshot.price.toLocaleString("vi-VN")}đ
-              </p>
+              <div className="flex flex-col gap-1 sm:col-span-1">
+                <p>
+                  <span className="font-medium text-indigo-600">Tổng tiền:</span>{" "}
+                  {booking.serviceSnapshot.price.toLocaleString("vi-VN")}đ
+                </p>
+                {booking.depositAmount && (
+                  <>
+                    <p className="text-xs text-emerald-600 font-medium">
+                      ✓ Đã đặt cọc (50%): {booking.depositAmount.toLocaleString("vi-VN")}đ
+                    </p>
+                    <p className="text-xs text-amber-600 font-medium">
+                      ⌛ Còn lại (tại quầy): {(booking.serviceSnapshot.price - booking.depositAmount).toLocaleString("vi-VN")}đ
+                    </p>
+                  </>
+                )}
+              </div>
             )}
 
             {booking.staffSnapshot?.name && (
@@ -203,16 +219,75 @@ function BookingCard({
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => {
-                const reason =
-                  window.prompt("Nhập lý do hủy booking:", "") || "";
-                onCancel(booking._id, reason);
-              }}
+              onClick={() => onRequestCancel(booking)}
               className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
             >
               Hủy booking
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CancelModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isSubmitting,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+  isSubmitting: boolean;
+}) {
+  const [reason, setReason] = useState("");
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-red-600">
+            Bạn sẽ bị mất tiền thanh toán cọc
+          </h3>
+          <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+            Nếu bạn hủy booking này, số tiền cọc (50%) đã thanh toán sẽ không được hoàn lại. Bạn có chắc chắn muốn tiếp tục?
+          </p>
+          
+          <div className="mt-5">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lý do hủy (không bắt buộc)
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              placeholder="Nhập lý do của bạn tại đây..."
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 bg-gray-50 px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          >
+            Quay lại
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(reason)}
+            disabled={isSubmitting}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {isSubmitting ? "Đang xử lý..." : "Xác nhận hủy"}
+          </button>
         </div>
       </div>
     </div>
@@ -230,44 +305,70 @@ export default function MySpaBookingsPage() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Modal hủy đơn
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+
   const fetchBookings = async () => {
     try {
       setLoading(true);
-
       const res = await request(() => api.get("/spa-bookings/my"));
-
       if (res?.success) {
         setBookings(res.data || []);
       } else {
         setBookings([]);
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Không thể tải booking spa"
-      );
+      toast.error(error?.response?.data?.message || "Không thể tải booking spa");
     } finally {
       setLoading(false);
     }
   };
 
+  // Tự động đồng bộ trạng thái thanh toán từ URL (Back từ PayOS)
   useEffect(() => {
-    fetchBookings();
+    const query = new URLSearchParams(window.location.search);
+    const status = query.get("status");
+    const orderCode = query.get("orderCode");
+
+    if (status === "PAID" && orderCode) {
+      const syncPayment = async () => {
+        try {
+          const res = await api.post("/payments/sync-status", { orderCode: Number(orderCode) });
+          if (res.data?.success) {
+            toast.success("Thanh toán thành công!");
+            fetchBookings(); // Tải lại danh sách sau khi sync
+            // Xóa query params để tránh sync lại khi F5
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (error) {
+          console.error("Sync payment error:", error);
+        }
+      };
+      syncPayment();
+    } else {
+      fetchBookings();
+    }
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, searchKeyword]);
 
-  const handleCancelBooking = async (bookingId: string, reason: string) => {
+  const handleCancelBooking = async (reason: string) => {
+    if (!selectedBookingId) return;
+
     try {
-      setSubmittingId(bookingId);
+      setSubmittingId(selectedBookingId);
 
       const res = await request(() =>
-        api.patch(`/spa-bookings/${bookingId}/cancel`, { reason })
+        api.patch(`/spa-bookings/${selectedBookingId}/cancel`, { reason })
       );
 
       if (res?.success) {
         toast.success("Hủy booking thành công");
+        setIsCancelModalOpen(false);
+        setSelectedBookingId(null);
         await fetchBookings();
       }
     } catch (error: any) {
@@ -396,7 +497,10 @@ export default function MySpaBookingsPage() {
                     key={booking._id}
                     booking={booking}
                     submittingId={submittingId}
-                    onCancel={handleCancelBooking}
+                    onRequestCancel={(b) => {
+                      setSelectedBookingId(b._id);
+                      setIsCancelModalOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -441,6 +545,16 @@ export default function MySpaBookingsPage() {
         </div>
       </main>
       <Footer />
+
+      <CancelModal
+        isOpen={isCancelModalOpen}
+        isSubmitting={!!submittingId}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setSelectedBookingId(null);
+        }}
+        onConfirm={handleCancelBooking}
+      />
     </>
   );
 }

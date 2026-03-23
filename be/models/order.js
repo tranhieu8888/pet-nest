@@ -3,26 +3,32 @@ const Schema = mongoose.Schema;
 
 const addressSchema = new mongoose.Schema({
   street: { type: String, required: true },
-  city: { type: String, required: true },
+  ward: { type: String },
+  district: { type: String },
+  province: { type: String },
+  city: { type: String },
   state: { type: String },
-  postalCode: { type: String, required: true },
+  postalCode: { type: String },
   country: { type: String, required: true, default: 'Vietnam' }
 }, { _id: true });
+
 const OrderSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     required: true,
     ref: 'User'
   },
-  OrderManagerId:{
+  OrderManagerId: {
     type: Schema.Types.ObjectId,
-    required: true,
+    required: false,
     ref: 'User'
   },
+  payOSOrderCode: {
+    type: Number
+  },
   OrderItems: [{
-      type: Schema.Types.ObjectId,
-      ref: 'OrderItem'
-    
+    type: Schema.Types.ObjectId,
+    ref: 'OrderItem'
   }],
   total: {
     type: Number,

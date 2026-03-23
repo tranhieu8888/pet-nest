@@ -60,6 +60,28 @@ function deleteLocalFileIfExists(public_id) {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
+function normalizeBlog(blog) {
+  if (!blog) return blog;
+
+  const plain = typeof blog.toObject === "function" ? blog.toObject() : { ...blog };
+
+  const firstLegacyImage = Array.isArray(plain.images) && plain.images.length > 0
+    ? plain.images[0]
+    : null;
+
+  const imageUrl = plain.image?.url || firstLegacyImage?.url || "";
+  const imagePublicId = plain.image?.public_id || firstLegacyImage?.public_id || "";
+
+  return {
+    ...plain,
+    slug: plain.slug || String(plain._id),
+    image: {
+      url: imageUrl,
+      public_id: imagePublicId,
+    },
+  };
+}
+
 /* =========================================
    CREATE BLOG (1 image + slug) + VALIDATE
    ko check trùng title, slug tự động thêm 1 khi trùng
@@ -142,7 +164,8 @@ exports.createBlog = async (req, res) => {
 exports.getAllBlogs = async (req, res) => {
   try {
     const blogs = await Blog.find().sort({ createdAt: -1 });
-    res.json({ success: true, blogs });
+    const normalizedBlogs = blogs.map(normalizeBlog);
+    res.json({ success: true, blogs: normalizedBlogs });
   } catch (e) {
     console.error("GET ALL BLOG ERROR:", e);
     res.status(500).json({ success: false, message: e.message });
@@ -179,7 +202,11 @@ exports.getBlog = async (req, res) => {
       createdAt: -1,
     });
 
-    res.json({ success: true, blog, related });
+    res.json({
+      success: true,
+      blog: normalizeBlog(blog),
+      related: related.map(normalizeBlog),
+    });
   } catch (e) {
     console.error("GET BLOG ERROR:", e);
     res.status(500).json({ success: false, message: e.message });
@@ -314,11 +341,19 @@ exports.getBlogBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const blog = await Blog.findOneAndUpdate(
+    let blog = await Blog.findOneAndUpdate(
       { slug },
       { $inc: { views: 1 } },
       { new: true }
     );
+
+    if (!blog && mongoose.Types.ObjectId.isValid(slug)) {
+      blog = await Blog.findByIdAndUpdate(
+        slug,
+        { $inc: { views: 1 } },
+        { new: true }
+      );
+    }
 
     if (!blog) {
       return res.status(404).json({ success: false, message: "Not found" });
@@ -331,7 +366,11 @@ exports.getBlogBySlug = async (req, res) => {
       createdAt: -1,
     });
 
-    res.json({ success: true, blog, related });
+    res.json({
+      success: true,
+      blog: normalizeBlog(blog),
+      related: related.map(normalizeBlog),
+    });
   } catch (e) {
     console.error("GET BLOG BY SLUG ERROR:", e);
     res.status(500).json({ success: false, message: e.message });

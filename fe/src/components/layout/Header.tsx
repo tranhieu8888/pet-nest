@@ -33,7 +33,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { io, Socket } from "socket.io-client";
-import axios from "axios";
 import pagesConfigEn from "../../../utils/petPagesConfig.en.js";
 import pagesConfigVi from "../../../utils/petPagesConfig.vi.js";
 import { jwtDecode } from "jwt-decode";
@@ -132,8 +131,38 @@ function CartDropdown() {
   const { lang } = useLanguage();
   const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
-  const latestItem =
-    cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        const res = await api.get("/cart/getcart", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.success && res.data.data) {
+          const items = res.data.data.cartItems || [];
+          setCartItems(items);
+          setCartCount(items.length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cart in header", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCart();
+
+    // Lắng nghe sự kiện khi cart được update từ các component khác
+    const handleCartUpdate = () => {
+      fetchCart();
+    };
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
 
   return (
     <DropdownMenu>
@@ -149,38 +178,50 @@ function CartDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="p-4">
-          <h3 className="mb-3 font-semibold">{config.cart.title}</h3>
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
-          ) : !latestItem ? (
-            <div className="py-4 text-center text-muted-foreground">
-              {config.cart.empty}
-            </div>
+          ) : cartItems.length === 0 ? (
+            <>
+              <div className="py-4 text-center text-muted-foreground">
+                {config.cart.empty}
+              </div>
+              <Separator className="my-3" />
+              <div className="space-y-2">
+                <Button className="w-full" size="sm" asChild>
+                  <Link href="/cart">{config.cart.viewCart}</Link>
+                </Button>
+              </div>
+            </>
           ) : (
             <>
               <div className="max-h-64 space-y-3 overflow-y-auto">
-                <div
-                  key={`${latestItem._id}-${latestItem.variantId}`}
-                  className="flex items-center space-x-3"
-                >
-                  <img
-                    src={latestItem.image || "/placeholder.svg"}
-                    alt={latestItem.name}
-                    className="h-12 w-12 rounded-md object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {latestItem.name}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-red-500">
-                        {latestItem.price.toLocaleString("vi-VN")}₫
-                      </span>
+                {cartItems.slice().reverse().map((item) => (
+                  <div
+                    key={`${item._id}`}
+                    className="flex items-center space-x-3"
+                  >
+                    <img
+                      src={(item as any).product?.selectedVariant?.images?.[0]?.url || (item as any).product?.images?.[0]?.url || "/placeholder.svg"}
+                      alt={(item as any).product?.name || "Sản phẩm"}
+                      className="h-12 w-12 rounded-md object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {(item as any).product?.name || "Sản phẩm"}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-red-500">
+                          {((item as any).product?.selectedVariant?.price || 0).toLocaleString("vi-VN")}₫
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          x{(item as any).quantity || 1}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
               <Separator className="my-3" />
               <div className="space-y-2">
@@ -502,11 +543,18 @@ function SpaServicesDropdown({
   loading?: boolean;
   error?: string | null;
 }) {
+  const categoryMap: Record<SpaServiceMenuItem["category"], string> = {
+    spa: "Spa tổng quát",
+    cleaning: "Vệ sinh",
+    grooming: "Tạo kiểu",
+    coloring: "Nhuộm lông",
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1 text-sm font-semibold text-red-600 transition-colors hover:text-primary">
-          <Scissors className="h-4 w-4" />
+        <button className="group flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 transition-all hover:border-red-200 hover:bg-red-100/70 hover:text-red-700">
+          <Scissors className="h-4 w-4 transition-transform group-hover:rotate-6" />
           DỊCH VỤ SPA
           <ChevronDown className="h-4 w-4" />
         </button>
@@ -514,58 +562,57 @@ function SpaServicesDropdown({
 
       <DropdownMenuContent
         align="start"
-        sideOffset={8}
-        className="w-72 rounded-none border border-gray-200 bg-white p-2 shadow-lg"
+        sideOffset={10}
+        className="w-[380px] rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
       >
-        <div className="px-2 pb-2 pt-1">
-          <div className="text-sm font-semibold text-gray-800">
-            Danh sách dịch vụ spa
-          </div>
+        <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-3 text-white">
+          <div className="text-sm font-semibold">Dịch vụ Spa cho thú cưng</div>
           {!loading && !error && spaServices.length > 0 && (
-            <div className="text-xs text-gray-500">
-              Tổng cộng: {spaServices.length} dịch vụ
+            <div className="mt-0.5 text-xs text-slate-200">
+              {spaServices.length} dịch vụ đang hoạt động
             </div>
           )}
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto pr-1">
+        <div className="max-h-[460px] space-y-2 overflow-y-auto p-3">
           {loading ? (
-            <div className="px-2 py-3 text-sm text-gray-500">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
               Đang tải dịch vụ...
             </div>
           ) : error ? (
-            <div className="px-2 py-3 text-sm text-red-500">{error}</div>
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-600">
+              {error}
+            </div>
           ) : spaServices.length === 0 ? (
-            <div className="px-2 py-3 text-sm text-gray-500">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
               Chưa có dịch vụ nào
             </div>
           ) : (
-            <div className="space-y-1">
-              {spaServices.map((service, index) => (
-                <React.Fragment key={service._id}>
-                  <DropdownMenuItem
-                    asChild
-                    className="cursor-pointer px-2 py-3 focus:bg-gray-50"
-                  >
-                    <Link
-                      href={`/spa-services/${service.slug}`}
-                      className="flex w-full flex-col items-start"
-                    >
-                      <span className="text-[16px] font-medium text-gray-700 hover:text-primary">
-                        {service.name}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {service.category}
-                      </span>
-                    </Link>
-                  </DropdownMenuItem>
+            spaServices.map((service) => (
+              <DropdownMenuItem
+                key={service._id}
+                asChild
+                className="cursor-pointer rounded-xl border border-transparent p-0 outline-none transition-all hover:border-slate-200 hover:bg-slate-50 focus:bg-slate-50"
+              >
+                <Link
+                  href={`/spa-services/${service.slug}`}
+                  className="flex w-full items-start justify-between gap-3 px-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-slate-800">
+                      {service.name}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      Phù hợp cho pet cần {categoryMap[service.category] || service.category}
+                    </div>
+                  </div>
 
-                  {index !== spaServices.length - 1 && (
-                    <div className="border-b border-gray-200" />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+                  <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                    {categoryMap[service.category] || service.category}
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ))
           )}
         </div>
       </DropdownMenuContent>
@@ -652,15 +699,12 @@ export default function Header({
           return;
         }
 
-        const axiosInstance = axios.create({
-          baseURL: "http://localhost:5000",
+        const response = await api.get("/auth/myprofile", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-
-        const response = await axiosInstance.get("/api/auth/myprofile");
         if (response.data.success) {
           setUser(response.data.user);
           setIsLoggedIn(true);
@@ -671,13 +715,14 @@ export default function Header({
         }
       } catch (error) {
         console.error("Error checking auth:", error);
-        if (axios.isAxiosError(error)) {
-          if (
-            error.response?.status === 401 ||
-            error.response?.status === 403
-          ) {
-            sessionStorage.removeItem("token");
-          }
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          ((error as { response?: { status?: number } }).response?.status === 401 ||
+            (error as { response?: { status?: number } }).response?.status === 403)
+        ) {
+          sessionStorage.removeItem("token");
         }
         setIsLoggedIn(false);
         setUser(null);
@@ -828,14 +873,15 @@ export default function Header({
         const token = sessionStorage.getItem("token");
         if (!userId || !token) return;
 
-        const res = await axios.get(
-          `http://localhost:5000/conversation/${userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await api.get(`/chat/conversations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const totalUnread = Array.isArray(res.data)
-          ? res.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)
-          : 0;
+        const conversations = Array.isArray(res.data?.data) ? res.data.data : [];
+        const totalUnread = conversations.reduce(
+          (sum: number, conv: { unreadCount?: number }) => sum + (conv.unreadCount || 0),
+          0
+        );
 
         setUnreadChatCount(totalUnread);
       } catch {

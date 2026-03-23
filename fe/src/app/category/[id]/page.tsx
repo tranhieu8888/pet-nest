@@ -3,7 +3,6 @@
 import { useLanguage } from "@/context/LanguageContext";
 import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
-import ChatBot from "@/components/chatbot/ChatBot";
 import viConfig from "../../../../utils/petPagesConfig.vi";
 import enConfig from "../../../../utils/petPagesConfig.en";
 import { useCategoryFilter } from "./useCategoryFilter";
@@ -196,7 +195,6 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
-      <ChatBot />
     </div>
   );
 }

@@ -6,7 +6,7 @@ exports.getAll = async (req, res) => {
   try {
     let filter = {};
 
-    if (req.query.role === "STAFF") {
+    if (req.query.role === "STAFF" || req.query.role === "2") {
       filter = { role: ROLES.STAFF };
     }
 

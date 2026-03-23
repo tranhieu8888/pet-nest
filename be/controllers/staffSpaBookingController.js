@@ -30,6 +30,8 @@ function parseTimeToMinutes(timeStr) {
   return hour * 60 + minute;
 }
 
+const moment = require("moment-timezone");
+
 // STAFF xem danh sách booking
 exports.getStaffSpaBookings = async (req, res) => {
   try {
@@ -42,6 +44,17 @@ exports.getStaffSpaBookings = async (req, res) => {
         message: "Không xác định được nhân viên đăng nhập",
       });
     }
+
+    // 1. Lấy tất cả các ngày làm việc của staff này để filter đơn pending
+    const staffSchedules = await StaffSchedule.find({
+      staffId,
+      isOff: false,
+      isDeleted: false,
+    }).select("workDate");
+
+    const workDates = staffSchedules.map((s) =>
+      moment.tz(s.workDate, VN_TIMEZONE).format("YYYY-MM-DD")
+    );
 
     let filter = {};
 
@@ -78,9 +91,18 @@ exports.getStaffSpaBookings = async (req, res) => {
       .populate("staffId", "name phone email")
       .sort({ createdAt: -1 });
 
+    // 2. Filter thủ công kết quả dựa trên ngày làm việc cho các đơn "pending"
+    // Chỉ những đơn pending có ngày bắt đầu trùng với ngày làm việc mới được hiển thị
+    const filteredBookings = bookings.filter((b) => {
+      if (b.status !== "pending") return true; // Các đơn đã confirm/completed giữ nguyên
+
+      const bookingDate = moment.tz(b.startAt, VN_TIMEZONE).format("YYYY-MM-DD");
+      return workDates.includes(bookingDate);
+    });
+
     return res.status(200).json({
       success: true,
-      data: bookings,
+      data: filteredBookings,
     });
   } catch (e) {
     console.error("GET STAFF SPA BOOKINGS ERROR:", e);
@@ -188,35 +210,25 @@ exports.confirmSpaBooking = async (req, res) => {
       });
     }
 
-    const startOfDay = new Date(booking.startAt);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(booking.startAt);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    // 1. Tìm lịch làm việc của staff này trong ngày của booking
+    // Cần normalize ngày của booking giống như cách lưu trong StaffSchedule (VN 00:00)
+    const bookingDateNormalized = moment.tz(booking.startAt, VN_TIMEZONE).startOf("day").toDate();
 
     const schedule = await StaffSchedule.findOne({
       staffId,
+      workDate: bookingDateNormalized,
+      isOff: false,
       isDeleted: false,
-      workDate: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
     });
 
     if (!schedule) {
       return res.status(400).json({
         success: false,
-        message: "Nhân viên chưa có lịch làm việc trong ngày này",
+        message: "Bạn không có lịch làm việc trong ngày này hoặc đã được nghỉ",
       });
     }
 
-    if (schedule.isOff) {
-      return res.status(400).json({
-        success: false,
-        message: "Nhân viên đang nghỉ trong ngày này",
-      });
-    }
-
+    // 2. Kiểm tra khung giờ nghiêm ngặt: Đơn hàng phải nằm trong ca làm việc
     const shiftStartMinutes = parseTimeToMinutes(schedule.shiftStart);
     const shiftEndMinutes = parseTimeToMinutes(schedule.shiftEnd);
     const bookingStartMinutes = getVNMinutes(booking.startAt);
@@ -225,12 +237,12 @@ exports.confirmSpaBooking = async (req, res) => {
     if (
       shiftStartMinutes === null ||
       shiftEndMinutes === null ||
-      bookingEndMinutes <= shiftStartMinutes ||
-      bookingStartMinutes >= shiftEndMinutes
+      bookingStartMinutes < shiftStartMinutes ||
+      bookingEndMinutes > shiftEndMinutes
     ) {
       return res.status(400).json({
         success: false,
-        message: "Booking không nằm trong khoảng thời gian làm việc",
+        message: `Đơn hàng này (${schedule.shiftStart} - ${schedule.shiftEnd}) nằm ngoài ca làm việc của bạn`,
       });
     }
 

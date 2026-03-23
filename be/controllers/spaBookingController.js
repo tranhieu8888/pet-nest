@@ -11,6 +11,8 @@ function generateBookingCode() {
   return `SPA-${Date.now()}-${random}`;
 }
 
+const payOSService = require("../services/payOSService");
+
 // ================= CREATE =================
 exports.createSpaBooking = async (req, res) => {
   try {
@@ -113,6 +115,12 @@ exports.createSpaBooking = async (req, res) => {
       });
     }
 
+    const payOSOrderCode = Number(String(Date.now()).slice(-9));
+
+    // Tính toán tiền cọc 50%
+    const totalPrice = service.price;
+    const depositAmount = Math.round(totalPrice * 0.5); // Làm tròn số tiền cọc
+
     const booking = await SpaBooking.create({
       bookingCode: generateBookingCode(),
       customerId,
@@ -142,7 +150,7 @@ exports.createSpaBooking = async (req, res) => {
       serviceSnapshot: {
         name: service.name,
         category: service.category,
-        price: service.price,
+        price: totalPrice, // Lưu giá gốc 100%
         durationMinutes: service.durationMinutes,
       },
 
@@ -159,25 +167,35 @@ exports.createSpaBooking = async (req, res) => {
       internalNote: "",
       cancelledAt: null,
       cancellationReason: "",
+
+      // PayOS Default
+      payOSOrderCode: payOSOrderCode,
+      payOSStatus: "PENDING",
+
+      // Financials
+      totalPrice: totalPrice,
+      depositAmount: depositAmount,
     });
 
-    // Gửi thông báo cho tất cả staff khi có booking mới
-    const staffList = await User.find({ role: ROLES.STAFF });
-    const notifyPromises = staffList.map((staff) =>
-      sendNotification({
-        userId: staff._id,
-        title: "Có booking spa mới",
-        description: `Khách hàng ${customer.name} vừa đặt lịch dịch vụ '${service.name}' cho thú cưng '${pet.name}'.`,
-        type: "spa-booking",
-        orderId: booking._id,
-      })
-    );
-    await Promise.all(notifyPromises);
+    // Tạo link thanh toán PayOS - Chỉ thanh toán số tiền cọc 50%
+    const paymentLinkRes = await payOSService.createPaymentLink({
+      orderCode: payOSOrderCode,
+      amount: depositAmount,
+      description: `Coc 50% BKG ${payOSOrderCode}`,
+      cancelUrl: `http://localhost:3000/my-spa-bookings`,
+      returnUrl: `http://localhost:3000/my-spa-bookings`,
+    });
+
+    if (paymentLinkRes) {
+      booking.payOSPaymentLink = paymentLinkRes.checkoutUrl;
+      await booking.save();
+    }
 
     return res.status(201).json({
       success: true,
       message: "Đặt lịch spa thành công",
       data: booking,
+      checkoutUrl: paymentLinkRes?.checkoutUrl || null,
     });
   } catch (e) {
     console.error("CREATE SPA BOOKING ERROR:", e);
@@ -200,7 +218,12 @@ exports.getMySpaBookings = async (req, res) => {
       });
     }
 
-    const bookings = await SpaBooking.find({ customerId })
+    // Chỉ hiển thị các booking đã thanh toán HOẶC đã hủy (để người dùng theo dõi)
+    // Ẩn các booking "Chưa thanh toán" mà vẫn đang ở trạng thái pending (vì người dùng chưa hoàn tất thanh toán)
+    const bookings = await SpaBooking.find({
+      customerId,
+      $or: [{ paymentStatus: "paid" }, { status: "cancelled" }],
+    })
       .populate("serviceId", "name slug image")
       .populate("petId", "name type breed")
       .populate("staffId", "name phone")
