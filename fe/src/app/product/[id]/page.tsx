@@ -38,10 +38,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/layout/Header";
 import { api } from "../../../../utils/axios";
+import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../../utils/petPagesConfig.vi";
 import enConfig from "../../../../utils/petPagesConfig.en";
 import { ModalCore } from "@/components/core/ModalCore";
+import { ButtonCore } from "@/components/core/ButtonCore";
 
 interface Product {
   _id: string;
@@ -107,12 +109,20 @@ interface UnreviewedData {
 }
 
 function formatPrice(price: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(price)) + "đ";
+  return (
+    new Intl.NumberFormat("vi-VN", {
+      maximumFractionDigits: 0,
+    }).format(Math.round(price)) + "đ"
+  );
 }
 
-function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" | "lg" }) {
+function StarRating({
+  rating,
+  size = "sm",
+}: {
+  rating: number;
+  size?: "sm" | "md" | "lg";
+}) {
   const sizeMap = { sm: "w-3.5 h-3.5", md: "w-5 h-5", lg: "w-7 h-7" };
   const cls = sizeMap[size];
   return (
@@ -120,12 +130,13 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`${cls} transition-colors ${star <= Math.floor(rating)
-            ? "fill-amber-400 text-amber-400"
-            : star <= rating
-              ? "fill-amber-400/50 text-amber-400"
-              : "fill-gray-200 text-gray-200"
-            }`}
+          className={`${cls} transition-colors ${
+            star <= Math.floor(rating)
+              ? "fill-amber-400 text-amber-400"
+              : star <= rating
+                ? "fill-amber-400/50 text-amber-400"
+                : "fill-gray-200 text-gray-200"
+          }`}
         />
       ))}
     </div>
@@ -140,20 +151,25 @@ export default function ProductPage() {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [addingToCart, setAddingToCart] = useState(false);
+  const [activeAction, setActiveAction] = useState<"add" | "buy" | null>(null);
   const [addToCartError, setAddToCartError] = useState<string | null>(null);
   const [addToCartSuccess, setAddToCartSuccess] = useState(false);
+  const cartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { lang } = useLanguage();
   const router = useRouter();
   const config =
     lang === "vi" ? viConfig.productDetail : enConfig.productDetail;
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"description" | "reviews">("description");
+  const [activeTab, setActiveTab] = useState<"description" | "reviews">(
+    "description",
+  );
   const [imageZoom, setImageZoom] = useState(false);
 
   // Review form states
-  const [unreviewedData, setUnreviewedData] = useState<UnreviewedData | null>(null);
+  const [unreviewedData, setUnreviewedData] = useState<UnreviewedData | null>(
+    null,
+  );
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     rating: 0,
@@ -164,10 +180,11 @@ export default function ProductPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   // States for deletion modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+  const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
   const [deletingLoading, setDeletingLoading] = useState(false);
 
   useEffect(() => {
@@ -199,7 +216,9 @@ export default function ProductPage() {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "An error occurred while fetching product"
+          err instanceof Error
+            ? err.message
+            : "An error occurred while fetching product",
         );
       } finally {
         setLoading(false);
@@ -213,7 +232,7 @@ export default function ProductPage() {
       try {
         const response = await api.get(`/reviews/unreviewed/${params.id}`);
         if (response.data.success) setUnreviewedData(response.data.data);
-      } catch { }
+      } catch {}
     };
     if (params.id) fetchUnreviewedProducts();
   }, [params.id]);
@@ -223,9 +242,11 @@ export default function ProductPage() {
       try {
         const res = await api.get("/wishlist");
         if (res.data.success && res.data.products) {
-          setIsWishlisted(res.data.products.some((p: any) => p._id === product?._id));
+          setIsWishlisted(
+            res.data.products.some((p: any) => p._id === product?._id),
+          );
         }
-      } catch { }
+      } catch {}
     };
     if (product?._id) fetchWishlist();
   }, [product?._id]);
@@ -235,32 +256,48 @@ export default function ProductPage() {
     setSelectedImage(0);
   }, [selectedVariant]);
 
-  const handleBuyNow = async () => {
+  const handleCartAction = async (type: "add" | "buy") => {
     if (!product || !product.variants[selectedVariant]) return;
+    if (quantity <= 0) return;
+
     try {
-      setAddingToCart(true);
+      setActiveAction(type);
+      setAddToCartError(null);
+
+      if (type === "add") {
+        if (cartTimeoutRef.current) clearTimeout(cartTimeoutRef.current);
+        setAddToCartSuccess(false);
+      }
+
       const response = await api.post("/cart/addtocart", {
         productId: product._id,
         productVariantId: product.variants[selectedVariant]._id,
         quantity,
       });
-      if (response.data.success && response.data.data) {
+
+      if (response.data.success) {
         window.dispatchEvent(new Event("cartUpdated"));
-        // Find the cart item we just added/updated
-        const cart = response.data.data;
-        const cartItems = cart.cartItems || [];
-        const addedItem = cartItems.find(
-          (item: any) => {
+
+        if (type === "buy") {
+          const cartItems = response.data.data?.cartItems || [];
+          const addedItem = cartItems.find((item: any) => {
             const pId = item.productId?._id || item.productId;
             const vId = item.productVariantId?._id || item.productVariantId;
-            return pId?.toString() === product._id && vId?.toString() === product.variants[selectedVariant]._id;
+            return (
+              pId?.toString() === product._id &&
+              vId?.toString() === product.variants[selectedVariant]._id
+            );
+          });
+
+          if (addedItem) {
+            localStorage.setItem("checkoutItems", JSON.stringify([String(addedItem._id)]));
+            router.push("/checkout");
+          } else {
+            router.push("/cart");
           }
-        );
-        if (addedItem) {
-          localStorage.setItem("checkoutItems", JSON.stringify([String(addedItem._id)]));
-          router.push("/checkout");
         } else {
-          router.push("/cart");
+          setAddToCartSuccess(true);
+          cartTimeoutRef.current = setTimeout(() => setAddToCartSuccess(false), 3000);
         }
       } else {
         throw new Error(response.data.message || config.addToCartFail);
@@ -268,35 +305,12 @@ export default function ProductPage() {
     } catch (err) {
       setAddToCartError(err instanceof Error ? err.message : config.addToCartFail);
     } finally {
-      setAddingToCart(false);
+      setActiveAction(null);
     }
   };
 
-  const handleAddToCart = async () => {
-    if (!product || !product.variants[selectedVariant]) return;
-    if (quantity <= 0) return;
-    try {
-      setAddingToCart(true);
-      setAddToCartError(null);
-      const response = await api.post("/cart/addtocart", {
-        productId: product._id,
-        productVariantId: product.variants[selectedVariant]._id,
-        quantity,
-      });
-      if (response.data.success) {
-        setAddToCartSuccess(true);
-        setTimeout(() => setAddToCartSuccess(false), 3000);
-        window.dispatchEvent(new Event("cartUpdated"));
-        // Stay on the same page instead of navigating
-      } else {
-        throw new Error(response.data.message || config.addToCartFail);
-      }
-    } catch (err) {
-      setAddToCartError(err instanceof Error ? err.message : config.addToCartFail);
-    } finally {
-      setAddingToCart(false);
-    }
-  };
+  const handleBuyNow = () => handleCartAction("buy");
+  const handleAddToCart = () => handleCartAction("add");
 
   const handleToggleWishlist = async () => {
     if (!product) return;
@@ -309,19 +323,31 @@ export default function ProductPage() {
         await api.post("/wishlist/add", { productId: product._id });
         setIsWishlisted(true);
       }
-    } catch { }
+    } catch {}
     setWishlistLoading(false);
   };
 
   const handleReviewSubmit = async () => {
     if (!product) return;
-    if (reviewForm.rating === 0) { setReviewError(config.reviewForm.minRating); return; }
-    if (reviewForm.comment.length < 10) { setReviewError(config.reviewForm.minCommentLength); return; }
+    if (reviewForm.rating === 0) {
+      setReviewError(config.reviewForm.minRating);
+      return;
+    }
+    if (reviewForm.comment.length < 10) {
+      setReviewError(config.reviewForm.minCommentLength);
+      return;
+    }
     const maxFileSize = 5 * 1024 * 1024;
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     for (const image of reviewForm.images) {
-      if (image.size > maxFileSize) { setReviewError("Kích thước file không được vượt quá 5MB"); return; }
-      if (!allowedTypes.includes(image.type)) { setReviewError("Chỉ chấp nhận file ảnh (JPEG, PNG, WebP)"); return; }
+      if (image.size > maxFileSize) {
+        setReviewError("Kích thước file không được vượt quá 5MB");
+        return;
+      }
+      if (!allowedTypes.includes(image.type)) {
+        setReviewError("Chỉ chấp nhận file ảnh (JPEG, PNG, WebP)");
+        return;
+      }
     }
     try {
       setSubmittingReview(true);
@@ -350,9 +376,14 @@ export default function ProductPage() {
       }
     } catch (err: any) {
       if (err.response?.status === 413) setReviewError("File ảnh quá lớn.");
-      else if (err.response?.status === 400) setReviewError(err.response.data.message || "Dữ liệu không hợp lệ");
-      else if (err.response?.status === 500) setReviewError("Lỗi server. Vui lòng thử lại sau.");
-      else setReviewError(err instanceof Error ? err.message : config.reviewForm.error);
+      else if (err.response?.status === 400)
+        setReviewError(err.response.data.message || "Dữ liệu không hợp lệ");
+      else if (err.response?.status === 500)
+        setReviewError("Lỗi server. Vui lòng thử lại sau.");
+      else
+        setReviewError(
+          err instanceof Error ? err.message : config.reviewForm.error,
+        );
     } finally {
       setSubmittingReview(false);
     }
@@ -389,12 +420,17 @@ export default function ProductPage() {
     }
   };
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString(lang === "vi" ? "vi-VN" : "en-US", {
-      year: "numeric", month: "long", day: "numeric",
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString(lang === "vi" ? "vi-VN" : "en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
+  };
 
-  // ─── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -404,7 +440,12 @@ export default function ProductPage() {
             <div className="space-y-4">
               <div className="aspect-square rounded-2xl bg-gray-200" />
               <div className="grid grid-cols-5 gap-3">
-                {[1, 2, 3, 4, 5].map(i => <div key={i} className="aspect-square rounded-xl bg-gray-200" />)}
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square rounded-xl bg-gray-200"
+                  />
+                ))}
               </div>
             </div>
             <div className="space-y-6 pt-4">
@@ -426,7 +467,9 @@ export default function ProductPage() {
         <Header />
         <div className="max-w-7xl mx-auto px-4 py-24 text-center">
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-xl text-gray-500">{error || config.productNotFound}</p>
+          <p className="text-xl text-gray-500">
+            {error || config.productNotFound}
+          </p>
         </div>
       </div>
     );
@@ -440,22 +483,43 @@ export default function ProductPage() {
   const parentAttributes = product.variants
     .flatMap((v) => v.attributes || [])
     .filter((attr) => attr.parentId === null)
-    .reduce((acc, attr) => { acc[attr._id] = attr.value; return acc; }, {} as Record<string, string>);
+    .reduce(
+      (acc, attr) => {
+        acc[attr._id] = attr.value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
 
-  const attributeOptions: Record<string, { value: string; variantIndex: number }[]> = {};
+  const attributeOptions: Record<
+    string,
+    { value: string; variantIndex: number }[]
+  > = {};
   product.variants.forEach((v, idx) => {
     (v.attributes || []).forEach((attr) => {
       if (attr.parentId && parentAttributes[attr.parentId]) {
-        if (!attributeOptions[attr.parentId]) attributeOptions[attr.parentId] = [];
-        if (!attributeOptions[attr.parentId].some((opt) => opt.value === attr.value)) {
-          attributeOptions[attr.parentId].push({ value: attr.value, variantIndex: idx });
+        if (!attributeOptions[attr.parentId])
+          attributeOptions[attr.parentId] = [];
+        if (
+          !attributeOptions[attr.parentId].some(
+            (opt) => opt.value === attr.value,
+          )
+        ) {
+          attributeOptions[attr.parentId].push({
+            value: attr.value,
+            variantIndex: idx,
+          });
         }
       }
     });
   });
 
-  const isUnreviewed = unreviewedData?.unreviewedProducts?.some((p) => p._id === product._id);
-  const unreviewedProduct = unreviewedData?.unreviewedProducts?.find((p) => p._id === product._id);
+  const isUnreviewed = unreviewedData?.unreviewedProducts?.some(
+    (p) => p._id === product._id,
+  );
+  const unreviewedProduct = unreviewedData?.unreviewedProducts?.find(
+    (p) => p._id === product._id,
+  );
 
   // Rating distribution
   const ratingCounts = [5, 4, 3, 2, 1].map((star) => ({
@@ -464,30 +528,41 @@ export default function ProductPage() {
   }));
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+      }}
+    >
       <Header />
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
         <nav className="flex items-center gap-2 text-sm text-gray-400">
-          <a href="/" className="hover:text-primary transition-colors">Trang chủ</a>
+          <a href="/" className="hover:text-primary transition-colors">
+            Trang chủ
+          </a>
           <ChevronRight className="w-3.5 h-3.5" />
           {product.category?.[0] && (
             <>
-              <a href={`/category/${product.category[0].id}`} className="hover:text-primary transition-colors">
+              <a
+                href={`/category/${product.category[0].id}`}
+                className="hover:text-primary transition-colors"
+              >
                 {product.category[0].name}
               </a>
               <ChevronRight className="w-3.5 h-3.5" />
             </>
           )}
-          <span className="text-gray-600 font-medium truncate max-w-xs">{product.name}</span>
+          <span className="text-gray-600 font-medium truncate max-w-xs">
+            {product.name}
+          </span>
         </nav>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* ── Main Product Grid ─────────────────────────────────────────────── */}
         <div className="grid lg:grid-cols-2 gap-10 mb-14">
-
           {/* ── Left: Image Gallery ────────────────────────────────────────── */}
           <div className="space-y-4">
             {/* Main Image */}
@@ -519,13 +594,21 @@ export default function ProductPage() {
               {images.length > 1 && (
                 <>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedImage((prev) => (prev - 1 + images.length) % images.length); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(
+                        (prev) => (prev - 1 + images.length) % images.length,
+                      );
+                    }}
                     className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all"
                   >
                     <ChevronLeft className="w-4 h-4 text-gray-700" />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedImage((prev) => (prev + 1) % images.length); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage((prev) => (prev + 1) % images.length);
+                    }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all"
                   >
                     <ChevronRight className="w-4 h-4 text-gray-700" />
@@ -541,10 +624,11 @@ export default function ProductPage() {
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${selectedImage === i
-                      ? "border-primary shadow-md scale-105"
-                      : "border-transparent hover:border-gray-300 opacity-60 hover:opacity-100"
-                      }`}
+                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                      selectedImage === i
+                        ? "border-primary shadow-md scale-105"
+                        : "border-transparent hover:border-gray-300 opacity-60 hover:opacity-100"
+                    }`}
                   >
                     <Image
                       src={img.url || "/placeholder.svg"}
@@ -557,8 +641,6 @@ export default function ProductPage() {
                 ))}
               </div>
             )}
-
-
           </div>
 
           {/* ── Right: Product Info ─────────────────────────────────────────── */}
@@ -576,14 +658,20 @@ export default function ProductPage() {
             </div>
 
             {/* Product Name */}
-            <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">{product.name}</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
+              {product.name}
+            </h1>
 
             {/* Rating row */}
             {product.averageRating !== null && product.totalReviews > 0 && (
               <div className="flex items-center gap-3">
                 <StarRating rating={product.averageRating} size="sm" />
-                <span className="font-bold text-amber-500">{product.averageRating?.toFixed(1)}</span>
-                <span className="text-sm text-gray-400">({product.totalReviews} đánh giá)</span>
+                <span className="font-bold text-amber-500">
+                  {product.averageRating?.toFixed(1)}
+                </span>
+                <span className="text-sm text-gray-400">
+                  ({product.totalReviews} đánh giá)
+                </span>
               </div>
             )}
 
@@ -607,15 +695,22 @@ export default function ProductPage() {
             <Separator />
 
             {/* Description */}
-            <p className="text-gray-500 text-base leading-relaxed">{product.description}</p>
+            <p className="text-gray-500 text-base leading-relaxed">
+              {product.description}
+            </p>
 
             {/* Variant Attributes */}
             {Object.entries(attributeOptions).map(([parentId, options]) => (
               <div key={parentId}>
                 <p className="text-sm font-semibold text-gray-700 mb-2">
-                  {parentAttributes[parentId][0].toUpperCase() + parentAttributes[parentId].slice(1)}:
+                  {parentAttributes[parentId][0].toUpperCase() +
+                    parentAttributes[parentId].slice(1)}
+                  :
                   <span className="text-primary ml-2">
-                    {options.find((o) => o.variantIndex === selectedVariant)?.value}
+                    {
+                      options.find((o) => o.variantIndex === selectedVariant)
+                        ?.value
+                    }
                   </span>
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -623,10 +718,11 @@ export default function ProductPage() {
                     <button
                       key={opt.value}
                       onClick={() => setSelectedVariant(opt.variantIndex)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${selectedVariant === opt.variantIndex
-                        ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
-                        }`}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                        selectedVariant === opt.variantIndex
+                          ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
+                      }`}
                     >
                       {opt.value}
                     </button>
@@ -639,7 +735,9 @@ export default function ProductPage() {
             {inStock && (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold text-gray-700">{config.quantity}:</span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {config.quantity}:
+                  </span>
                   <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
                     <button
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -651,7 +749,11 @@ export default function ProductPage() {
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity((q) => Math.min(variant.availableQuantity, q + 1))}
+                      onClick={() =>
+                        setQuantity((q) =>
+                          Math.min(variant.availableQuantity, q + 1),
+                        )
+                      }
                       className="px-3 py-2 hover:bg-gray-50 text-gray-600 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -661,46 +763,76 @@ export default function ProductPage() {
 
                 <div className="flex gap-3">
                   {/* Add to Cart — outline style */}
-                  <button
+                  <ButtonCore
                     onClick={handleAddToCart}
-                    disabled={addingToCart}
-                    className={`flex-1 flex items-center justify-center gap-2 rounded-2xl text-sm font-bold transition-all duration-300 border-2 ${addToCartSuccess
-                      ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
-                      : "bg-white border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white active:scale-[0.98]"
-                      }`}
-                    style={{ height: "52px" }}
-                  >
-                    {addingToCart ? (
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : addToCartSuccess ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        Đã thêm!
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-4 h-4" />
-                        {config.addToCart}
-                      </>
+                    isLoading={activeAction === "add"}
+                    disabled={addToCartSuccess}
+                    variantType="outline"
+                    className={cn(
+                      "flex-1 h-[52px]",
+                      addToCartSuccess &&
+                        "bg-emerald-500 border-emerald-500 text-white shadow-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600",
                     )}
-                  </button>
+                    leftIcon={
+                      !addToCartSuccess && <ShoppingCart className="w-4 h-4" />
+                    }
+                  >
+                    {addToCartSuccess ? (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Đã thêm!</span>
+                      </div>
+                    ) : (
+                      config.addToCart
+                    )}
+                  </ButtonCore>
 
                   {/* Buy Now — filled orange gradient */}
-                  <button
+                  <ButtonCore
                     onClick={handleBuyNow}
-                    disabled={addingToCart}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-2xl text-sm font-bold text-white transition-all duration-300 active:scale-[0.98]"
+                    isLoading={activeAction === "buy"}
+                    className="flex-1 h-[52px]"
                     style={{
-                      height: "52px",
-                      background: "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
+                      background:
+                        "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
                       boxShadow: "0 4px 16px rgba(249,115,22,0.35)",
                     }}
+                    leftIcon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    }
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
                     Mua ngay
-                  </button>
+                  </ButtonCore>
+
+                  {/* Wishlist Button — Icon Only */}
+                  <ButtonCore
+                    onClick={handleToggleWishlist}
+                    isLoading={wishlistLoading}
+                    variantType="outline"
+                    className={cn(
+                      "w-[52px] h-[52px] p-0 shrink-0",
+                      isWishlisted &&
+                        "text-red-500 border-red-100 bg-red-50 hover:bg-red-100 hover:border-red-200",
+                    )}
+                    title={isWishlisted ? "Đã yêu thích" : "Thêm vào yêu thích"}
+                  >
+                    <Heart
+                      className={cn("w-5 h-5", isWishlisted && "fill-current")}
+                    />
+                  </ButtonCore>
                 </div>
 
                 {addToCartError && (
@@ -708,19 +840,6 @@ export default function ProductPage() {
                     {addToCartError}
                   </p>
                 )}
-
-                {/* Wishlist as subtle text button */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleToggleWishlist}
-                    disabled={wishlistLoading}
-                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isWishlisted ? "text-red-500" : "text-gray-400 hover:text-red-400"
-                      }`}
-                  >
-                    <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500" : ""}`} />
-                    {isWishlisted ? "Đã yêu thích" : "Thêm vào yêu thích"}
-                  </button>
-                </div>
               </div>
             )}
 
@@ -728,61 +847,84 @@ export default function ProductPage() {
             {!inStock && (
               <div className="space-y-3">
                 <div className="flex gap-3">
-                  <button
+                  <ButtonCore
                     disabled
-                    className="flex-1 flex items-center justify-center gap-2 rounded-2xl text-sm font-bold bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200"
-                    style={{ height: "52px" }}
+                    variantType="outline"
+                    className="flex-1 h-[52px] opacity-50 cursor-not-allowed"
+                    leftIcon={<ShoppingCart className="w-4 h-4" />}
                   >
-                    <ShoppingCart className="w-4 h-4" />
                     {config.outOfStock}
-                  </button>
-                  <button
+                  </ButtonCore>
+                  <ButtonCore
                     disabled
-                    className="flex-1 flex items-center justify-center gap-2 rounded-2xl text-sm font-bold text-gray-400 bg-gray-100 cursor-not-allowed"
-                    style={{ height: "52px" }}
+                    className="flex-1 h-[52px] opacity-50 cursor-not-allowed"
+                    leftIcon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    }
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
                     Mua ngay
-                  </button>
+                  </ButtonCore>
                 </div>
                 <div className="flex justify-end">
                   <button
                     onClick={handleToggleWishlist}
                     disabled={wishlistLoading}
-                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isWishlisted ? "text-red-500" : "text-gray-400 hover:text-red-400"
-                      }`}
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                      isWishlisted
+                        ? "text-red-500"
+                        : "text-gray-400 hover:text-red-400"
+                    }`}
                   >
-                    <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500" : ""}`} />
+                    <Heart
+                      className={`w-4 h-4 ${isWishlisted ? "fill-red-500" : ""}`}
+                    />
                     {isWishlisted ? "Đã yêu thích" : "Thêm vào yêu thích"}
                   </button>
                 </div>
               </div>
             )}
-
           </div>
         </div>
 
-        {/* ── Image Zoom Dialog ──────────────────────────────────────────────── */}
-        {imageZoom && (
+        {/* ── Image/Review Zoom Dialog ───────────────────────────────────────── */}
+        {(imageZoom || activePreviewUrl) && (
           <div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-            onClick={() => setImageZoom(false)}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-300"
+            onClick={() => {
+              setImageZoom(false);
+              setActivePreviewUrl(null);
+            }}
           >
             <button
-              className="absolute top-4 right-4 text-white hover:text-gray-300 bg-white/10 rounded-full p-2"
-              onClick={() => setImageZoom(false)}
+              className="absolute top-6 right-6 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-all"
+              onClick={() => {
+                setImageZoom(false);
+                setActivePreviewUrl(null);
+              }}
             >
-              <X className="w-6 h-6" />
+              <X className="w-8 h-8" />
             </button>
-            <div className="relative max-w-3xl max-h-[90vh] w-full h-full">
+            <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
               <Image
-                src={images[selectedImage]?.url || "/placeholder.svg"}
+                src={activePreviewUrl || images[selectedImage]?.url || "/placeholder.svg"}
                 alt={product.name}
                 fill
                 className="object-contain"
                 sizes="90vw"
+                priority
               />
             </div>
           </div>
@@ -793,33 +935,58 @@ export default function ProductPage() {
           <div className="mb-12">
             <div
               className="relative overflow-hidden rounded-3xl p-6 flex items-center justify-between gap-6"
-              style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              }}
             >
-              <div className="absolute inset-0 opacity-10"
-                style={{ backgroundImage: "radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "30px 30px" }}
+              <div
+                className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)",
+                  backgroundSize: "30px 30px",
+                }}
               />
               <div className="relative space-y-1">
-                <h3 className="text-xl font-bold text-white">{config.unreviewedSection.title}</h3>
-                <p className="text-white/80 text-sm">{config.unreviewedSection.subtitle}</p>
-                <p className="text-white/60 text-xs">
-                  {config.unreviewedSection.purchasedOn.replace("{date}", formatDate(unreviewedProduct.lastPurchaseDate))}
+                <h3 className="text-xl font-bold text-white">
+                  {config.unreviewedSection.title}
+                </h3>
+                <p className="text-white/80 text-sm">
+                  {config.unreviewedSection.subtitle}
                 </p>
+                {unreviewedProduct.lastPurchaseDate && (
+                  <p className="text-white/60 text-xs">
+                    {config.unreviewedSection.purchasedOn.replace(
+                      "{date}",
+                      formatDate(unreviewedProduct.lastPurchaseDate),
+                    )}
+                  </p>
+                )}
               </div>
               <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
                 <DialogTrigger asChild>
-                  <button className="relative shrink-0 bg-white text-violet-700 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
+                  <ButtonCore
+                    variantType="outline"
+                    className="relative shrink-0 bg-white text-violet-700 border-none hover:bg-white/90 shadow-lg"
+                  >
                     {config.unreviewedSection.writeReview}
-                  </button>
+                  </ButtonCore>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[520px] rounded-3xl border-0 shadow-2xl">
                   <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold">{config.reviewForm.title}</DialogTitle>
-                    <p className="text-sm text-gray-400 mt-1">{config.reviewForm.subtitle}</p>
+                    <DialogTitle className="text-2xl font-bold">
+                      {config.reviewForm.title}
+                    </DialogTitle>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {config.reviewForm.subtitle}
+                    </p>
                   </DialogHeader>
                   <div className="space-y-5 mt-2">
                     {/* Star Rating Input */}
                     <div>
-                      <Label className="text-sm font-semibold mb-2 block">{config.reviewForm.rating}</Label>
+                      <Label className="text-sm font-semibold mb-2 block">
+                        {config.reviewForm.rating}
+                      </Label>
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
@@ -827,14 +994,17 @@ export default function ProductPage() {
                             type="button"
                             onMouseEnter={() => setHoveredStar(star)}
                             onMouseLeave={() => setHoveredStar(0)}
-                            onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                            onClick={() =>
+                              setReviewForm({ ...reviewForm, rating: star })
+                            }
                             className="focus:outline-none transition-transform hover:scale-110"
                           >
                             <Star
-                              className={`w-9 h-9 transition-colors ${star <= (hoveredStar || reviewForm.rating)
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-gray-200 fill-gray-200"
-                                }`}
+                              className={`w-9 h-9 transition-colors ${
+                                star <= (hoveredStar || reviewForm.rating)
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-gray-200 fill-gray-200"
+                              }`}
                             />
                           </button>
                         ))}
@@ -843,14 +1013,22 @@ export default function ProductPage() {
 
                     {/* Comment */}
                     <div>
-                      <Label htmlFor="review-comment" className="text-sm font-semibold mb-2 block">
+                      <Label
+                        htmlFor="review-comment"
+                        className="text-sm font-semibold mb-2 block"
+                      >
                         {config.reviewForm.comment}
                       </Label>
                       <Textarea
                         id="review-comment"
                         placeholder={config.reviewForm.commentPlaceholder}
                         value={reviewForm.comment}
-                        onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                        onChange={(e) =>
+                          setReviewForm({
+                            ...reviewForm,
+                            comment: e.target.value,
+                          })
+                        }
                         rows={4}
                         className="rounded-xl border-gray-200 resize-none focus:ring-2 focus:ring-primary/30"
                       />
@@ -858,7 +1036,9 @@ export default function ProductPage() {
 
                     {/* Images */}
                     <div>
-                      <Label className="text-sm font-semibold mb-2 block">{config.reviewForm.images}</Label>
+                      <Label className="text-sm font-semibold mb-2 block">
+                        {config.reviewForm.images}
+                      </Label>
                       <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
                         <input
                           type="file"
@@ -868,28 +1048,57 @@ export default function ProductPage() {
                           onChange={(e) => {
                             const files = Array.from(e.target.files || []);
                             const maxFileSize = 5 * 1024 * 1024;
-                            const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+                            const allowedTypes = [
+                              "image/jpeg",
+                              "image/jpg",
+                              "image/png",
+                              "image/webp",
+                            ];
                             const validFiles = files.filter((file) => {
-                              if (file.size > maxFileSize) { alert(`File ${file.name} quá lớn (tối đa 5MB)`); return false; }
-                              if (!allowedTypes.includes(file.type)) { alert(`File ${file.name} không phải là ảnh hợp lệ`); return false; }
+                              if (file.size > maxFileSize) {
+                                alert(`File ${file.name} quá lớn (tối đa 5MB)`);
+                                return false;
+                              }
+                              if (!allowedTypes.includes(file.type)) {
+                                alert(
+                                  `File ${file.name} không phải là ảnh hợp lệ`,
+                                );
+                                return false;
+                              }
                               return true;
                             });
-                            setReviewForm({ ...reviewForm, images: [...reviewForm.images, ...validFiles] });
+                            setReviewForm({
+                              ...reviewForm,
+                              images: [...reviewForm.images, ...validFiles],
+                            });
                           }}
                         />
                         <Plus className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-400">Thêm ảnh (JPEG, PNG, WebP – tối đa 5MB)</span>
+                        <span className="text-sm text-gray-400">
+                          Thêm ảnh (JPEG, PNG, WebP – tối đa 5MB)
+                        </span>
                       </label>
                       {reviewForm.images.length > 0 && (
                         <div className="grid grid-cols-4 gap-2 mt-3">
                           {reviewForm.images.map((file, index) => (
                             <div key={index} className="relative aspect-square">
                               <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100">
-                                <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
                               <button
                                 type="button"
-                                onClick={() => setReviewForm({ ...reviewForm, images: reviewForm.images.filter((_, i) => i !== index) })}
+                                onClick={() =>
+                                  setReviewForm({
+                                    ...reviewForm,
+                                    images: reviewForm.images.filter(
+                                      (_, i) => i !== index,
+                                    ),
+                                  })
+                                }
                                 className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 shadow-md"
                               >
                                 <X className="w-3 h-3" />
@@ -907,17 +1116,21 @@ export default function ProductPage() {
                     )}
 
                     <div className="flex justify-end gap-3 pt-2">
-                      <Button variant="outline" onClick={() => setShowReviewForm(false)} disabled={submittingReview} className="rounded-xl">
+                      <ButtonCore
+                        variantType="ghost"
+                        onClick={() => setShowReviewForm(false)}
+                        className="h-12"
+                      >
                         {config.cancel}
-                      </Button>
-                      <Button onClick={handleReviewSubmit} disabled={submittingReview} className="rounded-xl">
-                        {submittingReview ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            {config.reviewForm.submitting}
-                          </div>
-                        ) : config.reviewForm.submit}
-                      </Button>
+                      </ButtonCore>
+                      <ButtonCore
+                        onClick={handleReviewSubmit}
+                        isLoading={submittingReview}
+                        loadingText="Đang gửi..."
+                        className="h-12"
+                      >
+                        {config.reviewForm.submit}
+                      </ButtonCore>
                     </div>
                   </div>
                 </DialogContent>
@@ -936,11 +1149,14 @@ export default function ProductPage() {
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as "description" | "reviews")}
-                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-400 hover:text-gray-700"
-                  }`}
+                onClick={() =>
+                  setActiveTab(tab.key as "description" | "reviews")
+                }
+                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                  activeTab === tab.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-400 hover:text-gray-700"
+                }`}
               >
                 {tab.label}
               </button>
@@ -950,25 +1166,52 @@ export default function ProductPage() {
           {/* Tab: Description */}
           {activeTab === "description" && (
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h2 className="text-xl font-extrabold text-gray-900 mb-4">Mô tả chi tiết</h2>
+              <h2 className="text-xl font-extrabold text-gray-900 mb-4">
+                Mô tả chi tiết
+              </h2>
               {product.description ? (
                 <p className="text-gray-600 leading-relaxed text-base whitespace-pre-line">
                   {product.description}
                 </p>
               ) : (
-                <p className="text-gray-400 italic">Chưa có mô tả chi tiết cho sản phẩm này.</p>
+                <p className="text-gray-400 italic">
+                  Chưa có mô tả chi tiết cho sản phẩm này.
+                </p>
               )}
               {/* Additional product info */}
               <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
-                  { icon: Truck, label: "Miễn phí vận chuyển", desc: "Cho đơn hàng từ 200.000đ", color: "text-emerald-600", bg: "bg-emerald-50" },
-                  { icon: Shield, label: "Bảo hành 2 năm", desc: "Đổi mới nếu lỗi sản phẩm", color: "text-blue-600", bg: "bg-blue-50" },
-                  { icon: RotateCcw, label: "Đổi trả 30 ngày", desc: "Hoàn tiền nếu không hài lòng", color: "text-violet-600", bg: "bg-violet-50" },
+                  {
+                    icon: Truck,
+                    label: "Miễn phí vận chuyển",
+                    desc: "Cho đơn hàng từ 200.000đ",
+                    color: "text-emerald-600",
+                    bg: "bg-emerald-50",
+                  },
+                  {
+                    icon: Shield,
+                    label: "Bảo hành 2 năm",
+                    desc: "Đổi mới nếu lỗi sản phẩm",
+                    color: "text-blue-600",
+                    bg: "bg-blue-50",
+                  },
+                  {
+                    icon: RotateCcw,
+                    label: "Đổi trả 30 ngày",
+                    desc: "Hoàn tiền nếu không hài lòng",
+                    color: "text-violet-600",
+                    bg: "bg-violet-50",
+                  },
                 ].map(({ icon: Icon, label, desc, color, bg }) => (
-                  <div key={label} className={`flex items-start gap-3 ${bg} rounded-2xl p-4`}>
+                  <div
+                    key={label}
+                    className={`flex items-start gap-3 ${bg} rounded-2xl p-4`}
+                  >
                     <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${color}`} />
                     <div>
-                      <p className={`text-sm font-semibold ${color}`}>{label}</p>
+                      <p className={`text-sm font-semibold ${color}`}>
+                        {label}
+                      </p>
                       <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
                     </div>
                   </div>
@@ -983,7 +1226,9 @@ export default function ProductPage() {
               {product.reviews.length === 0 ? (
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-12 text-center">
                   <Star className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-400 text-base">Chưa có đánh giá nào cho sản phẩm này.</p>
+                  <p className="text-gray-400 text-base">
+                    Chưa có đánh giá nào cho sản phẩm này.
+                  </p>
                 </div>
               ) : (
                 <div className="grid lg:grid-cols-3 gap-8">
@@ -993,22 +1238,37 @@ export default function ProductPage() {
                       <div className="text-6xl font-black text-gray-900">
                         {product.averageRating?.toFixed(1)}
                       </div>
-                      <StarRating rating={product.averageRating || 0} size="md" />
+                      <StarRating
+                        rating={product.averageRating || 0}
+                        size="md"
+                      />
                       <p className="text-sm text-gray-400">
-                        {config.basedOnReviews.replace("{n}", String(product.totalReviews))}
+                        {config.basedOnReviews.replace(
+                          "{n}",
+                          String(product.totalReviews),
+                        )}
                       </p>
                       <div className="space-y-2">
                         {ratingCounts.map(({ star, count }) => (
-                          <div key={star} className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-500 w-4 text-right">{star}</span>
+                          <div
+                            key={star}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <span className="text-gray-500 w-4 text-right">
+                              {star}
+                            </span>
                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
                             <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-amber-400 transition-all"
-                                style={{ width: `${product.totalReviews ? (count / product.totalReviews) * 100 : 0}%` }}
+                                style={{
+                                  width: `${product.totalReviews ? (count / product.totalReviews) * 100 : 0}%`,
+                                }}
                               />
                             </div>
-                            <span className="text-gray-400 w-6 text-left">{count}</span>
+                            <span className="text-gray-400 w-6 text-left">
+                              {count}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -1024,21 +1284,36 @@ export default function ProductPage() {
                       >
                         <div className="flex items-start gap-4">
                           <Avatar className="w-11 h-11 ring-2 ring-gray-100">
-                            <AvatarImage src="/placeholder.svg" alt={review.user?.name} />
+                            <AvatarImage
+                              src="/placeholder.svg"
+                              alt={review.user?.name}
+                            />
                             <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-                              {review.user?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "U"}
+                              {review.user?.name
+                                ?.split(" ")
+                                .map((n: string) => n[0])
+                                .join("")
+                                .slice(0, 2) || "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900">{review.userId?.name || review.user?.name || "Người dùng"}</span>
+                                <span className="font-bold text-gray-900">
+                                  {review.userId?.name ||
+                                    review.user?.name ||
+                                    "Người dùng"}
+                                </span>
                                 <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium border border-emerald-100">
                                   {config.verifiedPurchase}
                                 </span>
                               </div>
-                              
-                              {(currentUser?._id === (review.userId?._id || review.userId || review.user?._id) || currentUser?.role === 0) && (
+
+                              {(currentUser?._id ===
+                                (review.userId?._id ||
+                                  review.userId ||
+                                  review.user?._id) ||
+                                currentUser?.role === 0) && (
                                 <button
                                   onClick={() => handleDeleteReview(review._id)}
                                   className="text-red-500 hover:text-red-700 transition-colors p-1"
@@ -1051,16 +1326,34 @@ export default function ProductPage() {
                             <div className="flex items-center gap-2">
                               <StarRating rating={review.rating} size="sm" />
                               <span className="text-xs text-gray-400">
-                                {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                                {new Date(review.createdAt).toLocaleDateString(
+                                  "vi-VN",
+                                )}
                               </span>
                             </div>
-                            {review.title && <h4 className="font-semibold text-gray-800">{review.title}</h4>}
-                            <p className="text-gray-500 leading-relaxed text-sm">{review.comment}</p>
+                            {review.title && (
+                              <h4 className="font-semibold text-gray-800">
+                                {review.title}
+                              </h4>
+                            )}
+                            <p className="text-gray-500 leading-relaxed text-sm">
+                              {review.comment}
+                            </p>
                             {review.images?.length > 0 && (
                               <div className="flex gap-2 flex-wrap pt-1">
                                 {review.images.map((img: any, idx: number) => (
-                                  <div key={idx} className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 hover:scale-105 transition-transform cursor-pointer">
-                                    <Image src={img.url || "/placeholder.svg"} alt="" width={64} height={64} className="w-full h-full object-cover" />
+                                  <div
+                                    key={idx}
+                                    onClick={() => setActivePreviewUrl(img.url)}
+                                    className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 hover:scale-105 transition-transform cursor-pointer group"
+                                  >
+                                    <Image
+                                      src={img.url || "/placeholder.svg"}
+                                      alt=""
+                                      width={64}
+                                      height={64}
+                                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                    />
                                   </div>
                                 ))}
                               </div>

@@ -13,7 +13,7 @@ const storage = new CloudinaryStorage({
     cloudinary,
     params: async (req, file) => {
         return {
-            folder: 'rental_app',
+            folder: 'pet_nest',
             allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp', 'avif'],
             public_id: `${Date.now()}-${file.originalname.split('.')[0]}`,
             transformation: [
