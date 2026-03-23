@@ -31,6 +31,8 @@ const adminSpaServiceRoute = require("./routes/adminSpaServiceRoute");
 const searchRoute = require("./routes/searchRoute");
 const adminSpaBookingRoute = require("./routes/adminSpaBookingRoute");
 const adminOrderRoute = require("./routes/adminOrderRoute");
+const adminDashboardRoute = require("./routes/adminDashboardRoute");
+const staffDashboardRoute = require("./routes/staffDashboardRoute");
 const aiChatRoute = require("./routes/aiChatRoute");
 const chatRoute = require("./routes/chatRoute");
 
@@ -77,6 +79,8 @@ app.use("/api/staff/schedules", staffScheduleRoute);
 app.use("/api/admin/spa-services", adminSpaServiceRoute);
 app.use("/api/search", searchRoute);
 app.use("/api/admin/spa-bookings", adminSpaBookingRoute);
+app.use("/api/admin", adminDashboardRoute);
+app.use("/api/staff/dashboard", staffDashboardRoute);
 const paymentRoute = require("./routes/paymentRoute");
 app.use("/api/payments", paymentRoute);
 app.use("/api/ai", aiChatRoute);
