@@ -219,9 +219,24 @@ export default function ProductPage() {
         productVariantId: product.variants[selectedVariant]._id,
         quantity,
       });
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         window.dispatchEvent(new Event("cartUpdated"));
-        router.push("/cart");
+        // Find the cart item we just added/updated
+        const cart = response.data.data;
+        const cartItems = cart.cartItems || [];
+        const addedItem = cartItems.find(
+          (item: any) => {
+            const pId = item.productId?._id || item.productId;
+            const vId = item.productVariantId?._id || item.productVariantId;
+            return pId?.toString() === product._id && vId?.toString() === product.variants[selectedVariant]._id;
+          }
+        );
+        if (addedItem) {
+          localStorage.setItem("checkoutItems", JSON.stringify([String(addedItem._id)]));
+          router.push("/checkout");
+        } else {
+          router.push("/cart");
+        }
       } else {
         throw new Error(response.data.message || config.addToCartFail);
       }
@@ -247,6 +262,7 @@ export default function ProductPage() {
         setAddToCartSuccess(true);
         setTimeout(() => setAddToCartSuccess(false), 3000);
         window.dispatchEvent(new Event("cartUpdated"));
+        // Stay on the same page instead of navigating
       } else {
         throw new Error(response.data.message || config.addToCartFail);
       }

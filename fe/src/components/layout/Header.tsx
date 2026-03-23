@@ -131,8 +131,38 @@ function CartDropdown() {
   const { lang } = useLanguage();
   const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
-  const latestItem =
-    cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        const res = await api.get("/cart/getcart", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.success && res.data.data) {
+          const items = res.data.data.cartItems || [];
+          setCartItems(items);
+          setCartCount(items.length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cart in header", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCart();
+
+    // Lắng nghe sự kiện khi cart được update từ các component khác
+    const handleCartUpdate = () => {
+      fetchCart();
+    };
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
 
   return (
     <DropdownMenu>
@@ -148,38 +178,50 @@ function CartDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="p-4">
-          <h3 className="mb-3 font-semibold">{config.cart.title}</h3>
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
-          ) : !latestItem ? (
-            <div className="py-4 text-center text-muted-foreground">
-              {config.cart.empty}
-            </div>
+          ) : cartItems.length === 0 ? (
+            <>
+              <div className="py-4 text-center text-muted-foreground">
+                {config.cart.empty}
+              </div>
+              <Separator className="my-3" />
+              <div className="space-y-2">
+                <Button className="w-full" size="sm" asChild>
+                  <Link href="/cart">{config.cart.viewCart}</Link>
+                </Button>
+              </div>
+            </>
           ) : (
             <>
               <div className="max-h-64 space-y-3 overflow-y-auto">
-                <div
-                  key={`${latestItem._id}-${latestItem.variantId}`}
-                  className="flex items-center space-x-3"
-                >
-                  <img
-                    src={latestItem.image || "/placeholder.svg"}
-                    alt={latestItem.name}
-                    className="h-12 w-12 rounded-md object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {latestItem.name}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-red-500">
-                        {latestItem.price.toLocaleString("vi-VN")}₫
-                      </span>
+                {cartItems.slice().reverse().map((item) => (
+                  <div
+                    key={`${item._id}`}
+                    className="flex items-center space-x-3"
+                  >
+                    <img
+                      src={(item as any).product?.selectedVariant?.images?.[0]?.url || (item as any).product?.images?.[0]?.url || "/placeholder.svg"}
+                      alt={(item as any).product?.name || "Sản phẩm"}
+                      className="h-12 w-12 rounded-md object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {(item as any).product?.name || "Sản phẩm"}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-red-500">
+                          {((item as any).product?.selectedVariant?.price || 0).toLocaleString("vi-VN")}₫
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          x{(item as any).quantity || 1}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
               <Separator className="my-3" />
               <div className="space-y-2">

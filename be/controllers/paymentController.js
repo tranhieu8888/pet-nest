@@ -1,5 +1,6 @@
 const User = require("../models/userModel");
 const SpaBooking = require("../models/spaBookingModel");
+const Order = require("../models/order");
 const payOSService = require("../services/payOSService");
 const { sendNotification } = require("../services/sendNotification");
 const { ROLES } = require("../config/role");
@@ -28,17 +29,28 @@ exports.handlePayOSWebhook = async (req, res) => {
       return res.status(200).json({ success: true, message: "Test webhook received" });
     }
 
-    // Tìm booking tương ứng
+    // Tìm order sản phẩm trước
+    const productOrder = await Order.findOne({ payOSOrderCode: orderCode });
+    if (productOrder) {
+      if (status === 'PAID') {
+        productOrder.paymentMethod = 'payos-paid';
+        await productOrder.save();
+        console.log(`PayOS Webhook: Cập nhật order SP ${productOrder._id} thành công.`);
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    // Nếu không, tìm booking spa
     const booking = await SpaBooking.findOne({ payOSOrderCode: orderCode });
     if (!booking) {
-      console.error("PayOS Webhook: Booking not found for orderCode", orderCode);
-      return res.status(404).json({ success: false, message: "Booking not found" });
+      console.error("PayOS Webhook: Không tìm thấy Booking hay Order nào cho", orderCode);
+      return res.status(404).json({ success: false, message: "Không tìm thấy giao dịch" });
     }
 
     // Cập nhật trạng thái
     console.log(`PayOS Webhook: Updating booking ${booking.bookingCode}. Status: ${status}`);
     booking.payOSStatus = status;
-    
+
     if (status === "PAID" && booking.paymentStatus !== "paid") {
       console.log(`PayOS Webhook: Setting paymentStatus to 'paid' for booking ${booking.bookingCode}`);
       booking.paymentStatus = "paid";
@@ -73,7 +85,7 @@ exports.handlePayOSWebhook = async (req, res) => {
  */
 exports.getPaymentHistory = async (req, res) => {
   try {
-    const payments = await SpaBooking.find({ 
+    const payments = await SpaBooking.find({
       paymentStatus: "paid",
       status: "completed"
     })
@@ -136,7 +148,7 @@ exports.syncPaymentStatus = async (req, res) => {
         })
       );
       await Promise.all(notifyPromises);
-      
+
       return res.status(200).json({ success: true, message: "Đã cập nhật trạng thái: Đã thanh toán", status: "PAID" });
     }
 
