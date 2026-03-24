@@ -53,7 +53,7 @@ export default function ProductsPage() {
     wishlistLoading,
     handleToggleWishlist,
     resetFilters,
-  } = useCategoryFilter(params.id as string);
+  } = useCategoryFilter(params.slug as string);
 
   const itemsPerPage = 9;
 
