@@ -11,7 +11,6 @@ import { ProductGrid } from "./components/ProductGrid";
 import { CategoryBreadcrumb } from "./components/CategoryBreadcrumb";
 import { PaginationControls } from "./components/PaginationControls";
 import { Category } from "./types";
-import { toSlug } from "@/lib/slug";
 import {
   Select,
   SelectContent,
@@ -74,20 +73,19 @@ export default function ProductsPage() {
   const handleCategoryClick = (categoryId: string) => {
     resetFilters();
     const clickedCat = categories?.children?.find((c) => c._id === categoryId);
-    if (!clickedCat) return;
-
-    const newHistory = [...breadcrumbHistory, clickedCat];
-    setBreadcrumbHistory(newHistory);
-    localStorage.setItem("breadcrumbHistory", JSON.stringify(newHistory));
-    router.push(`/category/${toSlug(clickedCat.name)}`);
+    if (clickedCat) {
+      const newHistory = [...breadcrumbHistory, clickedCat];
+      setBreadcrumbHistory(newHistory);
+      localStorage.setItem("breadcrumbHistory", JSON.stringify(newHistory));
+    }
+    router.push(`/category/${categoryId}`);
   };
 
   const handleBreadcrumbClick = (history: Category[], catId?: string) => {
     setBreadcrumbHistory(history);
     localStorage.setItem("breadcrumbHistory", JSON.stringify(history));
     if (catId) {
-      const target = history.find((c) => c._id === catId);
-      router.push(`/category/${target ? toSlug(target.name) : catId}`);
+      router.push(`/category/${catId}`);
     }
   };
 
@@ -121,6 +119,7 @@ export default function ProductsPage() {
         categoryPageConfig={categoryPageConfig}
         breadcrumbHistory={breadcrumbHistory}
         setBreadcrumbHistory={setBreadcrumbHistory}
+        routerParams={params as { id: string }}
         handleBreadcrumbClick={handleBreadcrumbClick}
       />
 

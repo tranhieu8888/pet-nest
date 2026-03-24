@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import {
   Heart,
   Star,
@@ -22,6 +21,9 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -32,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/layout/Header";
 import { api } from "../../../../utils/axios";
@@ -90,62 +93,10 @@ interface Product {
     updateAt: string;
     image: string;
   }[];
-  reviews: ProductReview[];
-  reviewUsers: ReviewUser[];
+  reviews: any[];
+  reviewUsers: any[];
   averageRating: number | null;
   totalReviews: number;
-}
-
-interface ReviewImage {
-  url: string;
-}
-
-interface ReviewUser {
-  _id?: string;
-  name?: string;
-  avatar?: string;
-}
-
-const getRefId = (value?: string | { _id: string }) => {
-  if (!value) return undefined;
-  return typeof value === "string" ? value : value._id;
-};
-
-const getReviewUserName = (userId?: string | ReviewUser, user?: ReviewUser | null) => {
-  if (userId && typeof userId !== "string") return userId.name;
-  return user?.name;
-};
-
-const getReviewUserId = (userId?: string | ReviewUser, user?: ReviewUser | null) => {
-  if (userId && typeof userId !== "string") return userId._id;
-  if (typeof userId === "string") return userId;
-  return user?._id;
-};
-
-interface ProductReview {
-  _id: string;
-  rating: number;
-  comment: string;
-  title?: string;
-  createdAt: string;
-  images?: ReviewImage[];
-  user?: ReviewUser | null;
-  userId?: string | ReviewUser;
-}
-
-interface CartItemResponse {
-  _id: string;
-  productId?: string | { _id: string };
-  productVariantId?: string | { _id: string };
-}
-
-interface CurrentUser {
-  _id?: string;
-  role?: number;
-}
-
-interface ApiErrorResponse {
-  message?: string;
 }
 
 interface UnreviewedProduct {
@@ -234,7 +185,7 @@ export default function ProductPage() {
   const [hoveredStar, setHoveredStar] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // States for deletion modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -306,7 +257,7 @@ export default function ProductPage() {
         const res = await api.get("/wishlist");
         if (res.data.success && res.data.products) {
           setIsWishlisted(
-            res.data.products.some((p: { _id: string }) => p._id === product?._id),
+            res.data.products.some((p: any) => p._id === product?._id),
           );
         }
       } catch { }
@@ -347,10 +298,10 @@ export default function ProductPage() {
         window.dispatchEvent(new Event("cartUpdated"));
 
         if (type === "buy") {
-          const cartItems: CartItemResponse[] = response.data.data?.cartItems || [];
-          const addedItem = cartItems.find((item) => {
-            const pId = getRefId(item.productId);
-            const vId = getRefId(item.productVariantId);
+          const cartItems = response.data.data?.cartItems || [];
+          const addedItem = cartItems.find((item: any) => {
+            const pId = item.productId?._id || item.productId;
+            const vId = item.productVariantId?._id || item.productVariantId;
             return (
               pId?.toString() === product._id &&
               vId?.toString() === selectedVariant._id
@@ -442,16 +393,11 @@ export default function ProductPage() {
       } else {
         throw new Error(response.data.message || config.reviewForm.error);
       }
-    } catch (err: unknown) {
-      const httpErr = err as {
-        response?: { status?: number; data?: ApiErrorResponse };
-        message?: string;
-      };
-
-      if (httpErr.response?.status === 413) setReviewError("File ảnh quá lớn.");
-      else if (httpErr.response?.status === 400)
-        setReviewError(httpErr.response.data?.message || "Dữ liệu không hợp lệ");
-      else if (httpErr.response?.status === 500)
+    } catch (err: any) {
+      if (err.response?.status === 413) setReviewError("File ảnh quá lớn.");
+      else if (err.response?.status === 400)
+        setReviewError(err.response.data.message || "Dữ liệu không hợp lệ");
+      else if (err.response?.status === 500)
         setReviewError("Lỗi server. Vui lòng thử lại sau.");
       else
         setReviewError(
@@ -486,9 +432,8 @@ export default function ProductPage() {
       } else {
         alert(response.data.error || "Không thể xóa đánh giá");
       }
-    } catch (err: unknown) {
-      const httpErr = err as { response?: { data?: { error?: string } } };
-      alert(httpErr.response?.data?.error || "Lỗi khi xóa đánh giá");
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Lỗi khi xóa đánh giá");
     } finally {
       setDeletingLoading(false);
     }
@@ -647,9 +592,9 @@ export default function ProductPage() {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
         <nav className="flex items-center gap-2 text-sm text-gray-400">
-          <Link href="/" className="hover:text-primary transition-colors">
+          <a href="/" className="hover:text-primary transition-colors">
             Trang chủ
-          </Link>
+          </a>
           <ChevronRight className="w-3.5 h-3.5" />
           {product.category?.[0] && (
             <>
@@ -1206,12 +1151,9 @@ export default function ProductPage() {
                           {reviewForm.images.map((file, index) => (
                             <div key={index} className="relative aspect-square">
                               <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100">
-                                <Image
+                                <img
                                   src={URL.createObjectURL(file)}
-                                  alt="Review upload preview"
-                                  width={120}
-                                  height={120}
-                                  unoptimized
+                                  alt=""
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -1425,7 +1367,8 @@ export default function ProductPage() {
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-gray-900">
-                                  {getReviewUserName(review.userId, review.user) ||
+                                  {review.userId?.name ||
+                                    review.user?.name ||
                                     "Người dùng"}
                                 </span>
                                 <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium border border-emerald-100">
@@ -1434,7 +1377,9 @@ export default function ProductPage() {
                               </div>
 
                               {(currentUser?._id ===
-                                getReviewUserId(review.userId, review.user) ||
+                                (review.userId?._id ||
+                                  review.userId ||
+                                  review.user?._id) ||
                                 currentUser?.role === 0) && (
                                   <button
                                     onClick={() => handleDeleteReview(review._id)}
@@ -1461,9 +1406,9 @@ export default function ProductPage() {
                             <p className="text-gray-500 leading-relaxed text-sm">
                               {review.comment}
                             </p>
-                            {(review.images?.length || 0) > 0 && (
+                            {review.images?.length > 0 && (
                               <div className="flex gap-2 flex-wrap pt-1">
-                                {(review.images || []).map((img: ReviewImage, idx: number) => (
+                                {review.images.map((img: any, idx: number) => (
                                   <div
                                     key={idx}
                                     onClick={() => setActivePreviewUrl(img.url)}

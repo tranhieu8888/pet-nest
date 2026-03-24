@@ -8,6 +8,7 @@ import {
   Clock,
   Shield,
   Heart,
+  Sparkles,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -27,7 +28,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../utils/petPagesConfig.vi";
 import enConfig from "../../../utils/petPagesConfig.en";
 import { ButtonCore } from "@/components/core/ButtonCore";
-import { toSlug } from "@/lib/slug";
 
 interface Category {
   _id: string;
@@ -321,7 +321,7 @@ export default function HomePage() {
       <Header />
 
       {/* ─── HERO SECTION ─── */}
-      <section className="relative w-full overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 min-h-[580px] lg:min-h-[calc(100vh-80px)] flex flex-col justify-center py-12 md:py-0">
+      <section className="relative w-full overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 min-h-[520px] md:min-h-[600px] flex flex-col justify-center">
         {/* Ambient glow orbs */}
         <div className="pointer-events-none absolute -top-28 -right-16 h-96 w-96 rounded-full bg-pink-600/20 blur-[80px] animate-pulse" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-indigo-500/20 blur-[72px]" />
@@ -337,18 +337,17 @@ export default function HomePage() {
           }}
         />
 
-        <div className="container mx-auto px-6 py-10 md:py-16 lg:py-20">
-          <div className="grid items-center gap-10 md:grid-cols-2 lg:grid-cols-[5fr_7fr] xl:gap-20">
+        <div className="container mx-auto px-6 py-14 md:py-20">
+          <div className="grid items-center gap-12 md:grid-cols-[1fr_1fr] lg:grid-cols-[5fr_7fr]">
 
             {/* LEFT: Text content */}
             <motion.div
               initial={{ opacity: 0, x: -28 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.65, ease: "easeOut" }}
-              className="z-10"
             >
               {/* Headline */}
-              <h1 className="text-3xl font-extrabold leading-tight text-white md:text-4xl lg:text-5xl xl:text-[3.25rem]">
+              <h1 className="text-3xl font-extrabold leading-tight text-white md:text-5xl lg:text-[3.1rem]">
                 Không gian{" "}
                 <span className="bg-gradient-to-r from-pink-400 to-pink-300 bg-clip-text text-transparent">
                   mua sắm
@@ -360,13 +359,13 @@ export default function HomePage() {
                 hiện đại
               </h1>
 
-              <p className="mt-5 max-w-lg text-sm leading-relaxed text-slate-300 md:text-base lg:text-lg">
+              <p className="mt-5 max-w-lg text-sm leading-relaxed text-slate-300 md:text-base">
                 Từ sản phẩm chất lượng đến dịch vụ spa chuyên nghiệp, mọi thứ bạn cần cho boss đều có tại{" "}
                 <span className="font-semibold text-white">Pet Nest</span>.
               </p>
 
-              {/* CTA Buttons */}
-              <div className="mt-8 flex flex-wrap gap-4">
+              {/* CTA Buttons – dùng ButtonCore để đồng nhất màu sắc */}
+              <div className="mt-7 flex flex-wrap gap-3">
                 <Link href="/spa-services" id="hero-cta-spa" className="btn-glowing-wrapper bg-pink-600 shadow-xl shadow-pink-500/10 active:scale-95 transition-transform !rounded-2xl h-12">
                   <ButtonCore
                     variantType="primary"
@@ -376,7 +375,7 @@ export default function HomePage() {
                     Đặt lịch spa ngay
                   </ButtonCore>
                 </Link>
-                <Link href="/products" id="hero-cta-shop" className="h-12 active:scale-95 transition-transform">
+                <Link href="/products" id="hero-cta-shop" className="h-12">
                   <ButtonCore
                     variantType="secondary"
                     leftIcon={<ShoppingBag className="h-4 w-4" />}
@@ -389,36 +388,36 @@ export default function HomePage() {
               </div>
 
               {/* Trust badges */}
-              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-slate-400">
-                <span className="flex items-center gap-1.5 hover:text-white transition-colors">
-                  <Shield className="h-4 w-4 text-emerald-400" />
+              <div className="mt-7 flex flex-wrap items-center gap-5 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-emerald-400" />
                   Sản phẩm chính hãng
                 </span>
-                <span className="flex items-center gap-1.5 hover:text-white transition-colors">
-                  <Truck className="h-4 w-4 text-sky-400" />
+                <span className="flex items-center gap-1.5">
+                  <Truck className="h-3.5 w-3.5 text-sky-400" />
                   Giao hàng nhanh chóng
                 </span>
-                <span className="flex items-center gap-1.5 hover:text-white transition-colors">
-                  <Heart className="h-4 w-4 text-pink-400" />
+                <span className="flex items-center gap-1.5">
+                  <Heart className="h-3.5 w-3.5 text-pink-400" />
                   Hỗ trợ 24/7
                 </span>
               </div>
             </motion.div>
 
-            {/* RIGHT: Pet image + Stats cards */}
+            {/* RIGHT: Pet image + Stats cards — layout ngang để dùng hết chiều rộng cột */}
             <motion.div
               initial={{ opacity: 0, x: 28 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.65, ease: "easeOut", delay: 0.15 }}
-              className="relative flex w-full flex-col items-center gap-10 lg:flex-row lg:items-center lg:justify-end xl:gap-14"
+              className="flex w-full flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-between"
             >
               {/* Pet illustration with glowing animated border */}
-              <div className="relative shrink-0 group transition-transform duration-700 hover:scale-[1.03]">
+              <div className="relative mx-auto shrink-0 group transition-transform duration-700 hover:scale-[1.03]">
                 <div className="absolute inset-0 rounded-full bg-pink-500/25 blur-3xl scale-110 animate-pulse" />
                 
                 {/* Glowing Wrapper */}
                 <div className="glowing-wrapper glow-blur rounded-full bg-slate-900 p-[3px] shadow-2xl">
-                  <div className="relative h-52 w-52 overflow-hidden rounded-full border-2 border-white/10 bg-slate-800 sm:h-64 sm:w-64 md:h-60 md:w-60 lg:h-72 lg:w-72 xl:h-80 xl:w-80">
+                  <div className="relative h-56 w-56 overflow-hidden rounded-full border-2 border-white/10 bg-slate-800 md:h-64 md:w-64 lg:h-72 lg:w-72">
                     <Image
                       src="/hero-pets.png"
                       alt="Thú cưng tại Pet Nest"
@@ -433,7 +432,7 @@ export default function HomePage() {
                 <motion.div
                   animate={{ y: [0, -6, 0] }}
                   transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-bold text-white backdrop-blur-md shadow-xl z-20"
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-5 py-2 text-xs font-bold text-white backdrop-blur-md shadow-xl"
                 >
                   <span className="inline-flex items-center gap-2">
                     <PawPrint className="h-4 w-4 text-pink-300" />
@@ -442,8 +441,8 @@ export default function HomePage() {
                 </motion.div>
               </div>
 
-              {/* Stats grid – 2×2, adaptive width */}
-              <div className="grid w-full grid-cols-2 gap-3 sm:max-w-md lg:w-auto lg:min-w-[280px] xl:min-w-[320px]">
+              {/* Stats grid – 2×2, fill hết chiều rộng còn lại */}
+              <div className="grid w-full grid-cols-2 gap-3 lg:max-w-xs xl:max-w-sm">
                 {[
                   { label: "Khách hàng tin tưởng", value: "10,000+", icon: <Users className="h-5 w-5 text-white/80" />, border: "border-white/10", bg: "bg-white/10" },
                   { label: "Sản phẩm & dịch vụ", value: "500+", icon: <ShoppingBag className="h-5 w-5 text-pink-300" />, border: "border-pink-500/25", bg: "bg-pink-600/10" },
@@ -453,10 +452,9 @@ export default function HomePage() {
                   <motion.div
                     key={item.label}
                     initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.3 + i * 0.09 }}
-                    className={`rounded-2xl border ${item.border} ${item.bg} p-4 backdrop-blur-sm transition-transform hover:scale-[1.02]`}
+                    className={`rounded-2xl border ${item.border} ${item.bg} p-4 backdrop-blur-sm`}
                   >
                     <div className="flex items-center gap-2">
                       {item.icon}
@@ -648,7 +646,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.06 }}
               >
-                <Link href={`/category/${toSlug(category.name)}`} className="group block">
+                <Link href={`/category/${category._id}`} className="group block">
                   <div className="relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
                     <Image
                       src={getValidImageUrl(category.image)}
@@ -689,7 +687,7 @@ export default function HomePage() {
                 transition={{ duration: 0.4, delay: index * 0.06 }}
               >
                 <Link
-                  href={`/category/${toSlug(category.name)}`}
+                  href={`/category/${category._id}`}
                   className="group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-xl bg-slate-100">

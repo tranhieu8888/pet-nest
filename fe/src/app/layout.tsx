@@ -20,11 +20,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Pet Nest",
   description: "Pet Nest - Your pet care companion",
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
-  },
 };
 
 const clientId =
@@ -38,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {clientId ? (
           <GoogleOAuthProvider clientId={clientId}>
