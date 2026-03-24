@@ -112,7 +112,6 @@ export default function BlogForm({
     }, 800);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.title, isOpen, isEdit]);
 
   const validateAll = (): Errors => {

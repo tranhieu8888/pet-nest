@@ -164,7 +164,7 @@ function EditProductModal({ product, onSave, onClose, isOpen }: EditProductModal
 
   // Handle parent checkbox
   const handleParentCategoryChange = async (categoryId: string, checked: boolean) => {
-    let newSelected = checked
+    const newSelected = checked
       ? [...selectedParentCategories, categoryId]
       : selectedParentCategories.filter(id => id !== categoryId);
     setSelectedParentCategories(newSelected);
@@ -210,7 +210,7 @@ function EditProductModal({ product, onSave, onClose, isOpen }: EditProductModal
       if (!formData.name || !formData.description) throw new Error('Name and description are required');
       if (selectedParentCategories.length === 0) throw new Error('Please select at least one parent category');
       // Chỉ lấy các parentId còn tick và child/grandchild của chúng
-      let categories: { categoryId: string }[] = [];
+      const categories: { categoryId: string }[] = [];
       selectedParentCategories.forEach(parentId => {
         if (!level1Categories.find(c => c._id === parentId)) return; // parentId không hợp lệ
         categories.push({ categoryId: parentId });
@@ -1187,7 +1187,7 @@ function AddProductModal({ onSave, onClose, isOpen }: AddProductModalProps) {
   }, [selectedParentAttribute]);
 
   const handleParentCategoryChange = async (categoryId: string, checked: boolean) => {
-    let newSelected = checked
+    const newSelected = checked
       ? [...selectedParentCategories, categoryId]
       : selectedParentCategories.filter(id => id !== categoryId);
     setSelectedParentCategories(newSelected);
@@ -1232,7 +1232,7 @@ function AddProductModal({ onSave, onClose, isOpen }: AddProductModalProps) {
       if (!formData.name || !formData.description) throw new Error('Name and description are required');
       if (selectedParentCategories.length === 0) throw new Error('Please select at least one parent category');
       // Build categories giống Edit
-      let categories: { categoryId: string }[] = [];
+      const categories: { categoryId: string }[] = [];
       selectedParentCategories.forEach(parentId => {
         if (!level1Categories.find(c => c._id === parentId)) return;
         categories.push({ categoryId: parentId });
@@ -2255,7 +2255,7 @@ export default function ProductPage() {
 
   // Sort products
   const sortedProducts = React.useMemo(() => {
-    let sortable = [...products];
+    const sortable = [...products];
     if (sortConfig) {
       sortable.sort((a, b) => {
         let aValue: any = a[sortConfig.key as keyof Product];

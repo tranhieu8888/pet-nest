@@ -78,7 +78,7 @@ export default function ShoppingCart() {
         setLoading(true)
         const response = await axiosInstance.get('/cart/getcart')
         if (response.data.success) {
-          let fetchedItems: CartItem[] = response.data.data.cartItems;
+          const fetchedItems: CartItem[] = response.data.data.cartItems;
           const updatedItems = await Promise.all(fetchedItems.map(async (item) => {
             const stockAvailable = getStockAvailable(item);
             if (item.quantity > stockAvailable && stockAvailable > 0) {

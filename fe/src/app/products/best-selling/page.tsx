@@ -241,7 +241,7 @@ export default function ProductsPage() {
     }
 
     // Sắp xếp
-    let sorted = [...filtered];
+    const sorted = [...filtered];
     switch (sortBy) {
       case "price-low":
         sorted.sort(
