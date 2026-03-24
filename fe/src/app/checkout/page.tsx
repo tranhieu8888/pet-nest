@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import Header from "@/components/layout/Header"
 import axiosInstance, { api } from "../../../utils/axios"
 import axios from "axios"
+import { ButtonCore } from "@/components/core/ButtonCore"
 
 interface UserProfile {
   name: string
@@ -221,7 +222,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-sky-50">
         <Header />
         <div className="flex flex-col items-center justify-center py-40">
-          <Loader2 className="animate-spin h-10 w-10 text-emerald-600 mb-4" />
+          <Loader2 className="animate-spin h-10 w-10 text-pink-600 mb-4" />
           <p className="text-gray-500 font-medium">Đang tải biểu mẫu thanh toán...</p>
         </div>
       </div>
@@ -238,9 +239,13 @@ export default function CheckoutPage() {
 
         {/* Header Cột Back */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" className="rounded-full h-12 w-12 p-0 bg-white shadow-sm hover:shadow border border-gray-100 hover:bg-gray-50 transition-all text-gray-700" onClick={() => router.push('/cart')}>
+          <ButtonCore 
+            variantType="outline" 
+            className="h-12 w-12 p-0" 
+            onClick={() => router.push('/cart')}
+          >
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </ButtonCore>
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Thanh toán</h1>
             <p className="text-gray-500 text-sm mt-1">Hoàn tất đặt hàng để nhận ngay các sản phẩm ưng ý</p>
@@ -308,25 +313,24 @@ export default function CheckoutPage() {
                     Địa chỉ nhận hàng
                   </CardTitle>
                   {hasAddressProfile && (
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <ButtonCore
+                      variantType="outline"
+                      className="text-xs h-8"
                       onClick={() => setUseStoredAddress(!useStoredAddress)}
-                      className="text-xs h-8 rounded-full font-semibold border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
                     >
                       {useStoredAddress ? "Nhập địa chỉ mới" : "Sử dụng địa chỉ đã lưu"}
-                    </Button>
+                    </ButtonCore>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 {useStoredAddress && hasAddressProfile ? (
-                  <div className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-100 flex items-start gap-4 transition-all hover:bg-emerald-50 w-full cursor-default">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="bg-pink-50/60 p-5 rounded-2xl border border-pink-100 flex items-start gap-4 transition-all hover:bg-pink-50 w-full cursor-default">
+                    <CheckCircle2 className="w-6 h-6 text-pink-600 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-emerald-900 mb-1.5 flex items-center gap-2">
+                      <h4 className="font-bold text-pink-900 mb-1.5 flex items-center gap-2">
                         Địa chỉ mặc định
-                        <span className="bg-emerald-200/50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Đã lưu</span>
+                        <span className="bg-pink-200/50 text-pink-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Đã lưu</span>
                       </h4>
                       <p className="text-gray-700 text-sm leading-relaxed font-medium">
                         {profile?.address[0].street}
@@ -400,7 +404,7 @@ export default function CheckoutPage() {
             <Card className="rounded-3xl border border-gray-200/80 shadow-md overflow-hidden bg-white hover:shadow-lg transition-all duration-300">
               <CardHeader className="bg-slate-50 border-b border-gray-100 pb-4 px-6 pt-5">
                 <CardTitle className="text-lg flex items-center gap-2.5 font-bold text-gray-800">
-                  <CreditCard className="w-5 h-5 text-emerald-600" />
+                  <CreditCard className="w-5 h-5 text-pink-600" />
                   Phương thức thanh toán
                 </CardTitle>
               </CardHeader>
@@ -412,16 +416,16 @@ export default function CheckoutPage() {
                 >
                   <div
                     className={`relative flex items-center space-x-3 border-2 p-4 rounded-2xl cursor-pointer transition-all ${paymentMethod === "cod"
-                      ? "border-emerald-500 bg-emerald-50/30 shadow-sm ring-1 ring-emerald-100"
+                      ? "border-pink-500 bg-pink-50/30 shadow-sm ring-1 ring-pink-100"
                       : "border-gray-100 hover:bg-gray-50 hover:border-gray-200"
                       }`}
                     onClick={() => setPaymentMethod("cod")}
                   >
-                    <RadioGroupItem value="cod" id="pm-cod" className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none shadow-sm" />
+                    <RadioGroupItem value="cod" id="pm-cod" className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-none shadow-sm" />
                     <Label htmlFor="pm-cod" className="flex-1 cursor-pointer font-bold text-gray-800 text-sm leading-snug">
                       Nhận hàng nhận tiền <br /><span className="text-gray-500 font-medium text-[13px]">(Thanh toán COD)</span>
                     </Label>
-                    <Home className={`w-8 h-8 opacity-20 absolute right-4 top-1/2 -translate-y-1/2 ${paymentMethod === "cod" ? "text-emerald-600 opacity-30" : "text-gray-400"}`} />
+                    <Home className={`w-8 h-8 opacity-20 absolute right-4 top-1/2 -translate-y-1/2 ${paymentMethod === "cod" ? "text-pink-600 opacity-30" : "text-gray-400"}`} />
                   </div>
                   <div
                     className={`relative flex items-center space-x-3 border-2 p-4 rounded-2xl cursor-pointer transition-all ${paymentMethod === "payos"
@@ -487,7 +491,7 @@ export default function CheckoutPage() {
                               )
                             })}
                         </div>
-                        <div className="text-sm font-black text-emerald-600">
+                        <div className="text-sm font-black text-pink-600">
                           {formatPrice(item.product.selectedVariant.price * item.quantity)}
                         </div>
                       </div>
@@ -511,17 +515,17 @@ export default function CheckoutPage() {
                          className="h-11 rounded-xl uppercase"
                        />
                        {appliedVoucher ? (
-                         <Button type="button" variant="destructive" className="h-11 rounded-xl px-4 w-[100px] shrink-0" onClick={handleRemoveVoucher}>
+                         <ButtonCore variantType="danger" className="h-11 px-4 w-[100px] shrink-0" onClick={handleRemoveVoucher}>
                             Hủy
-                         </Button>
+                         </ButtonCore>
                        ) : (
-                         <Button type="button" onClick={handleApplyVoucher} disabled={isApplyingVoucher || !voucherCode.trim()} className="h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-5 w-[100px] shrink-0 font-medium">
+                         <ButtonCore onClick={handleApplyVoucher} disabled={isApplyingVoucher || !voucherCode.trim()} className="h-11 px-5 w-[100px] shrink-0">
                             {isApplyingVoucher ? "Đợi..." : "Áp dụng"}
-                         </Button>
+                         </ButtonCore>
                        )}
                     </div>
                     {voucherError && <p className="text-red-500 text-xs font-semibold">{voucherError}</p>}
-                    {appliedVoucher && <p className="text-emerald-500 text-xs font-semibold">Ting ting! Áp dụng giảm thêm {formatPrice(appliedVoucher.discountValue)}</p>}
+                    {appliedVoucher && <p className="text-pink-500 text-xs font-semibold">Ting ting! Áp dụng giảm thêm {formatPrice(appliedVoucher.discountValue)}</p>}
                   </div>
                 </div>
 
@@ -539,7 +543,7 @@ export default function CheckoutPage() {
                     )}
                   </div>
                   {getVoucherDiscount() > 0 && (
-                    <div className="flex justify-between items-center text-emerald-600 font-medium text-sm">
+                    <div className="flex justify-between items-center text-pink-600 font-medium text-sm">
                       <span>Giảm giá (Voucher)</span>
                       <span className="font-bold">-{formatPrice(getVoucherDiscount())}</span>
                     </div>
@@ -550,30 +554,25 @@ export default function CheckoutPage() {
                   <div className="flex justify-between items-end">
                     <span className="font-bold text-gray-800 text-lg">Tổng cộng</span>
                     <div className="text-right">
-                      <span className="text-[28px] leading-none font-black text-emerald-600 tracking-tight block">
+                      <span className="text-[28px] leading-none font-black text-pink-600 tracking-tight block">
                         {formatPrice(calculateTotal())}
                       </span>
                     </div>
                   </div>
 
-                  <Button
-                    className="w-full mt-6 h-[56px] text-lg font-extrabold bg-gray-900 hover:bg-gray-800 text-white transition-all shadow-xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] rounded-2xl relative overflow-hidden group"
+                  <ButtonCore
+                    className="w-full mt-6 h-[56px]"
                     onClick={handlePlaceOrder}
+                    isLoading={submitting}
                     disabled={submitting}
+                    rightIcon={!submitting && <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />}
                   >
                     {submitting ? (
-                      <span className="flex items-center gap-2 relative z-10">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Đang tạo đơn hàng...
-                      </span>
+                        "Đang tạo đơn hàng..."
                     ) : (
-                      <span className="flex items-center justify-center gap-2 relative z-10">
-                        {paymentMethod === 'cod' ? "Hoàn Tất Đặt Hàng" : "Chuyển Đến Trang Thanh Toán"}
-                        <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />
-                      </span>
+                      paymentMethod === 'cod' ? "Hoàn Tất Đặt Hàng" : "Chuyển Đến Trang Thanh Toán"
                     )}
-                    {!submitting && <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0 content-['']" />}
-                  </Button>
+                  </ButtonCore>
                 </div>
               </CardContent>
             </Card>

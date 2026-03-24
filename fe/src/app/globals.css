@@ -137,3 +137,85 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Glowing Animated Border */
+@keyframes rotate-conic {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.glowing-wrapper {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.glowing-wrapper::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  left: -50%;
+  top: -50%;
+  width: 200%;
+  height: 200%;
+  background-color: transparent;
+  background-image: conic-gradient(transparent, #db2777, #ec4899, #818cf8, transparent 30%);
+  animation: rotate-conic 4s linear infinite;
+}
+
+.glowing-wrapper::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 4px;
+  top: 4px;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  background: inherit;
+  border-radius: inherit;
+}
+
+.glow-blur::before {
+  filter: blur(12px);
+  opacity: 0.8;
+}
+
+/* Glowing Button Wrapper */
+.btn-glowing-wrapper {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  padding: 2px;
+  border-radius: 1rem; /* Overridden by utility if needed, but 1rem matches rounded-2xl */
+  display: inline-flex;
+}
+
+.btn-glowing-wrapper::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  left: -50%;
+  top: -50%;
+  width: 200%;
+  height: 200%;
+  background-color: transparent;
+  background-image: conic-gradient(transparent, #fff, #db2777, #ec4899, transparent 30%);
+  animation: rotate-conic 3s linear infinite;
+}
+
+.btn-glowing-wrapper::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 2px;
+  top: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  background: inherit;
+  border-radius: inherit;
+}

@@ -131,10 +131,10 @@ function StarRating({
         <Star
           key={star}
           className={`${cls} transition-colors ${star <= Math.floor(rating)
-              ? "fill-amber-400 text-amber-400"
-              : star <= rating
-                ? "fill-amber-400/50 text-amber-400"
-                : "fill-gray-200 text-gray-200"
+            ? "fill-amber-400 text-amber-400"
+            : star <= rating
+              ? "fill-amber-400/50 text-amber-400"
+              : "fill-gray-200 text-gray-200"
             }`}
         />
       ))}
@@ -624,8 +624,8 @@ export default function ProductPage() {
                     key={i}
                     onClick={() => setSelectedImage(i)}
                     className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${selectedImage === i
-                        ? "border-primary shadow-md scale-105"
-                        : "border-transparent hover:border-gray-300 opacity-60 hover:opacity-100"
+                      ? "border-primary shadow-md scale-105"
+                      : "border-transparent hover:border-gray-300 opacity-60 hover:opacity-100"
                       }`}
                   >
                     <Image
@@ -717,8 +717,8 @@ export default function ProductPage() {
                       key={opt.value}
                       onClick={() => setSelectedVariant(opt.variantIndex)}
                       className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${selectedVariant === opt.variantIndex
-                          ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
-                          : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
+                        ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
                         }`}
                     >
                       {opt.value}
@@ -880,8 +880,8 @@ export default function ProductPage() {
                     onClick={handleToggleWishlist}
                     disabled={wishlistLoading}
                     className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isWishlisted
-                        ? "text-red-500"
-                        : "text-gray-400 hover:text-red-400"
+                      ? "text-red-500"
+                      : "text-gray-400 hover:text-red-400"
                       }`}
                   >
                     <Heart
@@ -997,8 +997,8 @@ export default function ProductPage() {
                           >
                             <Star
                               className={`w-9 h-9 transition-colors ${star <= (hoveredStar || reviewForm.rating)
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "text-gray-200 fill-gray-200"
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-gray-200 fill-gray-200"
                                 }`}
                             />
                           </button>
@@ -1148,8 +1148,8 @@ export default function ProductPage() {
                   setActiveTab(tab.key as "description" | "reviews")
                 }
                 className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-gray-400 hover:text-gray-700"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-400 hover:text-gray-700"
                   }`}
               >
                 {tab.label}

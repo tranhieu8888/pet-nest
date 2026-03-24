@@ -11,7 +11,7 @@ interface ButtonCoreProps extends React.ButtonHTMLAttributes<HTMLButtonElement>,
   loadingText?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  variantType?: "primary" | "danger" | "success" | "warning" | "info" | "outline" | "ghost";
+  variantType?: "primary" | "secondary" | "danger" | "success" | "warning" | "info" | "outline" | "ghost";
 }
 
 export const ButtonCore: React.FC<ButtonCoreProps> = ({
@@ -27,6 +27,8 @@ export const ButtonCore: React.FC<ButtonCoreProps> = ({
 }) => {
   const getVariantStyles = () => {
     switch (variantType) {
+      case "secondary":
+        return "bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-200 border-none";
       case "danger":
         return "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 border-none";
       case "success":
@@ -36,12 +38,12 @@ export const ButtonCore: React.FC<ButtonCoreProps> = ({
       case "info":
         return "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 border-none";
       case "outline":
-        return "bg-white border-2 border-gray-200 hover:border-gray-900 text-gray-900 hover:bg-gray-50";
+        return "bg-white border-2 border-pink-200 hover:border-pink-600 text-pink-600 hover:bg-pink-50";
       case "ghost":
-        return "bg-transparent hover:bg-gray-100/50 text-gray-500 hover:text-gray-900";
+        return "bg-transparent hover:bg-pink-50 text-pink-600 hover:text-pink-700";
       default:
-        // Primary
-        return "bg-gray-900 hover:bg-gray-800 text-white shadow-lg shadow-gray-200 border-none";
+        // Primary – brand color
+        return "bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-200 border-none";
     }
   };
 
