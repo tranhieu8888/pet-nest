@@ -21,9 +21,6 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -34,7 +31,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/layout/Header";
 import { api } from "../../../../utils/axios";
@@ -244,9 +240,14 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchUnreviewedProducts = async () => {
       try {
+        const token = sessionStorage.getItem("token");
+        if (!token) return;
+
         const response = await api.get(`/reviews/unreviewed/${params.id}`);
         if (response.data.success) setUnreviewedData(response.data.data);
-      } catch { }
+      } catch {
+        // Bỏ qua để tránh spam 401 trên console
+      }
     };
     if (params.id) fetchUnreviewedProducts();
   }, [params.id]);
@@ -254,13 +255,18 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchWishlist = async () => {
       try {
+        const token = sessionStorage.getItem("token");
+        if (!token) return;
+
         const res = await api.get("/wishlist");
         if (res.data.success && res.data.products) {
           setIsWishlisted(
             res.data.products.some((p: any) => p._id === product?._id),
           );
         }
-      } catch { }
+      } catch {
+        // Bỏ qua để tránh spam 401 trên console
+      }
     };
     if (product?._id) fetchWishlist();
   }, [product?._id]);

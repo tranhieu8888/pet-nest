@@ -10,11 +10,11 @@ import {
   LogOut,
   User,
   ChevronUp,
-  Settings,
   CreditCard,
   LayoutDashboard,
   MessageCircle,
 } from "lucide-react";
+import Link from "next/link";
 
 import {
   Sidebar,
@@ -36,49 +36,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import Link from "next/link";
 import StaffNotificationBell from "./components/StaffNotificationBell";
 
 const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/staff/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Lịch làm việc",
-    url: "/staff/schedule",
-    icon: CalendarDays,
-  },
-  {
-    title: "Đơn dịch vụ",
-    url: "/staff/services",
-    icon: ClipboardList,
-  },
-  {
-    title: "Khách hàng thú cưng",
-    url: "/staff/customers",
-    icon: PawPrint,
-  },
-  {
-    title: "Chăm sóc & cắt tỉa",
-    url: "/staff/grooming",
-    icon: Scissors,
-  },
-  {
-    title: "Lịch sử thanh toán",
-    url: "/staff/payments",
-    icon: CreditCard,
-  },
-  {
-    title: "Tin nhắn CSKH",
-    url: "/staff/messages",
-    icon: MessageCircle,
-  },
+  { title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard },
+  { title: "Lịch làm việc", url: "/staff/schedule", icon: CalendarDays },
+  { title: "Đơn dịch vụ", url: "/staff/services", icon: ClipboardList },
+  { title: "Khách hàng thú cưng", url: "/staff/customers", icon: PawPrint },
+  { title: "Chăm sóc & cắt tỉa", url: "/staff/grooming", icon: Scissors },
+  { title: "Lịch sử thanh toán", url: "/staff/payments", icon: CreditCard },
+  { title: "Tin nhắn CSKH", url: "/staff/messages", icon: MessageCircle },
 ];
 
 function StaffSidebar({ staffId }: { staffId: string | null }) {
@@ -103,9 +73,7 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
                   </div>
                   <div className="flex flex-col leading-none">
                     <span className="font-bold text-lg">Staff Panel</span>
-                    <span className="text-xs opacity-80">
-                      Pet Nest & Grooming
-                    </span>
+                    <span className="text-xs opacity-80">Pet Nest & Grooming</span>
                   </div>
                 </Link>
               </SidebarMenuButton>
@@ -123,26 +91,19 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
           <SidebarGroupLabel className="text-gray-400 uppercase text-xs tracking-wider px-3">
             Khu vực nhân viên
           </SidebarGroupLabel>
-
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {menuItems.map((item) => {
                 const isActive = pathname === item.url;
-
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       className={`transition-all duration-200 rounded-lg ${
-                        isActive
-                          ? "bg-emerald-100 text-emerald-700 font-semibold"
-                          : "hover:bg-gray-100"
+                        isActive ? "bg-emerald-100 text-emerald-700 font-semibold" : "hover:bg-gray-100"
                       }`}
                     >
-                      <Link
-                        href={item.url}
-                        className="flex items-center gap-3 px-3 py-2"
-                      >
+                      <Link href={item.url} className="flex items-center gap-3 px-3 py-2">
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -164,29 +125,19 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-medium">Nhân viên</span>
-                <span className="text-xs text-gray-500">
-                  petnest.staff@gmail.com
-                </span>
+                <span className="text-xs text-gray-500">petnest.staff@gmail.com</span>
               </div>
               <ChevronUp className="ml-auto size-4 text-gray-400" />
             </button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
-            {/* <DropdownMenuItem
-              onClick={() => (window.location.href = "/profile")}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Hồ sơ
-            </DropdownMenuItem> */}
-
-            {/* <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Cài đặt
-            </DropdownMenuItem> */}
-
-            {/* <DropdownMenuSeparator /> */}
-
+            <DropdownMenuItem asChild>
+              <Link href="/staff/profile" className="flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                Hồ sơ của tôi
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Đăng xuất
@@ -200,17 +151,12 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
   );
 }
 
-export default function StaffLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [staffId, setStaffId] = useState<string | null>(null);
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
     if (!token) {
       router.push("/login");
@@ -219,12 +165,10 @@ export default function StaffLayout({
 
     try {
       const decoded = JSON.parse(atob(token.split(".")[1]));
-
       if (decoded.role !== 2) {
         router.push("/");
         return;
       }
-
       setStaffId(decoded.id || decoded._id || null);
     } catch {
       router.push("/login");
@@ -234,7 +178,6 @@ export default function StaffLayout({
   return (
     <SidebarProvider>
       <StaffSidebar staffId={staffId} />
-
       <SidebarInset className="bg-gray-50 min-h-screen">
         <main className="p-4">{children}</main>
       </SidebarInset>
