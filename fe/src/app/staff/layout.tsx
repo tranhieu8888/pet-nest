@@ -59,16 +59,16 @@ const menuItems = [
     url: "/staff/services",
     icon: ClipboardList,
   },
-  {
-    title: "Khách hàng thú cưng",
-    url: "/staff/customers",
-    icon: PawPrint,
-  },
-  {
-    title: "Chăm sóc & cắt tỉa",
-    url: "/staff/grooming",
-    icon: Scissors,
-  },
+  // {
+  //   title: "Khách hàng thú cưng",
+  //   url: "/staff/customers",
+  //   icon: PawPrint,
+  // },
+  // {
+  //   title: "Chăm sóc & cắt tỉa",
+  //   url: "/staff/grooming",
+  //   icon: Scissors,
+  // },
   {
     title: "Lịch sử thanh toán",
     url: "/staff/payments",
@@ -173,12 +173,12 @@ function StaffSidebar({ staffId }: { staffId: string | null }) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
-            {/* <DropdownMenuItem
-              onClick={() => (window.location.href = "/profile")}
+            <DropdownMenuItem
+              onClick={() => (window.location.href = "/staff/profile")}
             >
               <User className="mr-2 h-4 w-4" />
               Hồ sơ
-            </DropdownMenuItem> */}
+            </DropdownMenuItem>
 
             {/* <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />

@@ -293,7 +293,10 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
             <div className="px-2.5 py-2 mb-1 border-b border-slate-50">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tài khoản</p>
             </div>
-            <DropdownMenuItem className="rounded py-2 text-[13px] focus:bg-slate-50 cursor-pointer">
+            <DropdownMenuItem 
+              className="rounded py-2 text-[13px] focus:bg-slate-50 cursor-pointer"
+              onClick={() => (window.location.href = "/admin/profile")}
+            >
               <User className="mr-2 h-4 w-4 text-slate-400" />
               Hồ sơ của tôi
             </DropdownMenuItem>
