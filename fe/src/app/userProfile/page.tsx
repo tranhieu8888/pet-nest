@@ -20,10 +20,14 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../utils/petPagesConfig.vi';
 import enConfig from '../../../utils/petPagesConfig.en';
+import { AddressForm } from '@/components/core/AddressForm';
 
 interface Address {
   _id?: string;
   street?: string;
+  ward?: string;
+  district?: string;
+  province?: string;
   city?: string;
   state?: string;
   postalCode?: string;
@@ -73,182 +77,6 @@ const getPasswordStrength = (password: string) => {
   if (score <= 4) return { score, label: 'Trung bình', color: 'bg-amber-500' };
   return { score, label: 'Mạnh', color: 'bg-emerald-500' };
 };
-
-type ProvinceApiItem = {
-  name: string;
-  districts?: { name: string }[];
-};
-
-type AddressDatasetItem = {
-  province: string;
-  districts: { name: string; postalCodes: string[] }[];
-};
-
-const VN_POSTAL_CODE_BY_PROVINCE: Record<string, string[]> = {
-  'Hà Nội': ['100000'],
-  'TP. Hồ Chí Minh': ['700000'],
-  'Hải Phòng': ['180000'],
-  'Đà Nẵng': ['550000'],
-  'Cần Thơ': ['900000'],
-  'An Giang': ['880000'],
-  'Bà Rịa - Vũng Tàu': ['790000'],
-  'Bắc Giang': ['220000'],
-  'Bắc Kạn': ['260000'],
-  'Bạc Liêu': ['960000'],
-  'Bắc Ninh': ['160000'],
-  'Bến Tre': ['930000'],
-  'Bình Định': ['590000'],
-  'Bình Dương': ['820000'],
-  'Bình Phước': ['830000'],
-  'Bình Thuận': ['770000'],
-  'Cà Mau': ['970000'],
-  'Cao Bằng': ['270000'],
-  'Đắk Lắk': ['630000'],
-  'Đắk Nông': ['640000'],
-  'Điện Biên': ['320000'],
-  'Đồng Nai': ['810000'],
-  'Đồng Tháp': ['870000'],
-  'Gia Lai': ['610000'],
-  'Hà Giang': ['200000'],
-  'Hà Nam': ['180000'],
-  'Hà Tĩnh': ['480000'],
-  'Hải Dương': ['170000'],
-  'Hậu Giang': ['950000'],
-  'Hòa Bình': ['350000'],
-  'Hưng Yên': ['160000'],
-  'Khánh Hòa': ['650000'],
-  'Kiên Giang': ['920000'],
-  'Kon Tum': ['600000'],
-  'Lai Châu': ['300000'],
-  'Lâm Đồng': ['660000'],
-  'Lạng Sơn': ['250000'],
-  'Lào Cai': ['310000'],
-  'Long An': ['850000'],
-  'Nam Định': ['070000'],
-  'Nghệ An': ['460000'],
-  'Ninh Bình': ['430000'],
-  'Ninh Thuận': ['660000'],
-  'Phú Thọ': ['290000'],
-  'Phú Yên': ['620000'],
-  'Quảng Bình': ['510000'],
-  'Quảng Nam': ['560000'],
-  'Quảng Ngãi': ['570000'],
-  'Quảng Ninh': ['200000'],
-  'Quảng Trị': ['520000'],
-  'Sóc Trăng': ['960000'],
-  'Sơn La': ['360000'],
-  'Tây Ninh': ['800000'],
-  'Thái Bình': ['060000'],
-  'Thái Nguyên': ['240000'],
-  'Thanh Hóa': ['440000'],
-  'Thừa Thiên Huế': ['530000'],
-  'Tiền Giang': ['860000'],
-  'Trà Vinh': ['940000'],
-  'Tuyên Quang': ['300000'],
-  'Vĩnh Long': ['890000'],
-  'Vĩnh Phúc': ['280000'],
-  'Yên Bái': ['330000'],
-};
-
-const normalizeProvinceName = (name: string) =>
-  name
-    .replace(/^Tỉnh\s+/i, '')
-    .replace(/^Thành phố\s+/i, '')
-    .replace(/^TP\.\s*/i, '')
-    .trim();
-
-const getPostalCodesByProvince = (provinceName: string) => {
-  if (!provinceName) return [];
-  const normalized = normalizeProvinceName(provinceName);
-
-  const exactKey = Object.keys(VN_POSTAL_CODE_BY_PROVINCE).find(
-    (key) => normalizeProvinceName(key).toLowerCase() === normalized.toLowerCase(),
-  );
-
-  if (exactKey) return VN_POSTAL_CODE_BY_PROVINCE[exactKey];
-  return ['000000'];
-};
-
-const FALLBACK_VN_ADDRESS_DATA: AddressDatasetItem[] = [
-  {
-    province: 'Hà Nội',
-    districts: [
-      { name: 'Ba Đình', postalCodes: ['11100'] },
-      { name: 'Hoàn Kiếm', postalCodes: ['11000'] },
-      { name: 'Cầu Giấy', postalCodes: ['11300'] },
-      { name: 'Đống Đa', postalCodes: ['11500'] },
-    ],
-  },
-  {
-    province: 'TP. Hồ Chí Minh',
-    districts: [
-      { name: 'Quận 1', postalCodes: ['700000'] },
-      { name: 'Quận 3', postalCodes: ['724000'] },
-      { name: 'Quận Bình Thạnh', postalCodes: ['723000'] },
-      { name: 'TP. Thủ Đức', postalCodes: ['713000'] },
-    ],
-  },
-  {
-    province: 'Đà Nẵng',
-    districts: [
-      { name: 'Hải Châu', postalCodes: ['550000'] },
-      { name: 'Thanh Khê', postalCodes: ['551000'] },
-      { name: 'Sơn Trà', postalCodes: ['552000'] },
-      { name: 'Ngũ Hành Sơn', postalCodes: ['557000'] },
-    ],
-  },
-  {
-    province: 'Hải Phòng',
-    districts: [
-      { name: 'Hồng Bàng', postalCodes: ['180000'] },
-      { name: 'Ngô Quyền', postalCodes: ['181000'] },
-      { name: 'Lê Chân', postalCodes: ['182000'] },
-    ],
-  },
-  {
-    province: 'Cần Thơ',
-    districts: [
-      { name: 'Ninh Kiều', postalCodes: ['940000'] },
-      { name: 'Bình Thủy', postalCodes: ['941000'] },
-      { name: 'Cái Răng', postalCodes: ['949000'] },
-    ],
-  },
-  {
-    province: 'Khánh Hòa',
-    districts: [
-      { name: 'Nha Trang', postalCodes: ['650000'] },
-      { name: 'Cam Ranh', postalCodes: ['655000'] },
-    ],
-  },
-  {
-    province: 'Lâm Đồng',
-    districts: [
-      { name: 'Đà Lạt', postalCodes: ['670000'] },
-      { name: 'Bảo Lộc', postalCodes: ['674000'] },
-    ],
-  },
-  {
-    province: 'Quảng Ninh',
-    districts: [
-      { name: 'Hạ Long', postalCodes: ['200000'] },
-      { name: 'Cẩm Phả', postalCodes: ['207000'] },
-    ],
-  },
-  {
-    province: 'Nghệ An',
-    districts: [
-      { name: 'Vinh', postalCodes: ['460000'] },
-      { name: 'Cửa Lò', postalCodes: ['461000'] },
-    ],
-  },
-  {
-    province: 'Thừa Thiên Huế',
-    districts: [
-      { name: 'Huế', postalCodes: ['530000'] },
-      { name: 'Hương Thủy', postalCodes: ['531000'] },
-    ],
-  },
-] as const;
 
 const UserProfilePage = () => {
   const { lang } = useLanguage();
@@ -330,51 +158,14 @@ const UserProfilePage = () => {
     return () => clearTimeout(timer);
   }, [successMsg]);
 
+
+
   const birthdayDisplay = useMemo(() => {
     if (!userData.birthday) return 'Chưa cập nhật';
     const date = new Date(userData.birthday);
     if (Number.isNaN(date.getTime())) return 'Chưa cập nhật';
     return date.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US');
   }, [userData.birthday, lang]);
-
-  const [vnAddressData, setVnAddressData] = useState<AddressDatasetItem[]>(FALLBACK_VN_ADDRESS_DATA);
-
-  useEffect(() => {
-    const fetchVnAddressData = async () => {
-      try {
-        const response = await fetch('https://provinces.open-api.vn/api/?depth=2');
-        if (!response.ok) return;
-
-        const rawData = (await response.json()) as ProvinceApiItem[];
-        const normalized: AddressDatasetItem[] = rawData.map((province) => ({
-          province: province.name,
-          districts: (province.districts || []).map((district) => ({
-            name: district.name,
-            postalCodes: getPostalCodesByProvince(province.name),
-          })),
-        }));
-
-        if (normalized.length > 0) {
-          setVnAddressData(normalized);
-        }
-      } catch (apiError) {
-        console.error('Cannot load provinces API, using fallback data.', apiError);
-      }
-    };
-
-    fetchVnAddressData();
-  }, []);
-
-  const provinceOptions = useMemo(() => vnAddressData.map((item) => item.province), [vnAddressData]);
-
-  const getDistrictOptions = (province?: string) => {
-    const provinceData = vnAddressData.find((item) => item.province === province);
-    return provinceData?.districts ?? [];
-  };
-
-  const getPostalCodeOptions = (province?: string) => {
-    return getPostalCodesByProvince(province || '');
-  };
 
   const getDateInputValue = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -449,6 +240,9 @@ const UserProfilePage = () => {
   const handleAddAddress = () => {
     const newAddress: Address = {
       street: '',
+      ward: '',
+      district: '',
+      province: '',
       city: '',
       state: '',
       postalCode: '',
@@ -710,128 +504,40 @@ const UserProfilePage = () => {
                 {isEditing ? (
                   <div className="space-y-4">
                     {(editData?.address || []).map((addr, idx) => (
-                      <div key={addr._id || idx} className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="mb-2 text-sm font-semibold text-slate-700">Địa chỉ {idx + 1}</p>
+                      <div key={addr._id || idx} className="rounded-xl border border-slate-200 bg-white p-4">
+                        <p className="mb-4 text-sm font-semibold text-slate-700 border-b pb-2">Địa chỉ {idx + 1}</p>
 
-                        <div className="grid gap-2 md:grid-cols-2">
-                          <input
-                            placeholder="Số nhà, đường"
-                            value={addr.street ?? ''}
-                            onChange={(e) =>
-                              setEditData((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      address: prev.address.map((a, i) =>
-                                        i === idx ? { ...a, street: e.target.value } : a,
-                                      ),
-                                    }
-                                  : prev,
-                              )
-                            }
-                            className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
-                          />
-                          <select
-                            value={addr.state ?? ''}
-                            onChange={(e) => {
-                              const selectedProvince = e.target.value;
-                              const autoPostalCode = getPostalCodeOptions(selectedProvince)[0] || '';
-                              setEditData((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      address: prev.address.map((a, i) =>
-                                        i === idx
-                                          ? {
-                                              ...a,
-                                              state: selectedProvince,
-                                              city: '',
-                                              postalCode: autoPostalCode,
-                                              country: 'Vietnam',
-                                            }
-                                          : a,
-                                      ),
-                                    }
-                                  : prev,
-                              );
-                            }}
-                            className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
-                          >
-                            <option value="">Chọn Tỉnh/Thành phố</option>
-                            {provinceOptions.map((province) => (
-                              <option key={province} value={province}>
-                                {province}
-                              </option>
-                            ))}
-                          </select>
-
-                          <select
-                            value={addr.city ?? ''}
-                            onChange={(e) => {
-                              const selectedDistrict = e.target.value;
-                              const postalCodes = getPostalCodeOptions(addr.state);
-
-                              setEditData((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      address: prev.address.map((a, i) =>
-                                        i === idx
-                                          ? {
-                                              ...a,
-                                              city: selectedDistrict,
-                                              postalCode: postalCodes[0] || '',
-                                            }
-                                          : a,
-                                      ),
-                                    }
-                                  : prev,
-                              );
-                            }}
-                            disabled={!addr.state}
-                            className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          >
-                            <option value="">Chọn Quận/Huyện</option>
-                            {getDistrictOptions(addr.state).map((district) => (
-                              <option key={district.name} value={district.name}>
-                                {district.name}
-                              </option>
-                            ))}
-                          </select>
-
-                          <input
-                            value={addr.postalCode ?? ''}
-                            readOnly
-                            placeholder="Mã bưu điện tự động"
-                            className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-slate-700 outline-none"
-                          />
-                          <input
-                            placeholder="Quốc gia"
-                            value={addr.country ?? ''}
-                            onChange={(e) =>
-                              setEditData((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      address: prev.address.map((a, i) =>
-                                        i === idx ? { ...a, country: e.target.value } : a,
-                                      ),
-                                    }
-                                  : prev,
-                              )
-                            }
-                            className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 md:col-span-2"
-                          />
-                        </div>
+                        <AddressForm
+                          hideLabels={true}
+                          value={{
+                             street: addr.street || '',
+                             ward: addr.ward || '',
+                             province: addr.province || '',
+                          }}
+                          onChange={(newAddr) => {
+                             setEditData((prev) =>
+                               prev
+                                 ? {
+                                     ...prev,
+                                     address: prev.address.map((a, i) =>
+                                       i === idx ? { ...a, ...newAddr } : a,
+                                     ),
+                                   }
+                                 : prev,
+                             );
+                          }}
+                        />
 
                         {editData && editData.address.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteAddress(addr._id || '', idx)}
-                            className="mt-3 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600"
-                          >
-                            Xóa địa chỉ này
-                          </button>
+                          <div className="mt-4 pt-3 border-t">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAddress(addr._id || '', idx)}
+                              className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                              Xóa địa chỉ này
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -848,7 +554,7 @@ const UserProfilePage = () => {
                   <ul className="space-y-2">
                     {userData.address.map((addr, idx) => (
                       <li key={addr._id || idx} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-800">
-                        {[addr.street, addr.city, addr.state, addr.postalCode, addr.country]
+                        {[addr.street, addr.ward, addr.province]
                           .filter(Boolean)
                           .join(', ') || 'Chưa cập nhật'}
                       </li>

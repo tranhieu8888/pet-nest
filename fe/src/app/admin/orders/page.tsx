@@ -51,11 +51,14 @@ type Order = {
   status: OrderStatus;
   paymentMethod?: string;
   address?: {
-    street: string;
-    city: string;
+    street?: string;
+    ward?: string;
+    district?: string;
+    province?: string;
+    city?: string;
     state?: string;
-    postalCode: string;
-    country: string;
+    postalCode?: string;
+    country?: string;
   };
   createAt: string;
   updateAt: string;
@@ -75,8 +78,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -161,7 +164,7 @@ export default function AdminOrdersPage() {
     if (searchKeyword) {
       params.set("search", searchKeyword);
     }
-    
+
     if (statusFilter && statusFilter !== "All") {
       params.set("status", statusFilter);
     }
@@ -215,7 +218,7 @@ export default function AdminOrdersPage() {
 
   const updateOrderStatus = async (id: string, newStatus: OrderStatus) => {
     if (!window.confirm("Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng này?")) return;
-    
+
     try {
       setUpdatingStatus(true);
       await api.patch(
@@ -223,15 +226,15 @@ export default function AdminOrdersPage() {
         { status: newStatus },
         { headers: getAuthHeaders() }
       );
-      
+
       // Refresh details if modal is open
       if (selectedOrder && selectedOrder._id === id) {
         await fetchOrderDetail(id);
       }
-      
+
       // Refresh list
       await fetchOrders();
-      
+
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
       alert(
@@ -295,7 +298,7 @@ export default function AdminOrdersPage() {
               Đặt lại
             </button>
           </div>
-          
+
           {/* Status Filter Tabs */}
           <div className="mt-4 flex flex-wrap gap-2">
             {[
@@ -308,11 +311,10 @@ export default function AdminOrdersPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value as any)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  statusFilter === tab.value
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${statusFilter === tab.value
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -362,7 +364,7 @@ export default function AdminOrdersPage() {
 
                         <td className="px-5 py-5 align-top">
                           <div className="font-semibold text-gray-900">
-                            {order.userId?.name || "Khách ẩn danh"}
+                            {order.userId?.name || "-"}
                           </div>
                           <div className="mt-1 text-sm text-gray-500">
                             {order.userId?.email || "-"}
@@ -477,10 +479,10 @@ export default function AdminOrdersPage() {
               ) : (
                 <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    
+
                     {/* Left Column - Details */}
                     <div className="lg:col-span-2 space-y-6">
-                      
+
                       {/* Items */}
                       <div className="rounded-2xl border bg-white p-5 shadow-sm">
                         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
@@ -490,11 +492,11 @@ export default function AdminOrdersPage() {
                         <div className="space-y-4">
                           {selectedOrder.OrderItems?.map((item, idx) => (
                             <div key={idx} className="flex gap-4 border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-gray-50">
+                              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-gray-50">
                                 {item.productVariant?.images?.[0]?.url ? (
-                                  <img 
-                                    src={item.productVariant.images[0].url} 
-                                    alt="Product" 
+                                  <img
+                                    src={item.productVariant.images[0].url}
+                                    alt="Product"
                                     className="h-full w-full object-cover"
                                   />
                                 ) : (
@@ -523,20 +525,20 @@ export default function AdminOrdersPage() {
                           <CreditCard className="h-5 w-5 text-indigo-500" />
                           Thanh toán
                         </div>
-                        
+
                         <div className="space-y-3 text-sm">
                           <div className="flex justify-between">
                             <span className="text-gray-500">Phương thức:</span>
                             <span className="font-medium">{selectedOrder.paymentMethod || "COD"}</span>
                           </div>
-                          
+
                           {selectedOrder.voucher && selectedOrder.voucher.length > 0 && (
                             <div className="flex justify-between">
                               <span className="text-gray-500">Voucher áp dụng:</span>
                               <span className="font-medium text-green-600">{selectedOrder.voucher.length} voucher</span>
                             </div>
                           )}
-                          
+
                           <div className="border-t pt-3 mt-3 flex justify-between text-base font-bold">
                             <span>Tổng cộng:</span>
                             <span className="text-indigo-600">{formatCurrency(selectedOrder.total)}</span>
@@ -548,18 +550,18 @@ export default function AdminOrdersPage() {
 
                     {/* Right Column - Customer & Actions */}
                     <div className="space-y-6">
-                      
+
                       {/* Status Update Actions */}
                       <div className="rounded-2xl border bg-indigo-50 p-5 shadow-sm">
                         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-indigo-900">
                           <Truck className="h-5 w-5" />
                           Trạng thái đơn
                         </div>
-                        
+
                         <div className="mb-5 inline-flex rounded-full border bg-white px-4 py-2 text-sm font-semibold shadow-sm">
                           {getStatusLabel(selectedOrder.status)}
                         </div>
-                        
+
                         <div className="space-y-3">
                           {selectedOrder.status === "processing" && (
                             <>
@@ -639,9 +641,8 @@ export default function AdminOrdersPage() {
                         </div>
                         {selectedOrder.address ? (
                           <div className="space-y-1 text-sm text-gray-700">
-                            <p className="font-medium">{selectedOrder.address.street}</p>
-                            <p>{selectedOrder.address.city}{selectedOrder.address.state ? `, ${selectedOrder.address.state}` : ''}</p>
-                            <p>{selectedOrder.address.postalCode} - {selectedOrder.address.country}</p>
+                            <p>{selectedOrder.address.street}</p>
+                            <p>{selectedOrder.address.ward ? `${selectedOrder.address.ward}, ` : ''}{selectedOrder.address.province ? selectedOrder.address.province : ''}</p>
                           </div>
                         ) : (
                           <div className="text-sm text-gray-500">Chưa có thông tin địa chỉ</div>
