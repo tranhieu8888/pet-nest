@@ -10,6 +10,7 @@ import { api } from '../../../utils/axios';
 import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../utils/petPagesConfig.vi';
 import enConfig from '../../../utils/petPagesConfig.en';
+import { ButtonCore } from '@/components/core/ButtonCore';
 
 interface ErrorResponse {
   success: boolean;
@@ -292,7 +293,7 @@ function LoginForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
               </div>
             </div>
@@ -307,7 +308,7 @@ function LoginForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -320,23 +321,23 @@ function LoginForm() {
                 <input type="checkbox" checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} />
                 {text.rememberMe}
               </label>
-              <Link href="/forgetpass" className="font-medium text-blue-600 hover:underline">
+              <Link href="/forgetpass" className="font-medium text-pink-600 hover:underline">
                 {text.forgotPassword}
               </Link>
             </div>
 
-            <button type="submit" disabled={isLoading} className="w-full rounded-xl bg-slate-900 py-2.5 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">
+            <ButtonCore type="submit" isLoading={isLoading} className="w-full">
               {isLoading ? text.loading : text.submit}
-            </button>
+            </ButtonCore>
 
-            <button
-              type="button"
+            <ButtonCore
+              variantType="outline"
               onClick={() => pushWithTransition('/homepage')}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2.5 font-medium text-slate-700 transition hover:bg-slate-50"
+              className="w-full"
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
             >
-              <ArrowLeft className="h-4 w-4" />
               {text.backHome}
-            </button>
+            </ButtonCore>
           </form>
 
           <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
@@ -367,13 +368,13 @@ function LoginForm() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h3 className="text-lg font-bold text-slate-900">{text.notVerifiedTitle}</h3>
             <p className="mt-2 text-sm text-slate-600">{text.notVerifiedDescription}</p>
-            <div className="mt-5 flex gap-2">
-              <button onClick={() => setShowVerificationModal(false)} className="w-full rounded-xl border border-slate-300 py-2 text-slate-700">
+             <div className="mt-5 flex gap-2">
+              <ButtonCore variantType="outline" onClick={() => setShowVerificationModal(false)} className="w-full">
                 {text.close}
-              </button>
-              <button onClick={handleResendVerification} disabled={resendLoading} className="w-full rounded-xl bg-slate-900 py-2 font-semibold text-white disabled:opacity-60">
+              </ButtonCore>
+              <ButtonCore onClick={handleResendVerification} isLoading={resendLoading} className="w-full">
                 {resendLoading ? text.resending : text.resendEmail}
-              </button>
+              </ButtonCore>
             </div>
           </div>
         </div>

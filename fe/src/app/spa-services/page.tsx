@@ -11,6 +11,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { api } from "../../../utils/axios";
 import { useRouter } from "next/navigation";
+import { ButtonCore } from "@/components/core/ButtonCore";
 
 interface SpaService {
   _id: string;
@@ -43,9 +44,8 @@ function getSpaImageUrl(image?: string) {
     return trimmed;
   }
 
-  return `http://localhost:5000${
-    trimmed.startsWith("/") ? trimmed : `/${trimmed}`
-  }`;
+  return `http://localhost:5000${trimmed.startsWith("/") ? trimmed : `/${trimmed}`
+    }`;
 }
 
 function getCategoryLabel(category: SpaService["category"]) {
@@ -103,8 +103,8 @@ export default function SpaServicesPage() {
         const servicesData = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
-          ? response.data
-          : [];
+            ? response.data
+            : [];
 
         const activeServices = servicesData.filter(
           (service: SpaService) => service.isActive
@@ -117,8 +117,8 @@ export default function SpaServicesPage() {
         if (err instanceof AxiosError) {
           setError(
             err.response?.data?.message ||
-              err.message ||
-              "Có lỗi xảy ra khi tải danh sách dịch vụ spa"
+            err.message ||
+            "Có lỗi xảy ra khi tải danh sách dịch vụ spa"
           );
         } else if (err instanceof Error) {
           setError(err.message);
@@ -316,16 +316,22 @@ export default function SpaServicesPage() {
                         <div className="mt-auto flex gap-2">
                           <Link
                             href={`/spa-services/${service.slug}`}
-                            className="flex-1 text-center border border-pink-600 text-pink-600 hover:bg-pink-50 px-4 py-2.5 rounded-xl font-medium transition"
+                            className="flex-1"
                           >
-                            Xem chi tiết
+                            <ButtonCore
+                              variantType="outline"
+                              className="w-full h-10 text-xs rounded-xl"
+                            >
+                              Xem chi tiết
+                            </ButtonCore>
                           </Link>
-                          <button
+                          <ButtonCore
+                            variantType="primary"
+                            className="flex-1 h-10 text-xs rounded-xl"
                             onClick={() => handleBookingClick(service.slug)}
-                            className="flex-1 text-center bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl font-medium transition"
                           >
                             Đặt lịch
-                          </button>
+                          </ButtonCore>
                         </div>
                       </div>
                     </div>
@@ -356,11 +362,10 @@ export default function SpaServicesPage() {
                         <button
                           key={page}
                           onClick={() => handleGoToPage(page)}
-                          className={`w-10 h-10 rounded-lg font-medium transition ${
-                            isActive
+                          className={`w-10 h-10 rounded-lg font-medium transition ${isActive
                               ? "bg-pink-600 text-white"
                               : "border border-pink-200 text-pink-600 hover:bg-pink-50"
-                          }`}
+                            }`}
                         >
                           {page}
                         </button>
