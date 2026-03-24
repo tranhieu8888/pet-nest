@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
@@ -11,6 +12,7 @@ import { ProductGrid } from "./components/ProductGrid";
 import { CategoryBreadcrumb } from "./components/CategoryBreadcrumb";
 import { PaginationControls } from "./components/PaginationControls";
 import { Category } from "./types";
+import { toSlug } from "@/lib/slug";
 import {
   Select,
   SelectContent,
@@ -52,9 +54,19 @@ export default function ProductsPage() {
     wishlistLoading,
     handleToggleWishlist,
     resetFilters,
-  } = useCategoryFilter(params.id as string);
+    resolvedCategoryId,
+  } = useCategoryFilter(params.slug as string);
 
   const itemsPerPage = 9;
+
+  useEffect(() => {
+    const rawSlug = params.slug as string;
+    if (!rawSlug || !resolvedCategoryId || !categories?.parent?.name) return;
+
+    if (/^[a-f\d]{24}$/i.test(rawSlug)) {
+      router.replace(`/category/${toSlug(categories.parent.name)}`);
+    }
+  }, [params.slug, resolvedCategoryId, categories?.parent?.name, router]);
 
   // Tạo danh sách brand động từ allProducts
   const brandCounts = allProducts.reduce((acc, p) => {
@@ -73,19 +85,20 @@ export default function ProductsPage() {
   const handleCategoryClick = (categoryId: string) => {
     resetFilters();
     const clickedCat = categories?.children?.find((c) => c._id === categoryId);
-    if (clickedCat) {
-      const newHistory = [...breadcrumbHistory, clickedCat];
-      setBreadcrumbHistory(newHistory);
-      localStorage.setItem("breadcrumbHistory", JSON.stringify(newHistory));
-    }
-    router.push(`/category/${categoryId}`);
+    if (!clickedCat) return;
+
+    const newHistory = [...breadcrumbHistory, clickedCat];
+    setBreadcrumbHistory(newHistory);
+    localStorage.setItem("breadcrumbHistory", JSON.stringify(newHistory));
+    router.push(`/category/${toSlug(clickedCat.name)}`);
   };
 
   const handleBreadcrumbClick = (history: Category[], catId?: string) => {
     setBreadcrumbHistory(history);
     localStorage.setItem("breadcrumbHistory", JSON.stringify(history));
     if (catId) {
-      router.push(`/category/${catId}`);
+      const target = history.find((c) => c._id === catId);
+      router.push(`/category/${target ? toSlug(target.name) : catId}`);
     }
   };
 
@@ -119,7 +132,6 @@ export default function ProductsPage() {
         categoryPageConfig={categoryPageConfig}
         breadcrumbHistory={breadcrumbHistory}
         setBreadcrumbHistory={setBreadcrumbHistory}
-        routerParams={params as { id: string }}
         handleBreadcrumbClick={handleBreadcrumbClick}
       />
 

@@ -36,6 +36,7 @@ import { io, Socket } from "socket.io-client";
 import pagesConfigEn from "../../../utils/petPagesConfig.en.js";
 import pagesConfigVi from "../../../utils/petPagesConfig.vi.js";
 import { jwtDecode } from "jwt-decode";
+import { toSlug } from "@/lib/slug";
 
 declare global {
   interface Window {
@@ -63,6 +64,7 @@ type SpaServiceMenuItem = {
   name: string;
   slug: string;
   category: "spa" | "cleaning" | "grooming" | "coloring";
+  image?: string;
   isActive: boolean;
 };
 
@@ -131,8 +133,38 @@ function CartDropdown() {
   const { lang } = useLanguage();
   const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
-  const latestItem =
-    cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        const res = await api.get("/cart/getcart", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.success && res.data.data) {
+          const items = res.data.data.cartItems || [];
+          setCartItems(items);
+          setCartCount(items.length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cart in header", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCart();
+
+    // Lắng nghe sự kiện khi cart được update từ các component khác
+    const handleCartUpdate = () => {
+      fetchCart();
+    };
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
 
   return (
     <DropdownMenu>
@@ -140,7 +172,7 @@ function CartDropdown() {
         <Button variant="ghost" size="sm" className="relative">
           <ShoppingCart className="h-5 w-5" />
           {cartCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
+            <Badge className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-pink-600 p-0 text-[10px] font-bold text-white ring-2 ring-white">
               {cartCount}
             </Badge>
           )}
@@ -148,42 +180,54 @@ function CartDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="p-4">
-          <h3 className="mb-3 font-semibold">{config.cart.title}</h3>
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
-              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-pink-600"></div>
             </div>
-          ) : !latestItem ? (
-            <div className="py-4 text-center text-muted-foreground">
-              {config.cart.empty}
-            </div>
-          ) : (
+          ) : cartItems.length === 0 ? (
             <>
-              <div className="max-h-64 space-y-3 overflow-y-auto">
-                <div
-                  key={`${latestItem._id}-${latestItem.variantId}`}
-                  className="flex items-center space-x-3"
-                >
-                  <img
-                    src={latestItem.image || "/placeholder.svg"}
-                    alt={latestItem.name}
-                    className="h-12 w-12 rounded-md object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {latestItem.name}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-red-500">
-                        {latestItem.price.toLocaleString("vi-VN")}₫
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div className="py-4 text-center text-muted-foreground">
+                {config.cart.empty}
               </div>
               <Separator className="my-3" />
               <div className="space-y-2">
-                <Button className="w-full" size="sm" asChild>
+                <Button className="w-full bg-pink-600 font-bold text-white hover:bg-pink-700" size="sm" asChild>
+                  <Link href="/cart">{config.cart.viewCart}</Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="max-h-64 space-y-3 overflow-y-auto">
+                {cartItems.slice().reverse().map((item) => (
+                  <div
+                    key={`${item._id}`}
+                    className="flex items-center space-x-3"
+                  >
+                    <img
+                      src={(item as any).product?.selectedVariant?.images?.[0]?.url || (item as any).product?.images?.[0]?.url || "/placeholder.svg"}
+                      alt={(item as any).product?.name || "Sản phẩm"}
+                      className="h-12 w-12 rounded-md object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {(item as any).product?.name || "Sản phẩm"}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-pink-600">
+                          {((item as any).product?.selectedVariant?.price || 0).toLocaleString("vi-VN")}₫
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          x{(item as any).quantity || 1}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Separator className="my-3" />
+              <div className="space-y-2">
+                <Button className="w-full bg-pink-600 font-bold text-white hover:bg-pink-700" size="sm" asChild>
                   <Link href="/cart">{config.cart.viewCart}</Link>
                 </Button>
               </div>
@@ -304,7 +348,7 @@ function NotificationDropdown() {
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
+            <Badge className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-pink-600 p-0 text-[10px] font-bold text-white ring-2 ring-white">
               {unreadCount}
             </Badge>
           )}
@@ -326,7 +370,7 @@ function NotificationDropdown() {
                   key={notification._id}
                   className={`flex cursor-pointer items-start justify-between gap-2 rounded-lg border p-3 ${
                     !notification.isRead
-                      ? "border-blue-200 bg-blue-50"
+                      ? "border-pink-200 bg-pink-50"
                       : "bg-gray-50"
                   }`}
                 >
@@ -339,7 +383,7 @@ function NotificationDropdown() {
                         {notification.title}
                       </h4>
                       {!notification.isRead && (
-                        <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                        <div className="h-2 w-2 rounded-full bg-pink-500"></div>
                       )}
                     </div>
                     <p className="mb-1 text-sm text-muted-foreground">
@@ -352,7 +396,7 @@ function NotificationDropdown() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="ml-2 text-red-500 hover:bg-red-100"
+                    className="ml-2 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(notification._id);
@@ -413,10 +457,19 @@ function UserDropdown({
   if (!isLoggedIn) {
     return (
       <div className="flex items-center space-x-2">
-        <Button variant="ghost" size="sm" asChild>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          asChild 
+          className="h-10 px-5 rounded-2xl font-bold text-slate-700 hover:text-pink-600 hover:bg-pink-50 transition-all active:scale-95 border-none"
+        >
           <Link href="/login">{config.user.login}</Link>
         </Button>
-        <Button size="sm" asChild>
+        <Button 
+          size="sm" 
+          asChild 
+          className="h-10 px-6 bg-pink-600 font-bold text-white hover:bg-pink-700 shadow-lg shadow-pink-200 rounded-2xl transition-all active:scale-95 border-none"
+        >
           <Link href="/register">{config.user.signup}</Link>
         </Button>
       </div>
@@ -429,13 +482,13 @@ function UserDropdown({
         <Button
           variant="ghost"
           size="sm"
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 transition-colors hover:bg-slate-50"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-600 text-white shadow-md shadow-pink-100">
             <User className="h-4 w-4" />
           </div>
-          <span className="hidden md:block">{user?.name}</span>
-          <ChevronDown className="h-4 w-4" />
+          <span className="hidden font-semibold text-slate-700 md:block">{user?.name}</span>
+          <ChevronDown className="h-4 w-4 text-slate-400" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -483,7 +536,7 @@ function UserDropdown({
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+        <DropdownMenuItem className="text-red-500 hover:bg-red-50 focus:text-red-600" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           {config.user.logout}
         </DropdownMenuItem>
@@ -501,76 +554,96 @@ function SpaServicesDropdown({
   loading?: boolean;
   error?: string | null;
 }) {
-  const categoryMap: Record<SpaServiceMenuItem["category"], string> = {
-    spa: "Spa tổng quát",
-    cleaning: "Vệ sinh",
-    grooming: "Tạo kiểu",
-    coloring: "Nhuộm lông",
+  const { lang } = useLanguage();
+  const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
+
+  const getCategoryLabel = (category: SpaServiceMenuItem["category"]) => {
+    return config.spa.categories[category] || category;
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="group flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 transition-all hover:border-red-200 hover:bg-red-100/70 hover:text-red-700">
-          <Scissors className="h-4 w-4 transition-transform group-hover:rotate-6" />
-          DỊCH VỤ SPA
-          <ChevronDown className="h-4 w-4" />
-        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="group flex h-9 items-center gap-2 rounded-xl px-3 font-bold text-slate-700 transition-all hover:bg-white hover:text-pink-600 hover:shadow-sm active:scale-95"
+        >
+          <Scissors className="h-4 w-4 transition-transform group-hover:rotate-12" />
+          <span className="hidden lg:inline">{config.spa.trigger}</span>
+          <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-data-[state=open]:rotate-180" />
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         align="start"
-        sideOffset={10}
-        className="w-[380px] rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
+        sideOffset={8}
+        className="w-[380px] overflow-hidden rounded-2xl border border-gray-100 bg-white p-0 shadow-2xl"
       >
-        <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-3 text-white">
-          <div className="text-sm font-semibold">Dịch vụ Spa cho thú cưng</div>
+        <div className="border-b border-gray-50 bg-gray-50/50 px-4 py-4">
+          <div className="text-sm font-bold text-gray-900">{config.spa.title}</div>
           {!loading && !error && spaServices.length > 0 && (
-            <div className="mt-0.5 text-xs text-slate-200">
-              {spaServices.length} dịch vụ đang hoạt động
+            <div className="mt-1 text-xs font-medium text-gray-500">
+              {config.spa.activeCount.replace(
+                "{count}",
+                spaServices.length.toString()
+              )}
             </div>
           )}
         </div>
 
-        <div className="max-h-[460px] space-y-2 overflow-y-auto p-3">
+        <div className="max-h-[460px] overflow-y-auto p-2 scrollbar-hide">
           {loading ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-              Đang tải dịch vụ...
+            <div className="flex items-center justify-center p-8 text-sm text-gray-400">
+              <div className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-pink-600 border-t-transparent" />
+              {config.spa.loading}
             </div>
           ) : error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-600">
-              {error}
+            <div className="m-2 rounded-xl bg-red-50 p-4 text-sm text-red-600">
+              {config.spa.error}
             </div>
           ) : spaServices.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-              Chưa có dịch vụ nào
+            <div className="p-10 text-center text-sm text-gray-400">
+              {config.spa.noServices}
             </div>
           ) : (
-            spaServices.map((service) => (
-              <DropdownMenuItem
-                key={service._id}
-                asChild
-                className="cursor-pointer rounded-xl border border-transparent p-0 outline-none transition-all hover:border-slate-200 hover:bg-slate-50 focus:bg-slate-50"
-              >
-                <Link
-                  href={`/spa-services/${service.slug}`}
-                  className="flex w-full items-start justify-between gap-3 px-3 py-3"
+            <div className="grid gap-1">
+              {spaServices.map((service) => (
+                <DropdownMenuItem
+                  key={service._id}
+                  asChild
+                  className="cursor-pointer rounded-xl p-0 outline-none transition-all focus:bg-primary/5"
                 >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-800">
-                      {service.name}
+                  <Link
+                    href={`/spa-services/${service.slug}`}
+                    className="group flex w-full items-center gap-4 p-3 transition-colors hover:bg-pink-50/50"
+                  >
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 shadow-sm">
+                      <img
+                        src={service.image || "/placeholder.svg"}
+                        alt={service.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      Phù hợp cho pet cần {categoryMap[service.category] || service.category}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold text-gray-800">
+                        {service.name}
+                      </div>
+                      <div className="mt-1 line-clamp-1 text-xs text-gray-500">
+                        {config.spa.suitableFor.replace(
+                          "{category}",
+                          getCategoryLabel(service.category)
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                    {categoryMap[service.category] || service.category}
-                  </span>
-                </Link>
-              </DropdownMenuItem>
-            ))
+                    <span className="shrink-0 rounded-full bg-pink-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-pink-600">
+                      {getCategoryLabel(service.category)}
+                    </span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </div>
           )}
         </div>
       </DropdownMenuContent>
@@ -854,154 +927,180 @@ export default function Header({
     searchResults.products.length > 0 || searchResults.spaServices.length > 0;
 
   return (
-    <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/homepage">
-            <div className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">
+            <div className="flex items-center space-x-2 transition-transform hover:scale-[1.02]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-600 shadow-lg shadow-pink-300/50">
+                <span className="text-xl font-black text-white">
                   {lang === "vi"
                     ? pagesConfigVi.header.brand.short
                     : pagesConfigEn.header.brand.short}
                 </span>
               </div>
-              <span className="text-xl font-bold">
+              <span className="text-2xl font-black tracking-tight text-slate-900 md:block">
                 {lang === "vi"
-                  ? pagesConfigVi.header.brand.full
-                  : pagesConfigEn.header.brand.full}
+                  ? pagesConfigVi.header.brand.full.split(" ")[0]
+                  : pagesConfigEn.header.brand.full.split(" ")[0]}
+                <span className="text-pink-600">
+                  {lang === "vi"
+                    ? pagesConfigVi.header.brand.full.split(" ").slice(1).join(" ")
+                    : pagesConfigEn.header.brand.full.split(" ").slice(1).join(" ")}
+                </span>
               </span>
             </div>
           </Link>
 
-          <div className="mx-8 hidden max-w-3xl flex-1 items-center gap-3 md:flex">
-            <div className="group/category relative z-50">
-              <div className="hidden min-w-max cursor-pointer items-center justify-center gap-2 rounded-md border border-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-primary/5 hover:text-primary lg:flex h-10">
-                <Menu className="h-4 w-4" />
-                {lang === "vi" ? "Danh mục" : "Categories"}
-              </div>
+          <div className="mx-6 hidden items-center md:flex">
+            <nav className="flex items-center gap-1 rounded-2xl bg-slate-100/50 p-1 border border-slate-200/50 backdrop-blur-sm">
+              <div className="group/category relative">
+                <div className="flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 font-bold text-slate-700 transition-all hover:bg-white hover:text-pink-600 hover:shadow-sm active:scale-95">
+                  <Menu className="h-4 w-4" />
+                  <span className="text-sm">{lang === "vi" ? "Danh mục" : "Categories"}</span>
+                </div>
 
-              <div className="invisible absolute left-0 top-full w-[300px] pt-2 opacity-0 transition-all duration-200 group-hover/category:visible group-hover/category:opacity-100">
-                <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
-                  <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-400">
-                    {loadingCategories
-                      ? "Đang tải..."
-                      : lang === "vi"
-                      ? "Tất cả danh mục"
-                      : "All Categories"}
-                  </div>
-
-                  {errorCategories && (
-                    <div className="px-2 text-sm text-red-500">
-                      {errorCategories}
+                <div className="invisible absolute left-0 top-full w-[300px] pt-3 opacity-0 transition-all duration-200 group-hover/category:visible group-hover/category:opacity-100 z-50">
+                  <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/50">
+                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      {loadingCategories
+                        ? "Đang tải..."
+                        : lang === "vi"
+                        ? "Tất cả danh mục"
+                        : "All Categories"}
                     </div>
-                  )}
 
-                  <div className="relative mt-1 flex flex-col gap-1 pb-1">
-                    {!loadingCategories &&
-                      !errorCategories &&
-                      categories.map((cat) => (
-                        <div
-                          key={cat.parent._id}
-                          className="group/item relative"
-                        >
-                          <Link
-                            href={`/category/${cat.parent._id}`}
-                            className="flex w-full items-center rounded-lg p-2.5 transition-colors hover:bg-primary/5 hover:text-primary"
+                    {errorCategories && (
+                      <div className="px-2 text-sm text-red-500">
+                        {errorCategories}
+                      </div>
+                    )}
+
+                    <div className="relative mt-1 flex flex-col gap-0.5 pb-1">
+                      {!loadingCategories &&
+                        !errorCategories &&
+                        categories.map((cat) => (
+                          <div
+                            key={cat.parent._id}
+                            className="group/item relative"
                           >
-                            {cat.parent.image && (
-                              <div className="relative mr-3 h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm transition-colors group-hover/item:border-primary/30">
-                                <img
-                                  src={cat.parent.image}
-                                  alt={cat.parent.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            )}
-                            <span className="flex-1 text-sm font-semibold">
-                              {cat.parent.name}
-                            </span>
-                            {cat.children && cat.children.length > 0 && (
-                              <ChevronDown className="h-4 w-4 flex-shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/item:text-primary" />
-                            )}
-                          </Link>
-
-                          {cat.children && cat.children.length > 0 && (
-                            <div className="invisible absolute left-full top-0 z-50 ml-1 w-[260px] pt-0 opacity-0 transition-all duration-200 group-hover/item:visible group-hover/item:opacity-100">
-                              <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
-                                <div className="mb-1 border-b border-gray-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary">
-                                  {cat.parent.name}
+                            <Link
+                              href={`/category/${toSlug(cat.parent.name)}`}
+                              className="flex w-full items-center rounded-xl p-2.5 transition-all hover:bg-pink-50 hover:text-pink-600"
+                            >
+                              {cat.parent.image && (
+                                <div className="relative mr-3 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-slate-100 shadow-sm transition-colors group-hover/item:border-pink-200">
+                                  <img
+                                    src={cat.parent.image}
+                                    alt={cat.parent.name}
+                                    className="h-full w-full object-cover"
+                                  />
                                 </div>
-                                <ul className="grid gap-1 pb-1">
-                                  {cat.children.map((child) => (
-                                    <li
-                                      key={child._id}
-                                      className="group/subitem relative"
-                                    >
-                                      <Link
-                                        href={`/category/${child._id}`}
-                                        className="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 text-gray-600 transition-colors hover:bg-primary/5 hover:text-primary"
+                              )}
+                              <span className="flex-1 text-sm font-bold">
+                                {cat.parent.name}
+                              </span>
+                              {cat.children && cat.children.length > 0 && (
+                                <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-slate-300 transition-colors group-hover/item:text-pink-600" />
+                              )}
+                            </Link>
+
+                            {cat.children && cat.children.length > 0 && (
+                              <div className="invisible absolute left-full top-0 z-50 ml-2 w-[260px] pt-0 opacity-0 transition-all duration-200 group-hover/item:visible group-hover/item:opacity-100">
+                                <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/50">
+                                  <div className="mb-1 border-b border-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-pink-600">
+                                    {cat.parent.name}
+                                  </div>
+                                  <ul className="grid gap-0.5 pb-1">
+                                    {cat.children.map((child) => (
+                                      <li
+                                        key={child._id}
+                                        className="group/subitem relative"
                                       >
-                                        <div className="flex items-center gap-2">
-                                          {child.image && (
-                                            <img
-                                              src={child.image}
-                                              alt={child.name}
-                                              className="h-6 w-6 rounded border border-gray-100 object-cover"
-                                            />
-                                          )}
-                                          <span className="text-sm font-medium">
-                                            {child.name}
-                                          </span>
-                                        </div>
+                                        <Link
+                                          href={`/category/${toSlug(child.name)}`}
+                                          className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-slate-600 transition-all hover:bg-pink-50 hover:text-pink-600"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {child.image && (
+                                              <img
+                                                src={child.image}
+                                                alt={child.name}
+                                                className="h-6 w-6 rounded-lg border border-slate-100 object-cover"
+                                              />
+                                            )}
+                                            <span className="text-sm font-bold">
+                                              {child.name}
+                                            </span>
+                                          </div>
+                                          {child.children &&
+                                            child.children.length > 0 && (
+                                              <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 text-slate-300 transition-colors group-hover/subitem:text-pink-600" />
+                                            )}
+                                        </Link>
+
                                         {child.children &&
                                           child.children.length > 0 && (
-                                            <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/subitem:text-primary" />
-                                          )}
-                                      </Link>
-
-                                      {child.children &&
-                                        child.children.length > 0 && (
-                                          <div className="invisible absolute left-full top-0 z-[60] ml-1 w-[240px] pt-0 opacity-0 transition-all duration-200 group-hover/subitem:visible group-hover/subitem:opacity-100">
-                                            <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
-                                              <div className="mb-1 border-b border-gray-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary">
-                                                {child.name}
+                                            <div className="invisible absolute left-full top-0 z-60 ml-2 w-[240px] pt-0 opacity-0 transition-all duration-200 group-hover/subitem:visible group-hover/subitem:opacity-100">
+                                              <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/50">
+                                                <div className="mb-1 border-b border-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-pink-600">
+                                                  {child.name}
+                                                </div>
+                                                <ul className="grid gap-0.5 pb-1">
+                                                  {child.children.map((grand) => (
+                                                    <li key={grand._id}>
+                                                      <Link
+                                                        href={`/category/${toSlug(grand.name)}`}
+                                                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 transition-all hover:bg-pink-50 hover:text-pink-600"
+                                                      >
+                                                        {grand.image && (
+                                                          <img
+                                                            src={grand.image}
+                                                            alt={grand.name}
+                                                            className="h-5 w-5 rounded-md border border-slate-100 object-cover"
+                                                          />
+                                                        )}
+                                                        <span className="font-bold">{grand.name}</span>
+                                                      </Link>
+                                                    </li>
+                                                  ))}
+                                                </ul>
                                               </div>
-                                              <ul className="grid gap-1 pb-1">
-                                                {child.children.map((grand) => (
-                                                  <li key={grand._id}>
-                                                    <Link
-                                                      href={`/category/${grand._id}`}
-                                                      className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-primary/5 hover:text-primary"
-                                                    >
-                                                      {grand.image && (
-                                                        <img
-                                                          src={grand.image}
-                                                          alt={grand.name}
-                                                          className="h-5 w-5 rounded border border-gray-100 object-cover"
-                                                        />
-                                                      )}
-                                                      <span>{grand.name}</span>
-                                                    </Link>
-                                                  </li>
-                                                ))}
-                                              </ul>
                                             </div>
-                                          </div>
-                                        )}
-                                    </li>
-                                  ))}
-                                </ul>
+                                          )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                            )}
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
+              <SpaServicesDropdown
+                spaServices={spaServices}
+                loading={loadingSpaServices}
+                error={errorSpaServices}
+              />
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                asChild
+                className="flex h-9 items-center gap-2 rounded-xl px-4 font-bold text-slate-700 transition-all hover:bg-white hover:text-pink-600 hover:shadow-sm active:scale-95"
+              >
+                <Link href="/blog" aria-label="Blog">
+                  Blog
+                </Link>
+              </Button>
+            </nav>
+          </div>
+
+          <div className="mr-8 hidden flex-1 items-center md:flex">
             <div className="relative flex-1" ref={searchBoxRef}>
               <form className="relative" onSubmit={handleSearch}>
                 <Input
@@ -1016,11 +1115,11 @@ export default function Header({
                   onFocus={() => {
                     if (searchQuery.trim()) setShowSearchDropdown(true);
                   }}
-                  className="w-full rounded-full border-gray-200 bg-gray-50 py-2.5 pl-4 pr-12 transition-colors focus:bg-white focus-visible:ring-primary/20"
+                  className="w-full h-11 rounded-2xl border-slate-100 bg-slate-100/30 pl-5 pr-14 transition-all focus:bg-white focus:border-pink-200 focus:ring-4 focus:ring-pink-500/5 outline-none font-medium text-slate-700 placeholder:text-slate-400"
                 />
                 <Button
                   size="icon"
-                  className="absolute right-1.5 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full bg-primary text-white hover:bg-primary/90"
+                  className="absolute right-1.5 top-1/2 h-8 w-8 -translate-y-1/2 rounded-xl bg-pink-600 text-white hover:bg-pink-700 shadow-md shadow-pink-200 transition-all hover:scale-110 active:scale-95"
                   type="submit"
                 >
                   <Search className="h-4 w-4" />
@@ -1028,7 +1127,7 @@ export default function Header({
               </form>
 
               {showSearchDropdown && (
-                <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-[420px] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl">
+                <div className="absolute left-0 right-0 top-full z-100 mt-2 max-h-[420px] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl">
                   {searching ? (
                     <div className="p-4 text-sm text-gray-500">
                       Đang tìm kiếm...
@@ -1050,7 +1149,7 @@ export default function Header({
                                 key={item._id}
                                 href={item.url}
                                 onClick={() => setShowSearchDropdown(false)}
-                                className="block rounded-xl px-3 py-3 transition-colors hover:bg-primary/5"
+                                className="block rounded-xl px-3 py-3 transition-colors hover:bg-pink-50"
                               >
                                 <div className="text-sm font-semibold text-gray-800">
                                   {item.name}
@@ -1083,7 +1182,7 @@ export default function Header({
                                 key={item._id}
                                 href={item.url}
                                 onClick={() => setShowSearchDropdown(false)}
-                                className="block rounded-xl px-3 py-3 transition-colors hover:bg-primary/5"
+                                className="block rounded-xl px-3 py-3 transition-colors hover:bg-pink-50"
                               >
                                 <div className="text-sm font-semibold text-gray-800">
                                   {item.name}
@@ -1101,7 +1200,7 @@ export default function Header({
                         <button
                           type="button"
                           onClick={() => handleSearch()}
-                          className="text-sm font-medium text-primary hover:underline"
+                          className="text-sm font-medium text-pink-600 hover:underline"
                         >
                           Xem tất cả kết quả cho "{searchQuery}"
                         </button>
@@ -1118,28 +1217,18 @@ export default function Header({
               <Search className="h-5 w-5" />
             </Button>
 
-            <SpaServicesDropdown
-              spaServices={spaServices}
-              loading={loadingSpaServices}
-              error={errorSpaServices}
-            />
-
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/blog" aria-label="Blog">
-                Blog
-              </Link>
-            </Button>
-
             <Button
               variant="ghost"
               size="sm"
-              className="hidden sm:flex"
+              className="hidden sm:flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100/50 text-slate-700 hover:bg-pink-50 hover:text-pink-600 transition-all border border-slate-200/50"
               asChild
             >
               <Link href="/wishlist" aria-label="Yêu thích">
                 <Heart className="h-5 w-5" />
               </Link>
             </Button>
+
+
 
             {isLoggedIn && userRole === 1 && (
               <Button
@@ -1151,7 +1240,7 @@ export default function Header({
               >
                 <MessageCircle className="mx-auto h-5 w-5" />
                 {unreadChatCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
+                  <Badge className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-pink-600 p-0 text-[10px] font-bold text-white ring-2 ring-white">
                     {unreadChatCount}
                   </Badge>
                 )}
@@ -1185,11 +1274,11 @@ export default function Header({
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full py-2 pl-4 pr-12"
+            className="w-full h-10 rounded-2xl border-slate-100 bg-slate-100/30 pl-4 pr-12 transition-all focus:bg-white focus:border-pink-200 outline-none"
           />
           <Button
-            size="sm"
-            className="absolute right-1 top-1 h-8"
+            size="icon"
+            className="absolute right-1 top-1.5 h-7 w-7 rounded-xl bg-pink-600 text-white hover:bg-pink-700 shadow-sm"
             type="submit"
           >
             <Search className="h-4 w-4" />

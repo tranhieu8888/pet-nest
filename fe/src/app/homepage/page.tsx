@@ -8,13 +8,17 @@ import {
   Clock,
   Shield,
   Heart,
-  Sparkles,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
   Scissors,
+  Users,
+  ShoppingBag,
+  Star,
+  MessageCircle,
+  PawPrint,
 } from "lucide-react";
-import { useState, useEffect, type MouseEvent } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../../utils/axios";
 import { AxiosError } from "axios";
 import Header from "@/components/layout/Header";
@@ -22,6 +26,8 @@ import Footer from "@/components/layout/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../utils/petPagesConfig.vi";
 import enConfig from "../../../utils/petPagesConfig.en";
+import { ButtonCore } from "@/components/core/ButtonCore";
+import { toSlug } from "@/lib/slug";
 
 interface Category {
   _id: string;
@@ -105,8 +111,17 @@ interface SpaService {
 function SectionHeading({ title, description }: { title: string; description: string }) {
   return (
     <div className="mb-10 text-center md:mb-12">
-      <h2 className="text-2xl font-bold tracking-tight text-slate-900 md:text-4xl">{title}</h2>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 md:text-base">{description}</p>
+      <div className="mb-3 flex items-center justify-center gap-2 opacity-80">
+        <div className="h-1 w-6 rounded-full bg-pink-600/30" />
+        <PawPrint className="h-5 w-5 text-pink-600 animate-pulse" />
+        <div className="h-1 w-6 rounded-full bg-pink-600/30" />
+      </div>
+      <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+        {title}
+      </h2>
+      <p className="mx-auto mt-4 max-w-2xl text-sm font-medium text-slate-500 md:text-base">
+        {description}
+      </p>
     </div>
   );
 }
@@ -144,7 +159,6 @@ export default function HomePage() {
   const [spaServices, setSpaServices] = useState<SpaService[]>([]);
 
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [activeSection, setActiveSection] = useState("banners");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingParents, setIsLoadingParents] = useState(true);
@@ -270,8 +284,8 @@ export default function HomePage() {
         const services = Array.isArray(response.data?.data)
           ? response.data.data
           : Array.isArray(response.data)
-          ? response.data
-          : [];
+            ? response.data
+            : [];
 
         setSpaServices(services.filter((service: SpaService) => service.isActive));
       } catch (err: unknown) {
@@ -300,126 +314,168 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, [banners.length]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 
-        if (visible[0]?.target?.id) {
-          setActiveSection(visible[0].target.id);
-        }
-      },
-      {
-        root: null,
-        rootMargin: "-110px 0px -45% 0px",
-        threshold: [0.2, 0.4, 0.6],
-      }
-    );
-
-    quickNavItems.forEach((item) => {
-      const section = document.getElementById(item.id);
-      if (section) observer.observe(section);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  const handleQuickNavClick = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
-    event.preventDefault();
-    const target = document.getElementById(id);
-    if (!target) return;
-
-    const headerOffset = 145;
-    const elementTop = target.getBoundingClientRect().top + window.pageYOffset;
-    const offsetTop = elementTop - headerOffset;
-
-    window.scrollTo({
-      top: offsetTop,
-      behavior: "smooth",
-    });
-
-    setActiveSection(id);
-  };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="w-full min-h-screen bg-[#fafafc] text-slate-900 selection:bg-pink-100 selection:text-pink-700">
       <Header />
 
-      <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900">
-        <div className="pointer-events-none absolute -top-24 right-10 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 left-10 h-60 w-60 rounded-full bg-cyan-400/20 blur-3xl" />
+      {/* ─── HERO SECTION ─── */}
+      <section className="relative w-full overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 min-h-[580px] lg:min-h-[calc(100vh-80px)] flex flex-col justify-center py-12 md:py-0">
+        {/* Ambient glow orbs */}
+        <div className="pointer-events-none absolute -top-28 -right-16 h-96 w-96 rounded-full bg-pink-600/20 blur-[80px] animate-pulse" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-indigo-500/20 blur-[72px]" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 h-56 w-56 -translate-y-1/2 rounded-full bg-pink-500/10 blur-[64px]" />
+        <div className="pointer-events-none absolute top-0 right-1/4 h-40 w-40 rounded-full bg-indigo-400/10 blur-[60px]" />
 
-        <div className="container mx-auto px-4 py-10 md:py-14">
-          <div className="grid gap-8 md:grid-cols-2 md:items-center">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5" />
-                Pet Nest Premium Experience
-              </div>
-              <h1 className="text-3xl font-extrabold leading-tight text-white md:text-5xl">
-                Không gian mua sắm & chăm sóc thú cưng hiện đại
+        {/* Subtle dot grid */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+
+        <div className="container mx-auto px-6 py-10 md:py-16 lg:py-20">
+          <div className="grid items-center gap-10 md:grid-cols-2 lg:grid-cols-[5fr_7fr] xl:gap-20">
+
+            {/* LEFT: Text content */}
+            <motion.div
+              initial={{ opacity: 0, x: -28 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.65, ease: "easeOut" }}
+              className="z-10"
+            >
+              {/* Headline */}
+              <h1 className="text-3xl font-extrabold leading-tight text-white md:text-4xl lg:text-5xl xl:text-[3.25rem]">
+                Không gian{" "}
+                <span className="bg-gradient-to-r from-pink-400 to-pink-300 bg-clip-text text-transparent">
+                  mua sắm
+                </span>{" "}
+                &amp; chăm sóc{" "}
+                <span className="bg-gradient-to-r from-indigo-300 to-slate-200 bg-clip-text text-transparent">
+                  thú cưng
+                </span>{" "}
+                hiện đại
               </h1>
-              <p className="mt-4 max-w-xl text-sm text-slate-200 md:text-base">
-                Từ sản phẩm chất lượng đến dịch vụ spa chuyên nghiệp, mọi thứ bạn cần cho boss đều có tại Pet Nest.
+
+              <p className="mt-5 max-w-lg text-sm leading-relaxed text-slate-300 md:text-base lg:text-lg">
+                Từ sản phẩm chất lượng đến dịch vụ spa chuyên nghiệp, mọi thứ bạn cần cho boss đều có tại{" "}
+                <span className="font-semibold text-white">Pet Nest</span>.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  href="/spa-services"
-                  className="rounded-xl bg-pink-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-pink-700"
-                >
-                  Đặt lịch spa ngay
+
+              {/* CTA Buttons */}
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link href="/spa-services" id="hero-cta-spa" className="btn-glowing-wrapper bg-pink-600 shadow-xl shadow-pink-500/10 active:scale-95 transition-transform !rounded-2xl h-12">
+                  <ButtonCore
+                    variantType="primary"
+                    leftIcon={<Scissors className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" />}
+                    className="h-full px-8 rounded-2xl border-none shadow-none"
+                  >
+                    Đặt lịch spa ngay
+                  </ButtonCore>
                 </Link>
-                <Link
-                  href="/products"
-                  className="rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
-                >
-                  Mua sắm sản phẩm
+                <Link href="/products" id="hero-cta-shop" className="h-12 active:scale-95 transition-transform">
+                  <ButtonCore
+                    variantType="secondary"
+                    leftIcon={<ShoppingBag className="h-4 w-4" />}
+                    rightIcon={<ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />}
+                    className="h-full px-8 rounded-2xl border-none"
+                  >
+                    Mua sắm ngay
+                  </ButtonCore>
                 </Link>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Khách hàng tin tưởng", value: "10,000+" },
-                { label: "Sản phẩm & dịch vụ", value: "500+" },
-                { label: "Đánh giá tích cực", value: "4.9/5" },
-                { label: "Hỗ trợ", value: "24/7" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                  <div className="text-2xl font-bold text-white">{item.value}</div>
-                  <div className="mt-1 text-xs text-slate-200">{item.label}</div>
+              {/* Trust badges */}
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5 hover:text-white transition-colors">
+                  <Shield className="h-4 w-4 text-emerald-400" />
+                  Sản phẩm chính hãng
+                </span>
+                <span className="flex items-center gap-1.5 hover:text-white transition-colors">
+                  <Truck className="h-4 w-4 text-sky-400" />
+                  Giao hàng nhanh chóng
+                </span>
+                <span className="flex items-center gap-1.5 hover:text-white transition-colors">
+                  <Heart className="h-4 w-4 text-pink-400" />
+                  Hỗ trợ 24/7
+                </span>
+              </div>
+            </motion.div>
+
+            {/* RIGHT: Pet image + Stats cards */}
+            <motion.div
+              initial={{ opacity: 0, x: 28 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.65, ease: "easeOut", delay: 0.15 }}
+              className="relative flex w-full flex-col items-center gap-10 lg:flex-row lg:items-center lg:justify-end xl:gap-14"
+            >
+              {/* Pet illustration with glowing animated border */}
+              <div className="relative shrink-0 group transition-transform duration-700 hover:scale-[1.03]">
+                <div className="absolute inset-0 rounded-full bg-pink-500/25 blur-3xl scale-110 animate-pulse" />
+                
+                {/* Glowing Wrapper */}
+                <div className="glowing-wrapper glow-blur rounded-full bg-slate-900 p-[3px] shadow-2xl">
+                  <div className="relative h-52 w-52 overflow-hidden rounded-full border-2 border-white/10 bg-slate-800 sm:h-64 sm:w-64 md:h-60 md:w-60 lg:h-72 lg:w-72 xl:h-80 xl:w-80">
+                    <Image
+                      src="/hero-pets.png"
+                      alt="Thú cưng tại Pet Nest"
+                      fill
+                      className="object-cover scale-110 transition-transform duration-700 group-hover:scale-[1.15]"
+                      priority
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Floating label */}
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-bold text-white backdrop-blur-md shadow-xl z-20"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <PawPrint className="h-4 w-4 text-pink-300" />
+                    Boss được yêu thương
+                  </span>
+                </motion.div>
+              </div>
+
+              {/* Stats grid – 2×2, adaptive width */}
+              <div className="grid w-full grid-cols-2 gap-3 sm:max-w-md lg:w-auto lg:min-w-[280px] xl:min-w-[320px]">
+                {[
+                  { label: "Khách hàng tin tưởng", value: "10,000+", icon: <Users className="h-5 w-5 text-white/80" />, border: "border-white/10", bg: "bg-white/10" },
+                  { label: "Sản phẩm & dịch vụ", value: "500+", icon: <ShoppingBag className="h-5 w-5 text-pink-300" />, border: "border-pink-500/25", bg: "bg-pink-600/10" },
+                  { label: "Đánh giá tích cực", value: "4.9/5", icon: <Star className="h-5 w-5 text-white/80" />, border: "border-white/10", bg: "bg-white/10" },
+                  { label: "Hỗ trợ liên tục", value: "24/7", icon: <MessageCircle className="h-5 w-5 text-indigo-300" />, border: "border-indigo-400/25", bg: "bg-indigo-600/10" },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: 0.3 + i * 0.09 }}
+                    className={`rounded-2xl border ${item.border} ${item.bg} p-4 backdrop-blur-sm transition-transform hover:scale-[1.02]`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {item.icon}
+                      <span className="text-xl font-extrabold text-white md:text-2xl">{item.value}</span>
+                    </div>
+                    <div className="mt-1.5 text-[11px] font-medium text-slate-300 leading-tight">{item.label}</div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
           </div>
         </div>
+
+        {/* Straight Divider matches the background */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-white/5" />
       </section>
 
-      <section className="sticky top-[72px] z-30 border-y border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-        <div className="container mx-auto overflow-x-auto px-4 py-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex min-w-max items-center gap-2 text-xs font-semibold md:text-sm">
-            {quickNavItems.map((item) => {
-              const isActive = activeSection === item.id;
-              return (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  onClick={(event) => handleQuickNavClick(event, item.id)}
-                  className={`rounded-full border px-3 py-1.5 transition ${
-                    isActive
-                      ? "border-pink-200 bg-pink-50 text-pink-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-pink-300 hover:text-pink-600"
-                  }`}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+
 
       <section id="banners" className="container mx-auto px-4 py-8 md:py-10">
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -446,7 +502,7 @@ export default function HomePage() {
                       <div className="max-w-2xl text-white">
                         <h3 className="text-2xl font-bold md:text-4xl">{banner.title}</h3>
                         <p className="mt-3 text-sm text-slate-100 md:text-base">{banner.description}</p>
-                        <span className="mt-5 inline-flex items-center gap-2 rounded-xl bg-pink-600 px-4 py-2 text-sm font-semibold">
+                        <span className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-pink-600 px-6 py-2.5 text-sm font-bold shadow-lg shadow-pink-500/20 transition-transform active:scale-95">
                           {banner.buttonText || "Xem ngay"}
                           <ArrowRight className="h-4 w-4" />
                         </span>
@@ -478,9 +534,8 @@ export default function HomePage() {
                   <button
                     key={idx}
                     onClick={() => setCurrentBannerIndex(idx)}
-                    className={`h-2.5 rounded-full transition-all ${
-                      currentBannerIndex === idx ? "w-8 bg-pink-600" : "w-2.5 bg-white/70"
-                    }`}
+                    className={`h-2.5 rounded-full transition-all ${currentBannerIndex === idx ? "w-8 bg-pink-600" : "w-2.5 bg-white/70"
+                      }`}
                     aria-label={`Go to banner ${idx + 1}`}
                   />
                 ))}
@@ -493,7 +548,9 @@ export default function HomePage() {
       </section>
 
       <section id="spa-services" className="container mx-auto px-4 py-8 md:py-14">
-        <div className="rounded-3xl border border-pink-100 bg-gradient-to-b from-pink-50 to-white p-6 md:p-8">
+        <div className="relative rounded-3xl p-6 md:p-8">
+          {/* Subtle Ambient Orb for Services */}
+          <div className="pointer-events-none absolute right-0 top-0 h-96 w-96 rounded-full bg-pink-500/5 blur-[100px]" />
           <SectionHeading
             title="Dịch vụ Spa thú cưng"
             description="Chăm sóc toàn diện với quy trình chuyên nghiệp, an toàn và phù hợp từng giống loài."
@@ -539,13 +596,13 @@ export default function HomePage() {
                       <div className="mt-4 grid grid-cols-2 gap-2">
                         <Link
                           href={`/spa-services/${service.slug}`}
-                          className="rounded-lg border border-pink-200 px-3 py-2 text-center text-xs font-semibold text-pink-700 transition hover:bg-pink-50"
+                          className="rounded-xl border border-pink-100 px-3 py-2 text-center text-xs font-bold text-pink-700 transition-all hover:bg-pink-50 hover:border-pink-200"
                         >
                           Chi tiết
                         </Link>
                         <Link
                           href={`/spa-booking/${service.slug}`}
-                          className="rounded-lg bg-pink-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-pink-700"
+                          className="rounded-xl bg-pink-600 px-3 py-2 text-center text-xs font-bold text-white transition-all hover:bg-pink-700 shadow-sm shadow-pink-100"
                         >
                           Đặt lịch
                         </Link>
@@ -556,12 +613,13 @@ export default function HomePage() {
               </div>
 
               <div className="mt-8 text-center">
-                <Link
-                  href="/spa-services"
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                >
-                  <Scissors className="h-4 w-4" />
-                  Xem tất cả dịch vụ spa
+                <Link href="/spa-services">
+                  <ButtonCore
+                    variantType="secondary"
+                    leftIcon={<Scissors className="h-4 w-4" />}
+                  >
+                    Xem tất cả dịch vụ spa
+                  </ButtonCore>
                 </Link>
               </div>
             </>
@@ -590,7 +648,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.06 }}
               >
-                <Link href={`/category/${category._id}`} className="group block">
+                <Link href={`/category/${toSlug(category.name)}`} className="group block">
                   <div className="relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
                     <Image
                       src={getValidImageUrl(category.image)}
@@ -631,7 +689,7 @@ export default function HomePage() {
                 transition={{ duration: 0.4, delay: index * 0.06 }}
               >
                 <Link
-                  href={`/category/${category._id}`}
+                  href={`/category/${toSlug(category.name)}`}
                   className="group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-xl bg-slate-100">
@@ -686,11 +744,11 @@ export default function HomePage() {
                   <Link
                     href={`/product/${product._id}`}
                     key={product._id}
-                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/50"
                   >
                     <div className="relative aspect-square bg-slate-50">
                       {isOutOfStock && (
-                        <span className="absolute left-3 top-3 z-10 rounded-full bg-red-600 px-2 py-1 text-[11px] font-semibold text-white">
+                        <span className="absolute left-3 top-3 z-10 rounded-lg bg-red-600/90 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-sm">
                           Hết hàng
                         </span>
                       )}
@@ -714,18 +772,21 @@ export default function HomePage() {
           )}
 
           <div className="mt-8 text-center">
-            <Link
-              href="/products/best-selling"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-200"
-            >
-              {homepageConfig.bestSelling.linkText}
-              <ArrowRight className="h-4 w-4" />
+            <Link href="/products/best-selling">
+              <ButtonCore
+                variantType="secondary"
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+              >
+                {homepageConfig.bestSelling.linkText}
+              </ButtonCore>
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-10 md:py-14">
+      <section className="relative container mx-auto px-4 py-10 md:py-14">
+        {/* Subtle Ambient Orb for Benefits */}
+        <div className="pointer-events-none absolute left-0 bottom-0 h-96 w-96 rounded-full bg-indigo-500/5 blur-[100px]" />
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
           <SectionHeading
             title={homepageConfig.whyShop.title}
@@ -750,96 +811,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 pb-8 md:pb-12">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {testimonials.map((item, index) => (
-            <motion.div
-              key={item.name}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: index * 0.07 }}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <p className="text-sm leading-relaxed text-slate-700">“{item.quote}”</p>
-              <div className="mt-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                  <p className="text-xs text-slate-500">{item.role}</p>
-                </div>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                  {item.rating}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section className="container mx-auto px-4 pb-12 md:pb-16">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-700 via-fuchsia-600 to-pink-600 p-7 text-white shadow-lg md:p-10">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/20 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-14 -left-10 h-44 w-44 rounded-full bg-indigo-400/30 blur-2xl" />
-
-          <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">Pet Nest Membership</p>
-              <h3 className="mt-2 text-2xl font-extrabold md:text-3xl">Nhận ưu đãi độc quyền mỗi tuần cho boss của bạn</h3>
-              <p className="mt-2 max-w-2xl text-sm text-white/90 md:text-base">
-                Đăng ký thành viên để nhận mã giảm giá, lịch nhắc chăm sóc thú cưng và quyền đặt lịch ưu tiên.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/register"
-                className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-fuchsia-700 transition hover:bg-slate-100"
-              >
-                Đăng ký ngay
-              </Link>
-              <Link
-                href="/spa-services"
-                className="rounded-xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
-              >
-                Xem dịch vụ
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );
 }
 
-const quickNavItems = [
-  { id: "banners", label: "Banner" },
-  { id: "spa-services", label: "Spa Services" },
-  { id: "shop-by-pet", label: "Shop by Pet" },
-  { id: "popular", label: "Popular" },
-  { id: "best-selling", label: "Best Selling" },
-];
-
-const testimonials = [
-  {
-    name: "Linh Trần",
-    role: "Khách hàng thân thiết",
-    quote: "Dịch vụ spa ở Pet Nest rất chuyên nghiệp, bé nhà mình đi về lúc nào cũng thơm và vui vẻ.",
-    rating: "5.0 ★",
-  },
-  {
-    name: "Minh Quân",
-    role: "Chủ nuôi 2 bé mèo",
-    quote: "Giao diện mới dễ dùng, đặt lịch nhanh. Nhân viên tư vấn cực kỳ nhiệt tình.",
-    rating: "4.9 ★",
-  },
-  {
-    name: "Hà Phương",
-    role: "Khách hàng mới",
-    quote: "Sản phẩm đa dạng, giá rõ ràng. Mình rất thích trải nghiệm mua sắm tại đây.",
-    rating: "4.9 ★",
-  },
-];
 
 const benefits = [
   {

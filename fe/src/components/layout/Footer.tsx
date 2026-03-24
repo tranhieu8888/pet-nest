@@ -50,9 +50,11 @@ const Footer = () => {
     <footer className="bg-background border-t mt-16">
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div>
-          <Link href="/" className="flex items-center gap-2 mb-4">
-            <PawPrint className="text-primary" />
-            <span className="font-bold text-xl">PetNest</span>
+          <Link href="/" className="flex items-center gap-2 mb-4 group">
+            <div className="bg-pink-600 p-1.5 rounded-lg shadow-md shadow-pink-100 transition-transform group-hover:scale-110">
+              <PawPrint className="text-white h-5 w-5" />
+            </div>
+            <span className="font-black text-2xl tracking-tight text-slate-900">Pet<span className="text-pink-600">Nest</span></span>
           </Link>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Không chỉ là cửa hàng thú cưng. Chúng tôi mang đến sản phẩm chất
@@ -65,17 +67,17 @@ const Footer = () => {
           <h4 className="font-semibold mb-4">Dịch vụ của chúng tôi</h4>
           <ul className="space-y-2 text-sm">
             <li>
-              <Link href="/products" className="hover:text-primary transition">
+              <Link href="/products" className="hover:text-pink-600 transition-colors">
                 🐶 Phụ kiện & Thức ăn
               </Link>
             </li>
             <li>
-              <Link href="/spa" className="hover:text-primary transition">
+              <Link href="/spa" className="hover:text-pink-600 transition-colors">
                 🛁 Spa & Tắm thú cưng
               </Link>
             </li>
             <li>
-              <Link href="/grooming" className="hover:text-primary transition">
+              <Link href="/grooming" className="hover:text-pink-600 transition-colors">
                 ✂️ Tỉa lông & Grooming
               </Link>
             </li>
@@ -109,13 +111,12 @@ const Footer = () => {
               placeholder="Nhập email của bạn"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-100 focus:border-pink-300 transition-all"
             />
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-primary text-white px-4 py-2 text-sm hover:opacity-90 transition disabled:opacity-50"
+              className="w-full rounded-lg bg-pink-600 text-white px-4 py-2.5 text-sm font-bold hover:bg-pink-700 transition shadow-lg shadow-pink-100 disabled:opacity-50"
             >
               {loading ? "Đang đăng ký..." : "Đăng ký"}
             </button>
@@ -130,11 +131,11 @@ const Footer = () => {
               href="https://facebook.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-primary transition"
+              className="text-slate-400 hover:text-pink-600 transition-colors"
             >
               <Facebook />
             </a>
-            <a href="#" className="hover:text-primary transition">
+            <a href="#" className="text-slate-400 hover:text-pink-600 transition-all">
               <Instagram />
             </a>
           </div>

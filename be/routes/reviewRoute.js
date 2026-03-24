@@ -3,8 +3,9 @@ const router = express.Router();
 const reviewController = require("../controllers/reviewController");
 const verifyToken = require("../middleware/auth");
 
+const { upload } = require("../config/cloudinary");
 // POST /api/reviews
-router.post("/", verifyToken, reviewController.createReview);
+router.post("/", verifyToken, upload.array("images"), reviewController.createReview);
 
 // GET /api/reviews
 router.get("/", reviewController.getAllReviews);
@@ -21,5 +22,8 @@ router.get(
 
 // GET /api/reviews/average/:productId
 router.get("/average/:productId", reviewController.getAverageRating);
+
+// DELETE /api/reviews/:id
+router.delete("/:id", verifyToken, reviewController.deleteReview);
 
 module.exports = router;

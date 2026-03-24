@@ -2,12 +2,12 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Category } from "../types";
+import { toSlug } from "@/lib/slug";
 
 interface CategoryBreadcrumbProps {
   categoryPageConfig: any;
   breadcrumbHistory: Category[];
   setBreadcrumbHistory: (history: Category[]) => void;
-  routerParams: { id: string };
   handleBreadcrumbClick: (history: Category[], catId?: string) => void;
 }
 
@@ -15,7 +15,6 @@ export const CategoryBreadcrumb = ({
   categoryPageConfig,
   breadcrumbHistory,
   setBreadcrumbHistory,
-  routerParams,
   handleBreadcrumbClick,
 }: CategoryBreadcrumbProps) => {
   return (
@@ -37,7 +36,7 @@ export const CategoryBreadcrumb = ({
               <ChevronRight className="w-4 h-4" />
               {idx < breadcrumbHistory.length - 1 ? (
                 <Link
-                  href={`/category/${cat._id}`}
+                  href={`/category/${toSlug(cat.name)}`}
                   className="hover:text-blue-600"
                   onClick={(e) => {
                     e.preventDefault();

@@ -7,6 +7,7 @@ import { api } from '../../../utils/axios';
 import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../utils/petPagesConfig.vi';
 import enConfig from '../../../utils/petPagesConfig.en';
+import { ButtonCore } from '@/components/core/ButtonCore';
 
 interface ErrorResponse {
   success: boolean;
@@ -216,7 +217,7 @@ export default function RegisterPage() {
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder={lang === 'vi' ? 'Nguyễn Văn A' : 'John Doe'}
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
               </div>
             </div>
@@ -232,7 +233,7 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="your@email.com"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
               </div>
             </div>
@@ -248,7 +249,7 @@ export default function RegisterPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="0123456789"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
               </div>
             </div>
@@ -264,7 +265,7 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -304,7 +305,7 @@ export default function RegisterPage() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
                 />
                 <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -312,9 +313,9 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <button type="submit" disabled={isLoading} className="w-full rounded-xl bg-slate-900 py-2.5 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">
+            <ButtonCore type="submit" isLoading={isLoading} className="w-full">
               {isLoading ? text.loading : text.submit}
-            </button>
+            </ButtonCore>
           </form>
 
           <p className="mt-5 text-center text-sm text-slate-600">
