@@ -8,7 +8,6 @@ import {
   Clock,
   Shield,
   Heart,
-  Sparkles,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -28,6 +27,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import viConfig from "../../../utils/petPagesConfig.vi";
 import enConfig from "../../../utils/petPagesConfig.en";
 import { ButtonCore } from "@/components/core/ButtonCore";
+import { toSlug } from "@/lib/slug";
 
 interface Category {
   _id: string;
@@ -646,7 +646,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.06 }}
               >
-                <Link href={`/category/${category._id}`} className="group block">
+                <Link href={`/category/${toSlug(category.name)}`} className="group block">
                   <div className="relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
                     <Image
                       src={getValidImageUrl(category.image)}
@@ -687,7 +687,7 @@ export default function HomePage() {
                 transition={{ duration: 0.4, delay: index * 0.06 }}
               >
                 <Link
-                  href={`/category/${category._id}`}
+                  href={`/category/${toSlug(category.name)}`}
                   className="group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-xl bg-slate-100">

@@ -36,6 +36,7 @@ import { io, Socket } from "socket.io-client";
 import pagesConfigEn from "../../../utils/petPagesConfig.en.js";
 import pagesConfigVi from "../../../utils/petPagesConfig.vi.js";
 import { jwtDecode } from "jwt-decode";
+import { toSlug } from "@/lib/slug";
 
 declare global {
   interface Window {
@@ -984,7 +985,7 @@ export default function Header({
                             className="group/item relative"
                           >
                             <Link
-                              href={`/category/${cat.parent._id}`}
+                              href={`/category/${toSlug(cat.parent.name)}`}
                               className="flex w-full items-center rounded-xl p-2.5 transition-all hover:bg-pink-50 hover:text-pink-600"
                             >
                               {cat.parent.image && (
@@ -1017,7 +1018,7 @@ export default function Header({
                                         className="group/subitem relative"
                                       >
                                         <Link
-                                          href={`/category/${child._id}`}
+                                          href={`/category/${toSlug(child.name)}`}
                                           className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-slate-600 transition-all hover:bg-pink-50 hover:text-pink-600"
                                         >
                                           <div className="flex items-center gap-2">
@@ -1049,7 +1050,7 @@ export default function Header({
                                                   {child.children.map((grand) => (
                                                     <li key={grand._id}>
                                                       <Link
-                                                        href={`/category/${grand._id}`}
+                                                        href={`/category/${toSlug(grand.name)}`}
                                                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 transition-all hover:bg-pink-50 hover:text-pink-600"
                                                       >
                                                         {grand.image && (
