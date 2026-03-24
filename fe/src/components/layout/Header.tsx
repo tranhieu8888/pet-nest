@@ -63,6 +63,7 @@ type SpaServiceMenuItem = {
   name: string;
   slug: string;
   category: "spa" | "cleaning" | "grooming" | "coloring";
+  image?: string;
   isActive: boolean;
 };
 
@@ -131,8 +132,38 @@ function CartDropdown() {
   const { lang } = useLanguage();
   const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
 
-  const latestItem =
-    cartItems.length > 0 ? cartItems[cartItems.length - 1] : null;
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        const res = await api.get("/cart/getcart", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.success && res.data.data) {
+          const items = res.data.data.cartItems || [];
+          setCartItems(items);
+          setCartCount(items.length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cart in header", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCart();
+
+    // Lắng nghe sự kiện khi cart được update từ các component khác
+    const handleCartUpdate = () => {
+      fetchCart();
+    };
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
 
   return (
     <DropdownMenu>
@@ -148,38 +179,50 @@ function CartDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="p-4">
-          <h3 className="mb-3 font-semibold">{config.cart.title}</h3>
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
-          ) : !latestItem ? (
-            <div className="py-4 text-center text-muted-foreground">
-              {config.cart.empty}
-            </div>
+          ) : cartItems.length === 0 ? (
+            <>
+              <div className="py-4 text-center text-muted-foreground">
+                {config.cart.empty}
+              </div>
+              <Separator className="my-3" />
+              <div className="space-y-2">
+                <Button className="w-full" size="sm" asChild>
+                  <Link href="/cart">{config.cart.viewCart}</Link>
+                </Button>
+              </div>
+            </>
           ) : (
             <>
               <div className="max-h-64 space-y-3 overflow-y-auto">
-                <div
-                  key={`${latestItem._id}-${latestItem.variantId}`}
-                  className="flex items-center space-x-3"
-                >
-                  <img
-                    src={latestItem.image || "/placeholder.svg"}
-                    alt={latestItem.name}
-                    className="h-12 w-12 rounded-md object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {latestItem.name}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-red-500">
-                        {latestItem.price.toLocaleString("vi-VN")}₫
-                      </span>
+                {cartItems.slice().reverse().map((item) => (
+                  <div
+                    key={`${item._id}`}
+                    className="flex items-center space-x-3"
+                  >
+                    <img
+                      src={(item as any).product?.selectedVariant?.images?.[0]?.url || (item as any).product?.images?.[0]?.url || "/placeholder.svg"}
+                      alt={(item as any).product?.name || "Sản phẩm"}
+                      className="h-12 w-12 rounded-md object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {(item as any).product?.name || "Sản phẩm"}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-red-500">
+                          {((item as any).product?.selectedVariant?.price || 0).toLocaleString("vi-VN")}₫
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          x{(item as any).quantity || 1}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
               <Separator className="my-3" />
               <div className="space-y-2">
@@ -501,76 +544,96 @@ function SpaServicesDropdown({
   loading?: boolean;
   error?: string | null;
 }) {
-  const categoryMap: Record<SpaServiceMenuItem["category"], string> = {
-    spa: "Spa tổng quát",
-    cleaning: "Vệ sinh",
-    grooming: "Tạo kiểu",
-    coloring: "Nhuộm lông",
+  const { lang } = useLanguage();
+  const config = lang === "vi" ? pagesConfigVi.header : pagesConfigEn.header;
+
+  const getCategoryLabel = (category: SpaServiceMenuItem["category"]) => {
+    return config.spa.categories[category] || category;
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="group flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 transition-all hover:border-red-200 hover:bg-red-100/70 hover:text-red-700">
-          <Scissors className="h-4 w-4 transition-transform group-hover:rotate-6" />
-          DỊCH VỤ SPA
-          <ChevronDown className="h-4 w-4" />
-        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="group flex items-center gap-2 rounded-full border border-gray-100 bg-gray-50/50 px-4 font-semibold text-primary transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+        >
+          <Scissors className="h-4 w-4 transition-transform group-hover:rotate-12" />
+          <span className="hidden lg:inline">{config.spa.trigger}</span>
+          <ChevronDown className="h-4 w-4 opacity-50 transition-transform group-data-[state=open]:rotate-180" />
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         align="start"
-        sideOffset={10}
-        className="w-[380px] rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
+        sideOffset={8}
+        className="w-[380px] overflow-hidden rounded-2xl border border-gray-100 bg-white p-0 shadow-2xl"
       >
-        <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-3 text-white">
-          <div className="text-sm font-semibold">Dịch vụ Spa cho thú cưng</div>
+        <div className="border-b border-gray-50 bg-gray-50/50 px-4 py-4">
+          <div className="text-sm font-bold text-gray-900">{config.spa.title}</div>
           {!loading && !error && spaServices.length > 0 && (
-            <div className="mt-0.5 text-xs text-slate-200">
-              {spaServices.length} dịch vụ đang hoạt động
+            <div className="mt-1 text-xs font-medium text-gray-500">
+              {config.spa.activeCount.replace(
+                "{count}",
+                spaServices.length.toString()
+              )}
             </div>
           )}
         </div>
 
-        <div className="max-h-[460px] space-y-2 overflow-y-auto p-3">
+        <div className="max-h-[460px] overflow-y-auto p-2 scrollbar-hide">
           {loading ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-              Đang tải dịch vụ...
+            <div className="flex items-center justify-center p-8 text-sm text-gray-400">
+              <div className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              {config.spa.loading}
             </div>
           ) : error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-600">
-              {error}
+            <div className="m-2 rounded-xl bg-red-50 p-4 text-sm text-red-600">
+              {config.spa.error}
             </div>
           ) : spaServices.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-              Chưa có dịch vụ nào
+            <div className="p-10 text-center text-sm text-gray-400">
+              {config.spa.noServices}
             </div>
           ) : (
-            spaServices.map((service) => (
-              <DropdownMenuItem
-                key={service._id}
-                asChild
-                className="cursor-pointer rounded-xl border border-transparent p-0 outline-none transition-all hover:border-slate-200 hover:bg-slate-50 focus:bg-slate-50"
-              >
-                <Link
-                  href={`/spa-services/${service.slug}`}
-                  className="flex w-full items-start justify-between gap-3 px-3 py-3"
+            <div className="grid gap-1">
+              {spaServices.map((service) => (
+                <DropdownMenuItem
+                  key={service._id}
+                  asChild
+                  className="cursor-pointer rounded-xl p-0 outline-none transition-all focus:bg-primary/5"
                 >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-800">
-                      {service.name}
+                  <Link
+                    href={`/spa-services/${service.slug}`}
+                    className="group flex w-full items-center gap-4 p-3 transition-colors hover:bg-primary/5"
+                  >
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 shadow-sm">
+                      <img
+                        src={service.image || "/placeholder.svg"}
+                        alt={service.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      Phù hợp cho pet cần {categoryMap[service.category] || service.category}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold text-gray-800">
+                        {service.name}
+                      </div>
+                      <div className="mt-1 line-clamp-1 text-xs text-gray-500">
+                        {config.spa.suitableFor.replace(
+                          "{category}",
+                          getCategoryLabel(service.category)
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                    {categoryMap[service.category] || service.category}
-                  </span>
-                </Link>
-              </DropdownMenuItem>
-            ))
+                    <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                      {getCategoryLabel(service.category)}
+                    </span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </div>
           )}
         </div>
       </DropdownMenuContent>
@@ -854,7 +917,7 @@ export default function Header({
     searchResults.products.length > 0 || searchResults.spaServices.length > 0;
 
   return (
-    <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/homepage">
@@ -874,7 +937,7 @@ export default function Header({
             </div>
           </Link>
 
-          <div className="mx-8 hidden max-w-3xl flex-1 items-center gap-3 md:flex">
+          <div className="mx-8 hidden flex-1 items-center gap-6 md:flex">
             <div className="group/category relative z-50">
               <div className="hidden min-w-max cursor-pointer items-center justify-center gap-2 rounded-md border border-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-primary/5 hover:text-primary lg:flex h-10">
                 <Menu className="h-4 w-4" />
@@ -910,7 +973,7 @@ export default function Header({
                             className="flex w-full items-center rounded-lg p-2.5 transition-colors hover:bg-primary/5 hover:text-primary"
                           >
                             {cat.parent.image && (
-                              <div className="relative mr-3 h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm transition-colors group-hover/item:border-primary/30">
+                              <div className="relative mr-3 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm transition-colors group-hover/item:border-primary/30">
                                 <img
                                   src={cat.parent.image}
                                   alt={cat.parent.name}
@@ -922,7 +985,7 @@ export default function Header({
                               {cat.parent.name}
                             </span>
                             {cat.children && cat.children.length > 0 && (
-                              <ChevronDown className="h-4 w-4 flex-shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/item:text-primary" />
+                              <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/item:text-primary" />
                             )}
                           </Link>
 
@@ -956,13 +1019,13 @@ export default function Header({
                                         </div>
                                         {child.children &&
                                           child.children.length > 0 && (
-                                            <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/subitem:text-primary" />
+                                            <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 text-gray-300 transition-colors group-hover/subitem:text-primary" />
                                           )}
                                       </Link>
 
                                       {child.children &&
                                         child.children.length > 0 && (
-                                          <div className="invisible absolute left-full top-0 z-[60] ml-1 w-[240px] pt-0 opacity-0 transition-all duration-200 group-hover/subitem:visible group-hover/subitem:opacity-100">
+                                          <div className="invisible absolute left-full top-0 z-60 ml-1 w-[240px] pt-0 opacity-0 transition-all duration-200 group-hover/subitem:visible group-hover/subitem:opacity-100">
                                             <div className="rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
                                               <div className="mb-1 border-b border-gray-50 px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary">
                                                 {child.name}
@@ -1002,6 +1065,18 @@ export default function Header({
               </div>
             </div>
 
+            <SpaServicesDropdown
+              spaServices={spaServices}
+              loading={loadingSpaServices}
+              error={errorSpaServices}
+            />
+
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/blog" aria-label="Blog">
+                Blog
+              </Link>
+            </Button>
+
             <div className="relative flex-1" ref={searchBoxRef}>
               <form className="relative" onSubmit={handleSearch}>
                 <Input
@@ -1028,7 +1103,7 @@ export default function Header({
               </form>
 
               {showSearchDropdown && (
-                <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-[420px] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl">
+                <div className="absolute left-0 right-0 top-full z-100 mt-2 max-h-[420px] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl">
                   {searching ? (
                     <div className="p-4 text-sm text-gray-500">
                       Đang tìm kiếm...
@@ -1118,18 +1193,6 @@ export default function Header({
               <Search className="h-5 w-5" />
             </Button>
 
-            <SpaServicesDropdown
-              spaServices={spaServices}
-              loading={loadingSpaServices}
-              error={errorSpaServices}
-            />
-
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/blog" aria-label="Blog">
-                Blog
-              </Link>
-            </Button>
-
             <Button
               variant="ghost"
               size="sm"
@@ -1140,6 +1203,8 @@ export default function Header({
                 <Heart className="h-5 w-5" />
               </Link>
             </Button>
+
+
 
             {isLoggedIn && userRole === 1 && (
               <Button

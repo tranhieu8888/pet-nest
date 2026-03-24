@@ -1,6 +1,6 @@
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { api } from "../../../../utils/axios";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import { ROLES } from "../../../../role.config";
 import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../../utils/petPagesConfig.vi';
 import enConfig from '../../../../utils/petPagesConfig.en';
+import { PaginationCore } from "@/components/core/PaginationCore";
 
 export interface Address {
     _id?: string;
@@ -183,8 +184,29 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
         onClose();
     };
 
+    const rules = useMemo(() => {
+        const pwd = formData.password;
+        return {
+            minLength: pwd.length >= 6,
+            upper: /[A-Z]/.test(pwd),
+            lower: /[a-z]/.test(pwd),
+            number: /\d/.test(pwd),
+        };
+    }, [formData.password]);
+
+    const strengthScore = Number(rules.minLength) + Number(rules.upper) + Number(rules.lower) + Number(rules.number);
+
+    const ruleClass = (ok: boolean) =>
+        `rounded-lg border px-2 py-1 text-xs ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!user && strengthScore < 4) {
+            alert('Vui lòng nhập mật khẩu đủ mạnh.');
+            return;
+        }
+
         try {
             const userData: Omit<User, '_id'> = {
                 ...formData,
@@ -239,6 +261,21 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 required={!user}
                             />
+                            
+                            <div className="mt-2">
+                                <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                                    <div
+                                        className={`h-full transition-all duration-300 ${strengthScore <= 1 ? 'bg-rose-500' : strengthScore <= 3 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                        style={{ width: `${Math.max(10, (strengthScore / 4) * 100)}%` }}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className={ruleClass(rules.minLength)}>Mật khẩu từ 6 ký tự</div>
+                                    <div className={ruleClass(rules.upper)}>Chữ cái viết hoa (A-Z)</div>
+                                    <div className={ruleClass(rules.lower)}>Chữ cái viết thường (a-z)</div>
+                                    <div className={ruleClass(rules.number)}>Chứa số (0-9)</div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -419,6 +456,7 @@ export default function UserPage() {
                 setUsers([...users, response.data]);
             }
             fetchUsers();
+            alert('Tài khoản đã được tạo. Email xác thực đã được gửi đến địa chỉ email đăng ký.');
         } catch (err: any) {
             setError(err.response?.data?.message || err.message);
         }
@@ -482,58 +520,6 @@ export default function UserPage() {
                                 setSelectedUser(undefined);
                                 setIsFormOpen(true);
                             }}>{config.addNewButton}</Button>
-                            {/* Import Users Button */}
-                            <input
-                                type="file"
-                                accept=".csv"
-                                id="import-users-csv"
-                                style={{ display: 'none' }}
-                                onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const formData = new FormData();
-                                    formData.append('file', file);
-                                    try {
-                                        await api.post('/users/import-csv', formData, {
-                                            headers: { 'Content-Type': 'multipart/form-data' },
-                                        });
-                                        alert(config.alert.importSuccess);
-                                        fetchUsers();
-                                    } catch (err: any) {
-                                        alert(config.alert.importFail + (err.response?.data?.message || err.message));
-                                    } finally {
-                                        e.target.value = '';
-                                    }
-                                }}
-                            />
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    const input = document.getElementById('import-users-csv') as HTMLInputElement;
-                                    if (input) input.click();
-                                }}
-                            >
-                                {config.importCSV}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={async () => {
-                                    try {
-                                        const response = await api.get('/users/export-csv', { responseType: 'blob' });
-                                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                                        const link = document.createElement('a');
-                                        link.href = url;
-                                        link.setAttribute('download', 'users.csv');
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        link.parentNode?.removeChild(link);
-                                    } catch (err: any) {
-                                        alert(config.alert.exportFail + (err.response?.data?.message || err.message));
-                                    }
-                                }}
-                            >
-                                {config.exportAll}
-                            </Button>
                         </div>
                     </div>
                 </CardHeader>
@@ -713,61 +699,17 @@ export default function UserPage() {
                     )}
                 </DialogContent>
             </Dialog>
-            <Pagination
-                filteredUsers={filteredUsers}
+            <PaginationCore
+                totalItems={filteredUsers.length}
                 itemsPerPage={itemsPerPage}
                 currentPage={currentPage}
-                setItemsPerPage={setItemsPerPage}
-                setCurrentPage={setCurrentPage}
-                config={config}
+                onPageChange={setCurrentPage}
+                previousLabel={config.pagination.previous}
+                nextLabel={config.pagination.next}
+                showingLabel={config.pagination.showing}
             />
         </div>
     );
 }
 
-interface PaginationProps {
-    filteredUsers: User[];
-    itemsPerPage: number;
-    currentPage: number;
-    setItemsPerPage: (value: number) => void;
-    setCurrentPage: (value: number) => void;
-}
 
-function Pagination({ filteredUsers, itemsPerPage, currentPage, setItemsPerPage, setCurrentPage, config }: PaginationProps & { config: any }) {
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-
-    return (
-        <div className="flex items-center justify-between px-2 py-4">
-            <div className="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                    disabled={currentPage === 1}
-                >
-                    {config.pagination.previous}
-                </Button>
-                <div className="flex items-center gap-1">
-                    {[...Array(totalPages)].map((_, index) => (
-                        <Button
-                            key={index + 1}
-                            variant={currentPage === index + 1 ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentPage(index + 1)}
-                        >
-                            {index + 1}
-                        </Button>
-                    ))}
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                >
-                    {config.pagination.next}
-                </Button>
-            </div>
-        </div>
-    );
-}

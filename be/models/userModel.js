@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 
 const addressSchema = new mongoose.Schema({
   street: { type: String, required: true },
-  city: { type: String, required: true },
+  ward: { type: String },
+  district: { type: String },
+  province: { type: String },
+  city: { type: String },
   state: { type: String },
-  postalCode: { type: String, required: true },
+  postalCode: { type: String },
   country: { type: String, required: true, default: 'Vietnam' }
 }, { _id: true });
 

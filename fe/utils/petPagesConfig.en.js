@@ -158,7 +158,14 @@ const pagesConfig = {
         three: "3 Stars",
         two: "2 Stars",
         one: "1 Star"
-      }
+      },
+      delete: "Delete",
+      deleteConfirm: "Are you sure you want to delete this review?",
+      successDelete: "Review deleted successfully!",
+      errorDelete: "Error deleting review.",
+      noComments: "No comments available.",
+      images: "Images",
+      cancel: "Cancel"
     },
     pagination: {
       showing: "Showing {start} to {end} of {total} products",
@@ -236,6 +243,7 @@ const pagesConfig = {
       exportFail: "Export failed: "
     },
     pagination: {
+      showing: "Showing {start} to {end} of {total} users",
       previous: "Previous",
       next: "Next"
     },
@@ -358,6 +366,21 @@ const pagesConfig = {
     brand: {
       short: "P",
       full: "Pet Nest"
+    },
+    spa: {
+      trigger: "Spa Services",
+      title: "Pet Spa Services",
+      activeCount: "{count} services active",
+      loading: "Loading services...",
+      error: "Error fetching services",
+      noServices: "No services available",
+      categories: {
+        spa: "General Spa",
+        cleaning: "Cleaning",
+        grooming: "Grooming",
+        coloring: "Hair Coloring",
+      },
+      suitableFor: "Suitable for pets needing {category}"
     },
     search: {
       placeholder: "Search for products, brands, and more...",
@@ -1256,6 +1279,39 @@ const pagesConfig = {
     manageCategory: "Manage Category",
     manageAttribute: "Manage Attribute",
     search: "Search"
+  },
+  orderHistory: {
+    title: "My Orders",
+    description: "View and track your order history",
+    searchPlaceholder: "Search by order ID, product name...",
+    allStatus: "All status",
+    noOrders: "You have no orders yet",
+    loading: "Loading data...",
+    table: {
+      orderId: "Order ID",
+      date: "Order Date",
+      total: "Total",
+      status: "Status",
+      actions: "Actions",
+      viewDetails: "Details"
+    },
+    status: {
+      pending: "Pending Payment",
+      processing: "Processing",
+      shipping: "Shipping",
+      completed: "Completed",
+      cancelled: "Cancelled",
+      returned: "Returned"
+    },
+    pagination: {
+      previous: "Previous",
+      next: "Next",
+      showing: "Showing {start} - {end} / {total} orders"
+    },
+    item: {
+      quantity: "Quantity: {count}",
+      price: "{price}₫"
+    }
   }
 };
 

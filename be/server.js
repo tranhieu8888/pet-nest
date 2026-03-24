@@ -35,6 +35,8 @@ const adminDashboardRoute = require("./routes/adminDashboardRoute");
 const staffDashboardRoute = require("./routes/staffDashboardRoute");
 const aiChatRoute = require("./routes/aiChatRoute");
 const chatRoute = require("./routes/chatRoute");
+const orderRoute = require("./routes/orderRoute");
+const cartRoute = require("./routes/cartRoute");
 
 const { setupSocket, getIO } = require("./config/socket.io");
 
@@ -86,6 +88,8 @@ app.use("/api/payments", paymentRoute);
 app.use("/api/ai", aiChatRoute);
 app.use("/api/chat", chatRoute);
 app.use("/api/admin/orders", adminOrderRoute);
+app.use("/api/orders", orderRoute);
+app.use("/api/cart", cartRoute);
 
 app.get("/", (req, res) => {
   res.send("API is running...");

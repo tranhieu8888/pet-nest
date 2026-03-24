@@ -123,10 +123,18 @@ const menuGroups: MenuGroup[] = [
 
 function AdminSidebar({ adminId }: { adminId: string | null }) {
   const pathname = usePathname();
+  const [optimisticPathname, setOptimisticPathname] = useState<string | null>(null);
+
+  // Clear optimistic path when actual pathname changes
+  useEffect(() => {
+    setOptimisticPathname(null);
+  }, [pathname]);
+
+  const currentPath = optimisticPathname || pathname;
 
   const isPathActive = (url?: string) => {
     if (!url) return false;
-    return pathname === url || pathname.startsWith(`${url}/`);
+    return currentPath === url || currentPath.startsWith(`${url}/`);
   };
 
   const isProductGroupActive =
@@ -156,45 +164,53 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
           <button
             type="button"
             onClick={() => setProductMenuOpen((prev) => !prev)}
-            className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+            className={`w-full flex items-center justify-between gap-3 px-5 py-3 transition-colors text-[13.5px] group ${
               isGroupActive
-                ? "bg-indigo-100 text-indigo-600 font-semibold"
-                : "hover:bg-gray-100"
+                ? "text-blue-600 font-semibold bg-blue-50/30"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <item.icon className="size-4" />
+            <div className="flex items-center gap-3.5">
+              <item.icon className={`size-[18px] transition-colors ${isGroupActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} />
               <span>{item.title}</span>
             </div>
             <ChevronDown
-              className={`size-4 transition-transform duration-200 ${
+              className={`size-3.5 transition-transform duration-200 ${
                 productMenuOpen ? "rotate-180" : ""
-              }`}
+              } ${isGroupActive ? "text-blue-600" : "text-slate-400"}`}
             />
           </button>
-          {productMenuOpen && (
-            <div className="mt-1 ml-6 pl-3 border-l border-gray-200 space-y-1">
-              {item.children.map((child) => (
-                <SidebarMenuButton
-                  key={child.title}
-                  asChild
-                  className={`transition-all duration-200 rounded-lg ${
-                    isPathActive(child.url)
-                      ? "bg-indigo-100 text-indigo-600 font-semibold"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  <Link
-                    href={child.url}
-                    className="flex items-center gap-3 px-3 py-2"
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              productMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="bg-slate-50/30">
+              {item.children.map((child) => {
+                const isSubActive = isPathActive(child.url);
+                return (
+                  <SidebarMenuButton
+                    key={child.title}
+                    asChild
+                    isActive={isSubActive}
+                    className={`h-11 pl-12 pr-4 transition-all duration-150 rounded-none relative border-r-[3px] ${
+                      isSubActive
+                        ? "bg-blue-50/60 text-blue-600 font-bold border-blue-600"
+                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent font-medium"
+                    }`}
                   >
-                    <child.icon className="size-4" />
-                    <span>{child.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              ))}
+                    <Link
+                      href={child.url}
+                      onClick={() => setOptimisticPathname(child.url)}
+                      className="flex items-center text-[13px]"
+                    >
+                      <span>{child.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                );
+              })}
             </div>
-          )}
+          </div>
         </SidebarMenuItem>
       );
     }
@@ -204,17 +220,19 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
       <SidebarMenuItem key={item.title}>
         <SidebarMenuButton
           asChild
-          className={`transition-all duration-200 rounded-lg ${
+          isActive={isActive}
+          className={`h-11 transition-all duration-150 rounded-none relative border-r-[3px] group/btn ${
             isActive
-              ? "bg-indigo-100 text-indigo-600 font-semibold"
-              : "hover:bg-gray-100"
+              ? "bg-blue-50 text-blue-600 font-bold border-blue-600"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent font-medium"
           }`}
         >
           <Link
             href={item.url!}
-            className="flex items-center gap-3 px-3 py-2"
+            onClick={() => setOptimisticPathname(item.url!)}
+            className="flex items-center gap-3.5 px-5 py-2 text-[13.5px]"
           >
-            <item.icon className="size-4" />
+            <item.icon className={`size-[18px] transition-colors ${isActive ? "text-blue-600" : "text-slate-400 group-hover/btn:text-slate-600"}`} />
             <span>{item.title}</span>
           </Link>
         </SidebarMenuButton>
@@ -223,41 +241,32 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
   };
 
   return (
-    <Sidebar className="border-r bg-white shadow-xl overflow-visible">
-      <SidebarHeader className="border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white overflow-visible">
-        <div className="flex items-center justify-between px-2 py-2">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <Link href="/admin/dashboard">
-                  <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
-                    <TrendingUp className="size-5" />
-                  </div>
-                  <div className="flex flex-col leading-none">
-                    <span className="font-bold text-lg">Admin Panel</span>
-                    <span className="text-xs opacity-80">
-                      Management System
-                    </span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-
-          <div className="shrink-0">
+    <Sidebar className="border-r border-slate-200 bg-white overflow-visible">
+      <SidebarHeader className="h-16 border-b border-slate-100 bg-white p-0 overflow-visible">
+        <div className="flex flex-row items-center justify-between h-full w-full px-5">
+          <Link href="/admin/dashboard" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+            <div className="flex size-7.5 items-center justify-center rounded bg-slate-900 text-white shadow-sm">
+              <TrendingUp className="size-4" />
+            </div>
+            <span className="font-bold text-slate-800 text-[14px] tracking-tight antialiased">
+              PETNEST ADMIN
+            </span>
+          </Link>
+          
+          <div className="shrink-0 flex items-center">
             <AdminNotificationBell adminId={adminId} />
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-2">
+      <SidebarContent className="py-2 custom-scrollbar">
         {menuGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-gray-400 uppercase text-[10px] tracking-widest font-semibold px-3 pt-3 pb-1">
+          <SidebarGroup key={group.label} className="p-0 mb-3 last:mb-0">
+            <SidebarGroupLabel className="text-slate-400 uppercase text-[10px] tracking-[0.08em] font-bold px-5 py-2.5 leading-none">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-0.5">
+              <SidebarMenu className="gap-0">
                 {group.items.map(renderItem)}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -265,23 +274,30 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-3">
+      <SidebarFooter className="border-t border-slate-100 p-3 bg-white">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-gray-100 transition">
-              <div className="flex size-8 items-center justify-center rounded-full bg-indigo-500 text-white">
-                <User className="size-4" />
+            <button className="flex w-full items-center gap-3 rounded-md p-2 hover:bg-slate-50 transition-colors group">
+              <div className="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 border border-slate-200 group-hover:border-slate-300">
+                <User className="size-4.5" />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="font-medium">Trang admin</span>
-                <span className="text-xs text-gray-500">admin@gmail.com</span>
+              <div className="flex flex-col text-left overflow-hidden">
+                <span className="font-semibold text-[13.5px] text-slate-900 truncate">Administrator</span>
+                <span className="text-[11px] text-slate-400 truncate font-medium">admin@gmail.com</span>
               </div>
-              <ChevronUp className="ml-auto size-4 text-gray-400" />
+              <ChevronUp className="ml-auto size-3.5 text-slate-400" />
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="w-56 rounded-xl shadow-lg">
-            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+          <DropdownMenuContent className="w-56 rounded-md shadow-xl border-slate-200 p-1" side="top" align="start">
+            <div className="px-2.5 py-2 mb-1 border-b border-slate-50">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tài khoản</p>
+            </div>
+            <DropdownMenuItem className="rounded py-2 text-[13px] focus:bg-slate-50 cursor-pointer">
+              <User className="mr-2 h-4 w-4 text-slate-400" />
+              Hồ sơ của tôi
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-500 rounded py-2 text-[13px] focus:bg-red-50 focus:text-red-600 cursor-pointer" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Đăng xuất
             </DropdownMenuItem>

@@ -176,3 +176,32 @@ exports.getAllReviews = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// DELETE /api/reviews/:id
+exports.deleteReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const review = await Review.findById(id);
+    if (!review) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Review not found" });
+    }
+
+    // Only reviewer or admin (role 0) can delete
+    if (review.userId.toString() !== userId && userRole !== 0) {
+      return res
+        .status(403)
+        .json({ success: false, error: "You are not authorized to delete this review" });
+    }
+
+    await Review.findByIdAndDelete(id);
+
+    res.status(200).json({ success: true, message: "Review deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
