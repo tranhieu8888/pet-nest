@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import Header from "@/components/layout/Header"
 import axiosInstance, { api } from "../../../utils/axios"
 import axios from "axios"
-import { ButtonCore } from "@/components/core/ButtonCore"
+import { AddressForm } from "@/components/core/AddressForm"
 
 interface UserProfile {
   name: string
@@ -43,19 +43,13 @@ export default function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([])
   const [profile, setProfile] = useState<UserProfile | null>(null)
 
-  const [useStoredAddress, setUseStoredAddress] = useState(false)
+  const [selectedAddressIndex, setSelectedAddressIndex] = useState<number | null>(null)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
-  const [street, setStreet] = useState("")
-  const [provinceCode, setProvinceCode] = useState("")
-  const [districtCode, setDistrictCode] = useState("")
-  const [wardCode, setWardCode] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("cod")
-
-  const [provinces, setProvinces] = useState<any[]>([])
-  const [wards, setWards] = useState<any[]>([])
+  const [addressData, setAddressData] = useState<{ street?: string; ward?: string; province?: string }>({})
 
   const [voucherCode, setVoucherCode] = useState("")
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null)
@@ -88,15 +82,9 @@ export default function CheckoutPage() {
           if (u.email) setEmail(u.email)
           if (u.phone) setPhone(u.phone)
           if (u.address && u.address.length > 0) {
-            setUseStoredAddress(true)
-            const addr = u.address[0]
-            if (addr.street) setStreet(addr.street)
+            setSelectedAddressIndex(0);
           }
         }
-
-        // Dùng API v2 (34 Tỉnh Thành mới - Cấu trúc 2 cấp: Tỉnh -> Phường/Xã)
-        const provRes = await axios.get("https://provinces.open-api.vn/api/v2/p/")
-        setProvinces(provRes.data)
       } catch (err) {
         console.error("Error loading checkout page:", err)
       } finally {
@@ -106,24 +94,13 @@ export default function CheckoutPage() {
     loadData()
   }, [])
 
-  useEffect(() => {
-    if (provinceCode) {
-      axios
-        .get(`https://provinces.open-api.vn/api/v2/p/${provinceCode}?depth=2`)
-        .then((res) => {
-          setWards(res.data.wards || [])
-        })
-        .catch(console.error)
-      setWardCode("")
-    }
-  }, [provinceCode])
 
   const calculateSubTotal = () =>
     items.reduce((sum, item) => sum + item.product.selectedVariant.price * item.quantity, 0)
 
   const getShippingFee = () => {
-    const hasStoredAddr = useStoredAddress && profile?.address && profile.address.length > 0;
-    const hasNewAddr = !!(provinceCode && wardCode && street.trim());
+    const hasStoredAddr = selectedAddressIndex !== null && profile?.address && profile.address.length > 0;
+    const hasNewAddr = !!(addressData.province && addressData.ward && addressData.street?.trim());
     if (hasStoredAddr || hasNewAddr) return 30000;
     return 0;
   }
@@ -142,17 +119,17 @@ export default function CheckoutPage() {
       setVoucherError("Vui lòng nhập mã voucher");
       return;
     }
-    
+
     try {
       setIsApplyingVoucher(true);
       setVoucherError("");
       const subTotal = calculateSubTotal();
-      
+
       const res = await axiosInstance.post("/vouchers/validate", {
         code: voucherCode,
         orderValue: subTotal
       });
-      
+
       setAppliedVoucher(res.data.voucher);
       setVoucherError("");
     } catch (err: any) {
@@ -175,16 +152,14 @@ export default function CheckoutPage() {
     if (!phone.trim()) return alert("Vui lòng nhập số điện thoại")
 
     let finalAddress: any = {}
-    if (useStoredAddress && profile?.address?.length) {
-      finalAddress = profile.address[0]
+    if (selectedAddressIndex !== null && profile?.address?.[selectedAddressIndex]) {
+      finalAddress = profile.address[selectedAddressIndex]
     } else {
-      if (!provinceCode || !wardCode || !street.trim()) {
+      if (!addressData.province || !addressData.ward || !addressData.street?.trim()) {
         alert("Vui lòng nhập đầy đủ thông tin địa chỉ")
         return
       }
-      const provName = provinces.find((p) => p.code == provinceCode)?.name || ""
-      const wardName = wards.find((w) => w.code == wardCode)?.name || ""
-      finalAddress = { street, ward: wardName, district: "", province: provName }
+      finalAddress = { street: addressData.street, ward: addressData.ward, district: "", province: addressData.province }
     }
 
     try {
@@ -239,9 +214,9 @@ export default function CheckoutPage() {
 
         {/* Header Cột Back */}
         <div className="flex items-center gap-4 mb-6">
-          <ButtonCore 
-            variantType="outline" 
-            className="h-12 w-12 p-0" 
+          <ButtonCore
+            variantType="outline"
+            className="h-12 w-12 p-0"
             onClick={() => router.push('/cart')}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -313,88 +288,52 @@ export default function CheckoutPage() {
                     Địa chỉ nhận hàng
                   </CardTitle>
                   {hasAddressProfile && (
-                    <ButtonCore
-                      variantType="outline"
-                      className="text-xs h-8"
-                      onClick={() => setUseStoredAddress(!useStoredAddress)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedAddressIndex(selectedAddressIndex !== null ? null : 0)}
+                      className="text-xs h-8 rounded-full font-semibold border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
                     >
-                      {useStoredAddress ? "Nhập địa chỉ mới" : "Sử dụng địa chỉ đã lưu"}
-                    </ButtonCore>
+                      {selectedAddressIndex !== null ? "Nhập địa chỉ mới" : "Sử dụng địa chỉ đã lưu"}
+                    </Button>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                {useStoredAddress && hasAddressProfile ? (
-                  <div className="bg-pink-50/60 p-5 rounded-2xl border border-pink-100 flex items-start gap-4 transition-all hover:bg-pink-50 w-full cursor-default">
-                    <CheckCircle2 className="w-6 h-6 text-pink-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-pink-900 mb-1.5 flex items-center gap-2">
-                        Địa chỉ mặc định
-                        <span className="bg-pink-200/50 text-pink-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Đã lưu</span>
-                      </h4>
-                      <p className="text-gray-700 text-sm leading-relaxed font-medium">
-                        {profile?.address[0].street}
-                        <br />
-                        {[
-                          profile?.address[0].ward,
-                          profile?.address[0].province,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </div>
+                {selectedAddressIndex !== null && hasAddressProfile ? (
+                  <div className="space-y-4">
+                    {profile.address.map((addr, idx) => (
+                      <div 
+                        key={addr._id || idx}
+                        onClick={() => setSelectedAddressIndex(idx)}
+                        className={`p-4 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${
+                          selectedAddressIndex === idx 
+                          ? "border-pink-500 bg-pink-50/50 shadow-sm ring-1 ring-pink-100" 
+                          : "border-gray-200 hover:border-pink-300 hover:bg-gray-50 mb-3"
+                        }`}
+                      >
+                        <div className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                          selectedAddressIndex === idx ? "border-pink-500 bg-pink-500" : "border-gray-300"
+                        }`}>
+                          {selectedAddressIndex === idx && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-1 text-sm flex items-center gap-2">
+                            Địa chỉ {idx + 1}
+                            {idx === 0 && <span className="bg-pink-100 text-pink-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Mặc định</span>}
+                          </h4>
+                          <p className="text-gray-600 text-sm leading-relaxed">
+                            {addr.street}
+                            <br />
+                            {[addr.ward, addr.province].filter(Boolean).join(", ")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-gray-700 font-bold text-sm">
-                        Tỉnh / Thành phố <span className="text-red-500">*</span>
-                      </Label>
-                      <Select value={provinceCode} onValueChange={setProvinceCode}>
-                        <SelectTrigger className="h-12 rounded-xl border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 shadow-sm bg-white">
-                          <SelectValue placeholder="Chọn Tỉnh/Thành phố" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                          {provinces.map((p) => (
-                            <SelectItem key={p.code} value={String(p.code)}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-gray-700 font-bold text-sm">
-                        Phường / Xã <span className="text-red-500">*</span>
-                      </Label>
-                      <Select
-                        value={wardCode}
-                        onValueChange={setWardCode}
-                        disabled={!provinceCode}
-                      >
-                        <SelectTrigger className="h-12 rounded-xl border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 shadow-sm bg-white">
-                          <SelectValue placeholder="Chọn Phường/Xã" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                          {wards.map((w) => (
-                            <SelectItem key={w.code} value={String(w.code)}>
-                              {w.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label className="text-gray-700 font-bold text-sm">
-                        Số nhà, tên đường chi tiết <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        value={street}
-                        onChange={(e) => setStreet(e.target.value)}
-                        placeholder="Ví dụ: Số 20 ngõ 15 đường Cầu Giấy..."
-                        className="h-12 rounded-xl border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 shadow-sm bg-white"
-                      />
-                    </div>
+                  <div className="pt-2">
+                    <AddressForm value={addressData} onChange={setAddressData} hideLabels={false} />
                   </div>
                 )}
               </CardContent>
@@ -504,25 +443,25 @@ export default function CheckoutPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-gray-700 font-bold text-sm">Mã Tích Lũy / Phiếu giảm giá</Label>
                     <div className="flex gap-2">
-                       <Input 
-                         value={voucherCode}
-                         onChange={(e) => {
-                           setVoucherCode(e.target.value.toUpperCase());
-                           setVoucherError("");
-                         }}
-                         disabled={!!appliedVoucher || isApplyingVoucher}
-                         placeholder="Nhập mã voucher..." 
-                         className="h-11 rounded-xl uppercase"
-                       />
-                       {appliedVoucher ? (
-                         <ButtonCore variantType="danger" className="h-11 px-4 w-[100px] shrink-0" onClick={handleRemoveVoucher}>
-                            Hủy
-                         </ButtonCore>
-                       ) : (
-                         <ButtonCore onClick={handleApplyVoucher} disabled={isApplyingVoucher || !voucherCode.trim()} className="h-11 px-5 w-[100px] shrink-0">
-                            {isApplyingVoucher ? "Đợi..." : "Áp dụng"}
-                         </ButtonCore>
-                       )}
+                      <Input
+                        value={voucherCode}
+                        onChange={(e) => {
+                          setVoucherCode(e.target.value.toUpperCase());
+                          setVoucherError("");
+                        }}
+                        disabled={!!appliedVoucher || isApplyingVoucher}
+                        placeholder="Nhập mã voucher..."
+                        className="h-11 rounded-xl uppercase"
+                      />
+                      {appliedVoucher ? (
+                        <ButtonCore variantType="danger" className="h-11 px-4 w-[100px] shrink-0" onClick={handleRemoveVoucher}>
+                          Hủy
+                        </ButtonCore>
+                      ) : (
+                        <ButtonCore onClick={handleApplyVoucher} disabled={isApplyingVoucher || !voucherCode.trim()} className="h-11 px-5 w-[100px] shrink-0">
+                          {isApplyingVoucher ? "Đợi..." : "Áp dụng"}
+                        </ButtonCore>
+                      )}
                     </div>
                     {voucherError && <p className="text-red-500 text-xs font-semibold">{voucherError}</p>}
                     {appliedVoucher && <p className="text-pink-500 text-xs font-semibold">Ting ting! Áp dụng giảm thêm {formatPrice(appliedVoucher.discountValue)}</p>}
@@ -568,7 +507,7 @@ export default function CheckoutPage() {
                     rightIcon={!submitting && <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />}
                   >
                     {submitting ? (
-                        "Đang tạo đơn hàng..."
+                      "Đang tạo đơn hàng..."
                     ) : (
                       paymentMethod === 'cod' ? "Hoàn Tất Đặt Hàng" : "Chuyển Đến Trang Thanh Toán"
                     )}

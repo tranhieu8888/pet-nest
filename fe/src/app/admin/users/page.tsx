@@ -16,14 +16,18 @@ import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../../utils/petPagesConfig.vi';
 import enConfig from '../../../../utils/petPagesConfig.en';
 import { PaginationCore } from "@/components/core/PaginationCore";
+import { AddressForm } from "@/components/core/AddressForm";
 
 export interface Address {
     _id?: string;
-    street: string;
-    city: string;
+    street?: string;
+    ward?: string;
+    district?: string;
+    province?: string;
+    city?: string;
     state?: string;
-    postalCode: string;
-    country: string;
+    postalCode?: string;
+    country?: string;
 }
 
 export interface User {
@@ -132,8 +136,8 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
         verified: false,
         address: [{
             street: '',
-            city: '',
-            state: '',
+            ward: '',
+            province: '',
             postalCode: '',
             country: ''
         }]
@@ -151,8 +155,8 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
                 verified: user.verified || false,
                 address: user.address.map(addr => ({
                     street: addr.street || '',
-                    city: addr.city || '',
-                    state: addr.state || '',
+                    ward: addr.ward || '',
+                    province: addr.province || '',
                     postalCode: addr.postalCode || '',
                     country: addr.country || ''
                 }))
@@ -171,8 +175,8 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
             verified: false,
             address: [{
                 street: '',
-                city: '',
-                state: '',
+                ward: '',
+                province: '',
                 postalCode: '',
                 country: ''
             }]
@@ -313,7 +317,7 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
                     <div className="space-y-2">
                         <Label>{config.form.fields.address}</Label>
                         {formData.address.map((address, index) => (
-                            <div key={index} className="relative grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                            <div key={index} className="relative p-4 border rounded-lg">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -321,63 +325,22 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
                                         updatedAddress.splice(index, 1);
                                         setFormData({ ...formData, address: updatedAddress });
                                     }}
-                                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm"
+                                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm z-10"
                                 >
                                     ✕
                                 </button>
-
-                                <div className="space-y-2">
-                                    <Label>{config.form.fields.street}</Label>
-                                    <Input
-                                        value={address.street}
-                                        onChange={(e) => {
-                                            const newAddress = [...formData.address];
-                                            newAddress[index] = { ...address, street: e.target.value };
-                                            setFormData({ ...formData, address: newAddress });
+                                
+                                <div className="mt-4">
+                                    <AddressForm
+                                        value={{
+                                            street: address.street,
+                                            ward: address.ward,
+                                            province: address.province,
                                         }}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{config.form.fields.city}</Label>
-                                    <Input
-                                        value={address.city}
-                                        onChange={(e) => {
-                                            const newAddress = [...formData.address];
-                                            newAddress[index] = { ...address, city: e.target.value };
-                                            setFormData({ ...formData, address: newAddress });
-                                        }}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{config.form.fields.state}</Label>
-                                    <Input
-                                        value={address.state}
-                                        onChange={(e) => {
-                                            const newAddress = [...formData.address];
-                                            newAddress[index] = { ...address, state: e.target.value };
-                                            setFormData({ ...formData, address: newAddress });
-                                        }}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{config.form.fields.postalCode}</Label>
-                                    <Input
-                                        value={address.postalCode}
-                                        onChange={(e) => {
-                                            const newAddress = [...formData.address];
-                                            newAddress[index] = { ...address, postalCode: e.target.value };
-                                            setFormData({ ...formData, address: newAddress });
-                                        }}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{config.form.fields.country}</Label>
-                                    <Input
-                                        value={address.country}
-                                        onChange={(e) => {
-                                            const newAddress = [...formData.address];
-                                            newAddress[index] = { ...address, country: e.target.value };
-                                            setFormData({ ...formData, address: newAddress });
+                                        onChange={(newAddr) => {
+                                            const updatedAddress = [...formData.address];
+                                            updatedAddress[index] = { ...address, ...newAddr };
+                                            setFormData({ ...formData, address: updatedAddress });
                                         }}
                                     />
                                 </div>
@@ -391,8 +354,8 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
                                 ...formData,
                                 address: [...formData.address, {
                                     street: '',
-                                    city: '',
-                                    state: '',
+                                    ward: '',
+                                    province: '',
                                     postalCode: '',
                                     country: ''
                                 }]
@@ -682,10 +645,8 @@ export default function UserPage() {
                                 {selectedUser.address.map((addr, index) => (
                                     <div key={index} className="p-4 border rounded-lg space-y-2">
                                         <p><strong>{config.form.fields.street}:</strong> {addr.street}</p>
-                                        <p><strong>{config.form.fields.city}:</strong> {addr.city}</p>
-                                        <p><strong>{config.form.fields.state}:</strong> {addr.state || config.notAvailable}</p>
-                                        <p><strong>{config.form.fields.postalCode}:</strong> {addr.postalCode}</p>
-                                        <p><strong>{config.form.fields.country}:</strong> {addr.country}</p>
+                                        <p><strong>Phường/Xã:</strong> {addr.ward || config.notAvailable}</p>
+                                        <p><strong>Tỉnh/Thành phố:</strong> {addr.province || config.notAvailable}</p>
                                     </div>
                                 ))}
                             </div>
