@@ -14,6 +14,7 @@ type StaffSchedule = {
   shiftEnd: string;
   isOff: boolean;
   note?: string;
+  overtimeHours?: number;
 };
 
 function formatDateVN(dateString: string) {
@@ -164,6 +165,11 @@ export default function StaffSchedulePage() {
 
                       <td className="p-3 border">
                         {s.isOff ? "-" : `${s.shiftStart} - ${s.shiftEnd}`}
+                        {!s.isOff && s.overtimeHours ? (
+                          <div className="text-xs text-amber-600 font-semibold mt-1">
+                            (Có thể làm thêm {s.overtimeHours} giờ)
+                          </div>
+                        ) : null}
                       </td>
 
                       <td className="p-3 border">

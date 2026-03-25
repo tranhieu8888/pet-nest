@@ -230,7 +230,8 @@ exports.confirmSpaBooking = async (req, res) => {
 
     // 2. Kiểm tra khung giờ nghiêm ngặt: Đơn hàng phải nằm trong ca làm việc
     const shiftStartMinutes = parseTimeToMinutes(schedule.shiftStart);
-    const shiftEndMinutes = parseTimeToMinutes(schedule.shiftEnd);
+    const shiftEndMinutes =
+      parseTimeToMinutes(schedule.shiftEnd) + (schedule.overtimeHours || 0) * 60;
     const bookingStartMinutes = getVNMinutes(booking.startAt);
     const bookingEndMinutes = getVNMinutes(booking.endAt);
 

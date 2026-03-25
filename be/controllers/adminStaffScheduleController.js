@@ -70,6 +70,7 @@ async function hasConfirmedBookingsOutsideNewShift({
   isOff,
   shiftStart,
   shiftEnd,
+  overtimeHours = 0,
   excludeScheduleId = null,
 }) {
   const { start, end } = getStartAndEndOfDay(workDate);
@@ -92,7 +93,7 @@ async function hasConfirmedBookingsOutsideNewShift({
   }
 
   const newShiftStartMinutes = parseTimeToMinutes(shiftStart);
-  const newShiftEndMinutes = parseTimeToMinutes(shiftEnd);
+  const newShiftEndMinutes = parseTimeToMinutes(shiftEnd) + (overtimeHours || 0) * 60;
 
   for (const booking of confirmedBookings) {
     const bookingStartMinutes = moment.tz(booking.startAt, VN_TIMEZONE).hours() * 60 + 
@@ -156,6 +157,7 @@ exports.create = async (req, res) => {
       shiftEnd: req.body.isOff ? "" : req.body.shiftEnd,
       isOff: !!req.body.isOff,
       note: req.body.note || "",
+      overtimeHours: req.body.overtimeHours || 0,
       isDeleted: false,
       deletedAt: null,
     };
@@ -171,6 +173,7 @@ exports.create = async (req, res) => {
       isOff: payload.isOff,
       shiftStart: payload.shiftStart,
       shiftEnd: payload.shiftEnd,
+      overtimeHours: payload.overtimeHours,
     });
 
     if (conflict?.type === "off-day-conflict") {
@@ -225,6 +228,7 @@ exports.update = async (req, res) => {
       shiftEnd: req.body.isOff ? "" : req.body.shiftEnd,
       isOff: !!req.body.isOff,
       note: req.body.note || "",
+      overtimeHours: req.body.overtimeHours || 0,
     };
 
     const errorMessage = validatePayload(payload);
@@ -247,6 +251,7 @@ exports.update = async (req, res) => {
       isOff: payload.isOff,
       shiftStart: payload.shiftStart,
       shiftEnd: payload.shiftEnd,
+      overtimeHours: payload.overtimeHours,
       excludeScheduleId: id,
     });
 
@@ -270,6 +275,7 @@ exports.update = async (req, res) => {
     schedule.shiftEnd = payload.shiftEnd;
     schedule.isOff = payload.isOff;
     schedule.note = payload.note;
+    schedule.overtimeHours = payload.overtimeHours;
 
     await schedule.save();
     await schedule.populate("staffId", "name");
