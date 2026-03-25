@@ -882,8 +882,9 @@ const getProductById = async (req, res) => {
                 message: 'Product not found'
             });
         }
+
         const variants = await ProductVariant.find({ product_id: product._id }).lean();
-        const variantIds = variants.map(v => v._id);
+        const variantIds = variants.map((v) => v._id);
 
         // 2. Lấy thông tin category (nhiều category)
         const Category = require('../models/category');
@@ -894,25 +895,50 @@ const getProductById = async (req, res) => {
             const cat = await Category.findById(product.category).lean();
             if (cat) categoryInfo = [cat];
         }
-        // Chỉ lấy _id, name, description
-        categoryInfo = categoryInfo.map(cat => ({
+
+        categoryInfo = categoryInfo.map((cat) => ({
             _id: cat._id,
             name: cat.name,
             description: cat.description
         }));
 
-        // 3. Tính tổng nhập kho cho từng variant
+        // 3. Lấy chi tiết attributes cho variants
+        const attributeIds = [
+            ...new Set(
+                variants
+                    .flatMap((variant) => variant.attribute || [])
+                    .map((attrId) => attrId.toString())
+            )
+        ];
+
+        const attributes = attributeIds.length
+            ? await Attribute.find({ _id: { $in: attributeIds } }).lean()
+            : [];
+
+        const attributeMap = attributes.reduce((map, attr) => {
+            map[attr._id.toString()] = {
+                _id: attr._id,
+                value: attr.value,
+                parentId: attr.parentId || null,
+                categories: attr.categories || [],
+                description: attr.description || ''
+            };
+            return map;
+        }, {});
+
+        // 4. Tính tổng nhập kho cho từng variant
         const ImportBatch = require('../models/import_batches');
         const importAgg = await ImportBatch.aggregate([
             { $match: { variantId: { $in: variantIds } } },
             { $group: { _id: '$variantId', importedQuantity: { $sum: '$quantity' } } }
         ]);
+
         const importMap = importAgg.reduce((map, item) => {
             map[item._id.toString()] = item.importedQuantity;
             return map;
         }, {});
 
-        // 4. Tính tổng đã bán cho từng variant (chỉ đơn completed)
+        // 5. Tính tổng đã bán cho từng variant
         const Order = require('../models/order');
         const soldAgg = await Order.aggregate([
             { $match: { status: { $in: ['processing', 'completed', 'shipping'] } } },
@@ -934,48 +960,72 @@ const getProductById = async (req, res) => {
                 }
             }
         ]);
+
         const soldMap = soldAgg.reduce((map, item) => {
             map[item._id.toString()] = item.orderedQuantity;
             return map;
         }, {});
 
-        // 5. Gắn availableQuantity vào từng variant (không filter theo availableQuantity)
-        const variantsWithStock = variants.map(variant => {
+        // 6. Gắn availableQuantity + attributes cho từng variant
+        const variantsWithStock = variants.map((variant) => {
             const imported = importMap[variant._id.toString()] || 0;
             const ordered = soldMap[variant._id.toString()] || 0;
             const available = imported - ordered;
+
+            const variantAttributes = (variant.attribute || [])
+                .map((attrId) => attributeMap[attrId.toString()])
+                .filter(Boolean);
+
             return {
                 ...variant,
                 importedQuantity: imported,
                 orderedQuantity: ordered,
-                availableQuantity: available
+                availableQuantity: available,
+                attributes: variantAttributes
             };
         });
 
-        // 6. Lấy reviews và user cho product (giữ nguyên logic cũ)
+        // 7. Lấy reviews và user cho product
         const Review = require('../models/reviewModel');
         const reviews = await Review.find({ productId: product._id })
             .populate('userId', 'name avatar')
             .lean();
+
         const User = require('../models/userModel');
         const users = await User.find().lean();
-        // Gắn reviews vào product
-        const productReviews = reviews.map(r => ({
+
+        const productReviews = reviews.map((r) => ({
             _id: r._id,
             rating: r.rating,
             comment: r.comment,
             images: r.images,
             createdAt: r.createdAt,
-            user: users.find(u => u._id.toString() === r.userId?._id?.toString())
+            user: users.find((u) => u._id.toString() === r.userId?._id?.toString())
                 ? {
                     _id: r.userId._id,
                     name: r.userId.name,
                     avatar: r.userId.avatar
-                } : null
+                }
+                : null
         }));
-        const averageRating = productReviews.length > 0 ? (productReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / productReviews.length) : 0;
 
-        // 7. Format kết quả trả về
+        const averageRating = productReviews.length > 0
+            ? productReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / productReviews.length
+            : 0;
+
+        // 8. Gom ảnh sản phẩm từ tất cả variants (loại trùng)
+        const productImages = [];
+        const imageSet = new Set();
+
+        variantsWithStock.forEach((variant) => {
+            (variant.images || []).forEach((img) => {
+                if (img?.url && !imageSet.has(img.url)) {
+                    imageSet.add(img.url);
+                    productImages.push({ url: img.url });
+                }
+            });
+        });
+
         const result = {
             _id: product._id,
             name: product.name,
@@ -984,6 +1034,7 @@ const getProductById = async (req, res) => {
             category: categoryInfo,
             createAt: product.createAt,
             updateAt: product.updateAt,
+            images: productImages,
             variants: variantsWithStock,
             averageRating,
             totalReviews: productReviews.length,

@@ -21,21 +21,21 @@ export default function EditCategoryModal({ category, onSave, onClose, isOpen }:
         parentCategory: category.parentCategory || null as string | null
     });
     const [imagePreview, setImagePreview] = useState<string | null>(category.image || null);
-    const [isUploading, setIsUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<{ name?: string }>({});
     const submitRef = useRef(false);
     const { request } = useApi();
     const { lang } = useLanguage();
     const config = lang === 'vi' ? viConfig.manaCategory : enConfig.manaCategory;
 
-    // Reset states when modal closes
     useEffect(() => {
         if (!isOpen) {
             submitRef.current = false;
             setError(null);
+            setFieldErrors({});
             setSelectedFile(null);
             setImagePreview(category.image || null);
             setUploadProgress(0);
@@ -44,54 +44,31 @@ export default function EditCategoryModal({ category, onSave, onClose, isOpen }:
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setSelectedFile(file);
-            setImagePreview(URL.createObjectURL(file));
-        }
+        if (file) { setSelectedFile(file); setImagePreview(URL.createObjectURL(file)); }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         e.stopPropagation();
-
-        if (submitRef.current) {
-            return;
-        }
+        const errs: { name?: string } = {};
+        if (!formData.name.trim()) errs.name = 'Tên danh mục không được bỏ trống';
+        setFieldErrors(errs);
+        if (Object.keys(errs).length > 0) return;
+        if (submitRef.current) return;
         submitRef.current = true;
         setError(null);
-
         try {
             setIsSubmitting(true);
-
-            if (!formData.name) {
-                throw new Error('Name is required');
-            }
-
             const formDataToSend = new FormData();
             formDataToSend.append('name', formData.name);
             formDataToSend.append('description', formData.description);
-            if (formData.parentCategory) {
-                formDataToSend.append('parentCategory', formData.parentCategory);
-            }
-            if (selectedFile) {
-                formDataToSend.append('image', selectedFile);
-            }
-
-            const response = await request(() => api.put(`/categories/${category._id}`, formDataToSend, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            }));
-
-            if (response.success) {
-                onSave(response.data);
-                onClose();
-            } else {
-                throw new Error(response.message || 'Failed to update category');
-            }
+            if (formData.parentCategory) formDataToSend.append('parentCategory', formData.parentCategory);
+            if (selectedFile) formDataToSend.append('image', selectedFile);
+            const response = await request(() => api.put(`/categories/${category._id}`, formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } }));
+            if (response.success) { onSave(response.data); onClose(); }
+            else throw new Error(response.message || 'Không thể cập nhật danh mục');
         } catch (error: any) {
-            console.error('Error updating category:', error);
-            setError(error.message || 'Failed to update category');
+            setError(error.message || 'Không thể cập nhật danh mục');
         } finally {
             setIsSubmitting(false);
             submitRef.current = false;
@@ -100,70 +77,89 @@ export default function EditCategoryModal({ category, onSave, onClose, isOpen }:
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                    <DialogTitle>{config.editTitle}</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+            <DialogContent className="sm:max-w-[560px] p-0 rounded-2xl shadow-2xl border-slate-200 overflow-hidden gap-0">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-6 py-4">
+                    <DialogHeader>
+                        <DialogTitle className="text-white text-lg font-bold">
+                            ✏️ {config.editTitle}
+                        </DialogTitle>
+                        <p className="text-slate-300 text-sm mt-0.5">{category.name}</p>
+                    </DialogHeader>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-4" noValidate>
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-md">
-                            {error}
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-start gap-2">
+                            <span className="flex-shrink-0 mt-0.5">⚠</span><span>{error}</span>
                         </div>
                     )}
-                    <div className="space-y-2">
-                        <Label htmlFor="name">{config.form.name} <span className="text-red-500">*</span></Label>
+
+                    {/* Name */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                            {config.form.name} <span className="text-red-500">*</span>
+                        </Label>
                         <Input
                             id="name"
                             value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            required
+                            onChange={(e) => { setFormData(prev => ({ ...prev, name: e.target.value })); setFieldErrors(fe => ({ ...fe, name: undefined })); }}
+                            className={`h-10 rounded-xl border-slate-300 focus:border-blue-500 transition-colors ${fieldErrors.name ? 'border-red-400 bg-red-50/50' : ''}`}
                         />
+                        {fieldErrors.name && <p className="text-red-500 text-xs flex items-center gap-1"><span>⚠</span>{fieldErrors.name}</p>}
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">{config.form.description}</Label>
+
+                    {/* Description */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="description" className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                            {config.form.description}
+                        </Label>
                         <Textarea
                             id="description"
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                            className="rounded-xl border-slate-300 focus:border-blue-500 resize-none min-h-[80px] transition-colors"
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="image">{config.form.image}</Label>
-                        <Input
-                            id="image"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            disabled={isSubmitting}
-                        />
-                        {isSubmitting && (
-                            <div className="space-y-2">
-                                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                    <div
-                                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                                        style={{ width: `${uploadProgress}%` }}
-                                    ></div>
+
+                    {/* Image Upload */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="image" className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                            {config.form.image}
+                        </Label>
+                        <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 hover:border-blue-400 transition-colors">
+                            <Input
+                                id="image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                disabled={isSubmitting}
+                                className="border-0 p-0 h-auto file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-medium file:px-3 file:py-1.5 file:text-sm hover:file:bg-blue-100"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">{imagePreview ? 'Chọn ảnh mới để thay thế' : 'PNG, JPG, WEBP tối đa 5MB'}</p>
+                        </div>
+                        {isSubmitting && uploadProgress > 0 && (
+                            <div className="space-y-1">
+                                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                    <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                                 </div>
-                                <p className="text-sm text-gray-500">{config.uploading.replace('{progress}', String(uploadProgress))}</p>
                             </div>
                         )}
                         {imagePreview && (
-                            <div className="mt-2 relative w-full h-48">
-                                <NextImage
-                                    src={imagePreview}
-                                    alt="Preview"
-                                    fill
-                                    className="object-contain rounded-md"
-                                />
+                            <div className="relative w-full h-44 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                <NextImage src={imagePreview} alt="Preview" fill className="object-contain" />
+                                <button type="button" onClick={() => { setImagePreview(null); setSelectedFile(null); }} className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow">✕</button>
                             </div>
                         )}
                     </div>
-                    <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="rounded-xl border-slate-300 text-slate-600">
                             {config.form.cancel}
                         </Button>
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? config.form.saving : config.form.save}
+                        <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 font-semibold px-5 shadow-sm transition-all">
+                            {isSubmitting ? '⏳ Đang lưu...' : config.form.save}
                         </Button>
                     </div>
                 </form>

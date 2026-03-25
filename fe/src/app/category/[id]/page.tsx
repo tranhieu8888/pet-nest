@@ -56,7 +56,6 @@ export default function ProductsPage() {
 
   const itemsPerPage = 9;
 
-  // Tạo danh sách brand động từ allProducts
   const brandCounts = allProducts.reduce((acc, p) => {
     if (p.brand) {
       acc[p.brand] = (acc[p.brand] || 0) + 1;
@@ -94,7 +93,6 @@ export default function ProductsPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = products.slice(startIndex, endIndex);
 
-  // Initial load
   if (loading && allProducts.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -114,7 +112,6 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      {/* Breadcrumb */}
       <CategoryBreadcrumb
         categoryPageConfig={categoryPageConfig}
         breadcrumbHistory={breadcrumbHistory}
@@ -123,10 +120,8 @@ export default function ProductsPage() {
         handleBreadcrumbClick={handleBreadcrumbClick}
       />
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-8">
-          {/* Sidebar */}
           <FilterSidebar
             categories={categories}
             categoryPageConfig={categoryPageConfig}
@@ -145,14 +140,12 @@ export default function ProductsPage() {
             handleAttributeChange={handleAttributeChange}
           />
 
-          {/* Main List */}
           <div className="flex-1">
-            {/* Results Header */}
             <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-lg border border-gray-200">
               <p className="text-gray-700 font-medium">
                 {categoryPageConfig.sort.results.replace(
                   "{count}",
-                  products.length.toString()
+                  products.length.toString(),
                 )}
               </p>
               <div className="flex items-center space-x-3">
@@ -175,7 +168,6 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Grid */}
             <ProductGrid
               loading={loading}
               products={currentProducts}
@@ -185,7 +177,6 @@ export default function ProductsPage() {
               handleToggleWishlist={handleToggleWishlist}
             />
 
-            {/* Pagination Controls */}
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}

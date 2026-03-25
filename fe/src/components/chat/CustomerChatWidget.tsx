@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { MessageCircle, Send, X } from 'lucide-react';
 import { api } from '../../../utils/axios';
 
@@ -19,6 +20,7 @@ const initialMessage: ChatMessage = {
 };
 
 export default function CustomerChatWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,6 +28,10 @@ export default function CustomerChatWidget() {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
+
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/staff')) {
+    return null;
+  }
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {

@@ -21,9 +21,6 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -34,7 +31,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/layout/Header";
 import { api } from "../../../../utils/axios";
@@ -44,6 +40,31 @@ import viConfig from "../../../../utils/petPagesConfig.vi";
 import enConfig from "../../../../utils/petPagesConfig.en";
 import { ModalCore } from "@/components/core/ModalCore";
 import { ButtonCore } from "@/components/core/ButtonCore";
+
+interface ProductAttribute {
+  _id: string;
+  value: string;
+  parentId: string | null;
+  categories?: string[];
+}
+
+interface ProductVariant {
+  _id: string;
+  product_id: string;
+  images: {
+    url: string;
+  }[];
+  attributes: ProductAttribute[];
+  sellPrice: number;
+  importBatches: {
+    _id: string;
+    variantId: string;
+    importDate: string;
+    quantity: number;
+    costPrice: number;
+  }[];
+  availableQuantity: number;
+}
 
 interface Product {
   _id: string;
@@ -55,28 +76,10 @@ interface Product {
   }[];
   createAt: string;
   updateAt: string;
-  variants: {
-    _id: string;
-    product_id: string;
-    images: {
-      url: string;
-    }[];
-    attributes: {
-      _id: string;
-      value: string;
-      parentId: string | null;
-      categories?: string[];
-    }[];
-    sellPrice: number;
-    importBatches: {
-      _id: string;
-      variantId: string;
-      importDate: string;
-      quantity: number;
-      costPrice: number;
-    }[];
-    availableQuantity: number;
+  images?: {
+    url: string;
   }[];
+  variants: ProductVariant[];
   categoryInfo: {
     _id: string;
     name: string;
@@ -147,7 +150,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeAction, setActiveAction] = useState<"add" | "buy" | null>(null);
@@ -209,7 +212,15 @@ export default function ProductPage() {
         setLoading(true);
         const response = await api.get(`/products/productById/${params.id}`);
         if (response.data.success) {
-          setProduct(response.data.data);
+          const fetchedProduct: Product = response.data.data;
+          setProduct(fetchedProduct);
+
+          const defaultVariant =
+            fetchedProduct.variants.find((v) => v.availableQuantity > 0) ||
+            fetchedProduct.variants[0] ||
+            null;
+
+          setSelectedVariantId(defaultVariant?._id || null);
         } else {
           throw new Error("Failed to fetch product");
         }
@@ -229,9 +240,14 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchUnreviewedProducts = async () => {
       try {
+        const token = sessionStorage.getItem("token");
+        if (!token) return;
+
         const response = await api.get(`/reviews/unreviewed/${params.id}`);
         if (response.data.success) setUnreviewedData(response.data.data);
-      } catch { }
+      } catch {
+        // Bỏ qua để tránh spam 401 trên console
+      }
     };
     if (params.id) fetchUnreviewedProducts();
   }, [params.id]);
@@ -239,13 +255,18 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchWishlist = async () => {
       try {
+        const token = sessionStorage.getItem("token");
+        if (!token) return;
+
         const res = await api.get("/wishlist");
         if (res.data.success && res.data.products) {
           setIsWishlisted(
             res.data.products.some((p: any) => p._id === product?._id),
           );
         }
-      } catch { }
+      } catch {
+        // Bỏ qua để tránh spam 401 trên console
+      }
     };
     if (product?._id) fetchWishlist();
   }, [product?._id]);
@@ -253,10 +274,15 @@ export default function ProductPage() {
   // Reset selected image when variant changes
   useEffect(() => {
     setSelectedImage(0);
-  }, [selectedVariant]);
+    setQuantity(1);
+  }, [selectedVariantId]);
 
   const handleCartAction = async (type: "add" | "buy") => {
-    if (!product || !product.variants[selectedVariant]) return;
+    const selectedVariant = product?.variants.find(
+      (v) => v._id === selectedVariantId,
+    );
+
+    if (!product || !selectedVariant) return;
     if (quantity <= 0) return;
 
     try {
@@ -270,7 +296,7 @@ export default function ProductPage() {
 
       const response = await api.post("/cart/addtocart", {
         productId: product._id,
-        productVariantId: product.variants[selectedVariant]._id,
+        productVariantId: selectedVariant._id,
         quantity,
       });
 
@@ -284,7 +310,7 @@ export default function ProductPage() {
             const vId = item.productVariantId?._id || item.productVariantId;
             return (
               pId?.toString() === product._id &&
-              vId?.toString() === product.variants[selectedVariant]._id
+              vId?.toString() === selectedVariant._id
             );
           });
 
@@ -474,11 +500,26 @@ export default function ProductPage() {
     );
   }
 
-  const variant = product.variants[selectedVariant] || {};
-  const images = variant?.images || [];
-  const inStock = variant.availableQuantity > 0;
+  const variant =
+    product.variants.find((v) => v._id === selectedVariantId) ||
+    product.variants[0] ||
+    ({} as ProductVariant);
 
-  // Build attribute options
+  const inStock = (variant?.availableQuantity || 0) > 0;
+
+  const dedupeImages = (imgs: { url: string }[] = []) => {
+    const used = new Set<string>();
+    return imgs.filter((img) => {
+      if (!img?.url || used.has(img.url)) return false;
+      used.add(img.url);
+      return true;
+    });
+  };
+
+  const variantImages = dedupeImages(variant?.images || []);
+  const productImages = dedupeImages(product.images || []);
+  const images = variantImages.length > 0 ? variantImages : productImages;
+
   const parentAttributes = product.variants
     .flatMap((v) => v.attributes || [])
     .filter((attr) => attr.parentId === null)
@@ -490,28 +531,47 @@ export default function ProductPage() {
       {} as Record<string, string>,
     );
 
-  const attributeOptions: Record<
-    string,
-    { value: string; variantIndex: number }[]
-  > = {};
-  product.variants.forEach((v, idx) => {
+  const selectedOptionsByParent = (variant.attributes || []).reduce(
+    (acc, attr) => {
+      if (attr.parentId) acc[attr.parentId] = attr._id;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
+  const attributeOptions: Record<string, ProductAttribute[]> = {};
+  product.variants.forEach((v) => {
     (v.attributes || []).forEach((attr) => {
       if (attr.parentId && parentAttributes[attr.parentId]) {
-        if (!attributeOptions[attr.parentId])
-          attributeOptions[attr.parentId] = [];
-        if (
-          !attributeOptions[attr.parentId].some(
-            (opt) => opt.value === attr.value,
-          )
-        ) {
-          attributeOptions[attr.parentId].push({
-            value: attr.value,
-            variantIndex: idx,
-          });
+        if (!attributeOptions[attr.parentId]) attributeOptions[attr.parentId] = [];
+        if (!attributeOptions[attr.parentId].some((opt) => opt._id === attr._id)) {
+          attributeOptions[attr.parentId].push(attr);
         }
       }
     });
   });
+
+  const getVariantForAttributeOption = (
+    parentId: string,
+    optionAttributeId: string,
+  ) => {
+    return product.variants.find((candidate) => {
+      const candidateSelection = (candidate.attributes || []).reduce(
+        (acc, attr) => {
+          if (attr.parentId) acc[attr.parentId] = attr._id;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      if (candidateSelection[parentId] !== optionAttributeId) return false;
+
+      return Object.entries(selectedOptionsByParent).every(([pId, attrId]) => {
+        if (pId === parentId) return true;
+        return candidateSelection[pId] === attrId;
+      });
+    });
+  };
 
   const isUnreviewed = unreviewedData?.unreviewedProducts?.some(
     (p) => p._id === product._id,
@@ -698,35 +758,54 @@ export default function ProductPage() {
             </p>
 
             {/* Variant Attributes */}
-            {Object.entries(attributeOptions).map(([parentId, options]) => (
-              <div key={parentId}>
-                <p className="text-sm font-semibold text-gray-700 mb-2">
-                  {parentAttributes[parentId][0].toUpperCase() +
-                    parentAttributes[parentId].slice(1)}
-                  :
-                  <span className="text-primary ml-2">
-                    {
-                      options.find((o) => o.variantIndex === selectedVariant)
-                        ?.value
-                    }
-                  </span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {options.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setSelectedVariant(opt.variantIndex)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${selectedVariant === opt.variantIndex
-                        ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
-                        }`}
-                    >
-                      {opt.value}
-                    </button>
-                  ))}
+            {Object.entries(attributeOptions).map(([parentId, options]) => {
+              const currentOptionAttrId = selectedOptionsByParent[parentId];
+              const currentOption = options.find(
+                (opt) => opt._id === currentOptionAttrId,
+              );
+
+              return (
+                <div key={parentId}>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">
+                    {parentAttributes[parentId][0].toUpperCase() +
+                      parentAttributes[parentId].slice(1)}
+                    :
+                    <span className="text-primary ml-2">
+                      {currentOption?.value || "-"}
+                    </span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {options.map((opt) => {
+                      const mappedVariant = getVariantForAttributeOption(
+                        parentId,
+                        opt._id,
+                      );
+                      const disabled = !mappedVariant;
+                      const active = currentOptionAttrId === opt._id;
+
+                      return (
+                        <button
+                          key={opt._id}
+                          onClick={() => {
+                            if (mappedVariant) setSelectedVariantId(mappedVariant._id);
+                          }}
+                          disabled={disabled}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                            active
+                              ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
+                              : disabled
+                                ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"
+                          }`}
+                        >
+                          {opt.value}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Quantity + Add to cart */}
             {inStock && (
