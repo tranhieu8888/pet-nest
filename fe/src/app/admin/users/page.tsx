@@ -106,7 +106,7 @@ function RoleSelector({ value, onChange, config, isAdding }: RoleSelectorProps &
     return (
         <div className="flex flex-wrap gap-2">
             {Object.entries(ROLES)
-                .filter(([roleName]) => isAdding ? roleName === 'STAFF' : true)
+                .filter(([roleName]) => isAdding ? roleName === 'STAFF' : roleName !== 'CUSTOMER')
                 .map(([roleName, roleValue]) => (
                 <Badge
                     key={roleName}
