@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { useLanguage } from '@/context/LanguageContext';
 import viConfig from '../../../utils/petPagesConfig.vi';
 import enConfig from '../../../utils/petPagesConfig.en';
+import { ButtonCore } from "@/components/core/ButtonCore";
 
 interface CartItem {
   _id: string
@@ -25,6 +26,10 @@ interface CartItem {
     _id: string
     name: string
     description: string
+    category: {
+      _id: string
+      name: string
+    }[]
     selectedVariant: {
       _id: string
       price: number
@@ -33,7 +38,9 @@ interface CartItem {
         url: string
       }[]
       attributes: {
+        _id: string
         value: string
+        parentId: string | null
       }[]
       importedQuantity?: number
       orderedQuantity?: number
@@ -71,7 +78,7 @@ export default function ShoppingCart() {
         setLoading(true)
         const response = await axiosInstance.get('/cart/getcart')
         if (response.data.success) {
-          let fetchedItems: CartItem[] = response.data.data.cartItems;
+          const fetchedItems: CartItem[] = response.data.data.cartItems;
           const updatedItems = await Promise.all(fetchedItems.map(async (item) => {
             const stockAvailable = getStockAvailable(item);
             if (item.quantity > stockAvailable && stockAvailable > 0) {
@@ -177,9 +184,9 @@ export default function ShoppingCart() {
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-800">{cartConfig.error}</h2>
         <p className="text-gray-500">{error}</p>
-        <Button onClick={() => router.push('/homepage')} className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl">
+        <ButtonCore onClick={() => router.push('/homepage')} variantType="primary">
            Quay về trang chủ
-        </Button>
+        </ButtonCore>
       </div>
     )
   }
@@ -195,12 +202,12 @@ export default function ShoppingCart() {
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">{cartConfig.emptyTitle}</h2>
           <p className="text-gray-500 mb-8 max-w-sm text-center text-lg">{cartConfig.emptyDesc}</p>
-          <Button 
+          <ButtonCore 
             onClick={() => router.push('/homepage')} 
-            className="rounded-full h-14 px-8 text-lg font-semibold bg-gray-900 hover:bg-gray-800 text-white shadow-2xl transition-all hover:scale-105"
+            variantType="secondary"
           >
             {cartConfig.startShopping}
-          </Button>
+          </ButtonCore>
         </div>
       </div>
     )
@@ -214,12 +221,16 @@ export default function ShoppingCart() {
         
         {/* Tiêu đề & Cột Back */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" className="rounded-full h-12 w-12 p-0 bg-white shadow-sm hover:shadow border border-gray-100 hover:bg-gray-50 transition-all text-gray-700" onClick={() => router.push('/homepage')}>
+          <ButtonCore 
+            variantType="outline" 
+            className="h-12 w-12 p-0" 
+            onClick={() => router.push('/homepage')}
+          >
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </ButtonCore>
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{cartConfig.title || "Giỏ Hàng Của Bạn"}</h1>
-            <p className="text-gray-500 text-sm mt-1">Đang có <span className="font-semibold text-emerald-600">{cartItems.length}</span> sản phẩm nằm trong giỏ</p>
+            <p className="text-gray-500 text-sm mt-1">Đang có <span className="font-semibold text-pink-600">{cartItems.length}</span> sản phẩm nằm trong giỏ</p>
           </div>
         </div>
 
@@ -243,7 +254,7 @@ export default function ShoppingCart() {
                  </label>
                </div>
                {selectedItems.length > 0 && (
-                 <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">Đã chọn {selectedItems.length} món</span>
+                 <span className="text-sm font-medium text-pink-600 bg-pink-50 px-3 py-1 rounded-full">Đã chọn {selectedItems.length} món</span>
                )}
             </div>
 
@@ -259,7 +270,7 @@ export default function ShoppingCart() {
                   <div
                     key={item._id}
                     className={`relative bg-white p-5 rounded-3xl shadow-sm border transition-all duration-300 hover:shadow-md 
-                      ${isSelected ? "border-emerald-300 ring-2 ring-emerald-100/50 bg-emerald-50/10" : "border-gray-100 lg:hover:w-[101%]"}
+                      ${isSelected ? "border-pink-300 ring-2 ring-pink-100/50 bg-pink-50/10" : "border-gray-100 lg:hover:w-[101%]"}
                       ${(isOutOfStock || isOverQuantity) ? "opacity-60 grayscale-[30%] bg-gray-50" : ""}
                     `}
                   >
@@ -270,7 +281,7 @@ export default function ShoppingCart() {
                             id={`item-${item._id}`}
                             checked={isSelected}
                             onChange={() => toggleItemSelection(item._id)}
-                            className="w-5 h-5 rounded data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none shadow-sm"
+                            className="w-5 h-5 rounded data-[state=checked]:bg-pink-500 data-[state=checked]:border-none shadow-sm"
                             disabled={isOutOfStock}
                          />
                       </div>
@@ -294,55 +305,67 @@ export default function ShoppingCart() {
                       {/* Thông tin */}
                       <div className="flex-1 min-w-0 py-1 pb-2 flex flex-col justify-between h-full">
                         <div>
-                           <div className="flex justify-between items-start">
-                              <h3 className="font-bold text-gray-900 text-base sm:text-lg lg:text-[19px] leading-tight mb-2 line-clamp-2 pr-4">{item.product.name}</h3>
-                              <Button
-                                variant="ghost"
-                                size="icon"
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {item.product.category?.map((cat) => (
+                                <span key={cat._id} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase tracking-tight">
+                                  {cat.name}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex justify-between items-start">
+                               <h3 className="font-bold text-gray-900 text-base sm:text-lg lg:text-[19px] leading-tight mb-2 line-clamp-2 pr-4">{item.product.name}</h3>
+                              <ButtonCore
+                                variantType="ghost"
                                 onClick={() => removeItem(item._id)}
-                                className="text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-8 h-8 rounded-full flex-shrink-0 -mt-2 -mr-2"
+                                className="text-gray-400 hover:text-red-500 w-8 h-8 p-0"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </ButtonCore>
                            </div>
                            
-                           <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium mb-3">
-                             {item.product.selectedVariant.attributes.map((attr, index) => (
-                               <span key={index} className="bg-gray-100/80 px-2.5 py-1 rounded-md border border-gray-200/60 lowercase first-letter:uppercase">
-                                 {attr.value}
-                               </span>
-                             ))}
-                           </div>
+                            <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-500 font-medium mb-3">
+                             {item.product.selectedVariant.attributes
+                               // Chỉ hiển thị các attribute có parentId (là các giá trị được chọn)
+                               // Nếu có cả parent trong list (parentId === null), ta dùng nó để làm label
+                               .filter(attr => attr.parentId !== null)
+                               .map((attr, index) => {
+                                 const parent = item.product.selectedVariant.attributes.find(p => p._id === attr.parentId);
+                                 return (
+                                   <span key={index} className="bg-gray-100/80 px-2.5 py-1 rounded-lg border border-gray-200/60 flex items-center gap-1.5 shadow-sm">
+                                     {parent && <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{parent.value}:</span>}
+                                     <span className="text-gray-700 font-bold lowercase first-letter:uppercase">{attr.value}</span>
+                                   </span>
+                                 );
+                               })}
+                            </div>
                         </div>
 
                         {/* Controls & Price */}
-                        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mt-auto pt-2">
+                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mt-auto pt-2">
                            <div className="flex items-center bg-gray-50/80 border border-gray-200 rounded-xl p-1 shadow-inner h-10 w-fit">
-                             <Button
-                               variant="ghost"
-                               size="icon"
+                             <ButtonCore
+                               variantType="ghost"
                                onClick={() => updateQuantity(item._id, item.quantity - 1)}
                                disabled={item.quantity <= 1 || isOutOfStock}
-                               className="h-8 w-8 rounded-lg hover:bg-white hover:text-black hover:shadow-sm text-gray-600 transition-all"
+                               className="h-8 w-8 p-0"
                              >
                                <Minus className="h-3.5 w-3.5" />
-                             </Button>
+                             </ButtonCore>
                              <span className="w-10 text-center font-bold text-gray-900 text-sm select-none">
                                {item.quantity}
                              </span>
-                             <Button
-                               variant="ghost"
-                               size="icon"
+                             <ButtonCore
+                               variantType="ghost"
                                onClick={() => updateQuantity(item._id, item.quantity + 1)}
                                disabled={item.quantity >= stockAvailable || isOutOfStock}
-                               className="h-8 w-8 rounded-lg hover:bg-white hover:text-black hover:shadow-sm text-gray-600 transition-all"
+                               className="h-8 w-8 p-0"
                              >
                                <Plus className="h-3.5 w-3.5" />
-                             </Button>
+                             </ButtonCore>
                            </div>
 
                            <div className="flex flex-col sm:items-end">
-                              <span className="font-bold text-xl text-emerald-600 tracking-tight">
+                              <span className="font-bold text-xl text-pink-600 tracking-tight">
                                 {formatPrice(item.product.selectedVariant.price * item.quantity)}
                               </span>
                               {item.quantity > 1 && (
@@ -381,23 +404,21 @@ export default function ShoppingCart() {
                 <div className="flex justify-between items-end">
                   <span className="text-gray-800 font-bold text-lg">Tổng cộng</span>
                   <div className="text-right">
-                    <div className="text-[28px] leading-none font-black text-emerald-600 tracking-tight">
+                    <div className="text-[28px] leading-none font-black text-pink-600 tracking-tight">
                       {formatPrice(calculateSelectedTotal())}
                     </div>
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full h-[60px] rounded-2xl text-[17px] font-bold bg-gray-900 hover:bg-gray-800 text-white shadow-xl shadow-gray-200 transition-all hover:scale-[1.02] active:scale-[0.98] mt-2 relative overflow-hidden group"
+                <ButtonCore 
+                  variantType="primary"
+                  className="w-full h-[60px]"
                   onClick={handleBuyNow}
                   disabled={selectedItems.length === 0}
+                  rightIcon={selectedItems.length > 0 && <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />}
                 >
-                   <span className="relative z-10 flex items-center justify-center gap-2">
-                     {selectedItems.length > 0 ? "Thanh Toán Ngay" : "Vui lòng chọn sản phẩm"}
-                     {selectedItems.length > 0 && <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />}
-                   </span>
-                   {selectedItems.length > 0 && <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0 content-['']" />}
-                </Button>
+                  {selectedItems.length > 0 ? "Thanh Toán Ngay" : "Vui lòng chọn sản phẩm"}
+                </ButtonCore>
               </div>
             </Card>
           </div>

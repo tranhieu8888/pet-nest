@@ -1,3 +1,4 @@
+import React from "react";
 import { Search, ChevronDown, ChevronUp, Star, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,6 +42,7 @@ export const FilterSidebar = ({
 }: FilterSidebarProps) => {
   return (
     <div className="w-72 space-y-6">
+      {/* Categories */}
       {categories?.children && categories.children.length > 0 && (
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-lg mb-3 text-gray-900">
@@ -61,6 +63,7 @@ export const FilterSidebar = ({
         </div>
       )}
 
+      {/* Price Range */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <h3 className="font-bold text-lg mb-4 text-gray-900">
           {categoryPageConfig.sidebar.price}
@@ -96,6 +99,7 @@ export const FilterSidebar = ({
         </div>
       </div>
 
+      {/* Attributes */}
       {categories?.attributes?.map((attribute) => (
         <div key={attribute._id} className="bg-white p-4 rounded-lg border border-gray-200">
           <h3 className="font-bold text-lg mb-4 text-gray-900 capitalize">
@@ -111,7 +115,7 @@ export const FilterSidebar = ({
                 />
                 <label
                   htmlFor={`${attribute._id}-${child._id}`}
-                  className="text-sm cursor-pointer text-gray-700 capitalize"
+                  className="text  -sm cursor-pointer text-gray-700 capitalize"
                 >
                   {child.value}
                 </label>
@@ -121,6 +125,7 @@ export const FilterSidebar = ({
         </div>
       ))}
 
+      {/* Brand Filter */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <h3 className="font-bold text-lg mb-4 text-gray-900">
           {categoryPageConfig.sidebar.brand}
@@ -165,13 +170,14 @@ export const FilterSidebar = ({
               <ChevronDown className="w-4 h-4 mr-1" />
               {categoryPageConfig.sidebar.showMore.replace(
                 "{count}",
-                Math.max(0, filteredBrandsLength - 7).toString(),
+                Math.max(0, filteredBrandsLength - 7).toString()
               )}
             </>
           )}
         </Button>
       </div>
 
+      {/* Customer Rating Filter */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <h3 className="font-bold text-lg mb-4 text-gray-900">
           {categoryPageConfig.sidebar.customerRating}
@@ -182,14 +188,15 @@ export const FilterSidebar = ({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   checked={selectedRating === rating}
-                  onChange={(e) => setSelectedRating(e.target.checked ? rating : null)}
+                  onChange={(e: any) => setSelectedRating(e.target.checked ? rating : null)}
                   id={`rating-${rating}`}
                 />
                 <label htmlFor={`rating-${rating}`} className="flex items-center cursor-pointer">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={`star-${rating}-${star}`}
-                      className={`w-5 h-5 ${star <= rating ? "text-orange-400 fill-orange-400" : "text-gray-300"}`}
+                      className={`w-5 h-5 ${star <= rating ? "text-orange-400 fill-orange-400" : "text-gray-300"
+                        }`}
                       fill={star <= rating ? "#f59e42" : "none"}
                     />
                   ))}

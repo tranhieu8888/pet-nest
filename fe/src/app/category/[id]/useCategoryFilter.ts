@@ -2,255 +2,258 @@ import { useState, useEffect } from "react";
 import { productApi } from "@/api/product";
 import { categoryApi } from "@/api/category";
 import { wishlistApi } from "@/api/wishlist";
-import { Product, CategoryResponse, Category, FilterParams } from "./types";
+import { Product, CategoryResponse, Category } from "./types";
 
 export function useCategoryFilter(categoryId: string) {
-    const [allProducts, setAllProducts] = useState<Product[]>([]);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [categories, setCategories] = useState<CategoryResponse | null>(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CategoryResponse | null>(null);
 
-    const [brandSearch, setBrandSearch] = useState("");
-    const [showMoreBrands, setShowMoreBrands] = useState(false);
-    const [priceRange, setPriceRange] = useState<[string, string]>(["", ""]);
-    const [sortBy, setSortBy] = useState("relevance");
-    const [selectedRating, setSelectedRating] = useState<number | null>(null);
-    const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
-    const [currentPage, setCurrentPage] = useState(1);
-    const [breadcrumbHistory, setBreadcrumbHistory] = useState<Category[]>([]);
+  const [brandSearch, setBrandSearch] = useState("");
+  const [showMoreBrands, setShowMoreBrands] = useState(false);
+  const [priceRange, setPriceRange] = useState<[string, string]>(["", ""]);
+  const [sortBy, setSortBy] = useState("relevance");
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [breadcrumbHistory, setBreadcrumbHistory] = useState<Category[]>([]);
 
-    const [wishlistItems, setWishlistItems] = useState<string[]>([]);
-    const [wishlistLoading, setWishlistLoading] = useState<Record<string, boolean>>({});
+  const [wishlistItems, setWishlistItems] = useState<string[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState<Record<string, boolean>>({});
 
-    useEffect(() => {
-        const fetchData = async () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [categoriesResponse, attributesResponse, productsData] = await Promise.all([
+          categoryApi.getChildCategories(categoryId),
+          categoryApi.getCategoryAttributes(categoryId),
+          productApi.getProductsByCategory(categoryId),
+        ]);
+
+        if (categoriesResponse.success) {
+          setCategories({
+            parent: categoriesResponse.parent,
+            children: categoriesResponse.children,
+            attributes: attributesResponse.attributes,
+          });
+
+          if (categoriesResponse.parent) {
+            let history: Category[] = [];
             try {
-                setLoading(true);
-                const [categoriesResponse, attributesResponse, productsData] = await Promise.all([
-                    categoryApi.getChildCategories(categoryId),
-                    categoryApi.getCategoryAttributes(categoryId),
-                    productApi.getProductsByCategory(categoryId),
-                ]);
+              const stored = localStorage.getItem("breadcrumbHistory");
+              if (stored) history = JSON.parse(stored);
+            } catch {}
 
-                if (categoriesResponse.success) {
-                    setCategories((prev) => ({
-                        ...prev,
-                        ...categoriesResponse,
-                        attributes: attributesResponse.attributes,
-                    }));
-
-                    if (categoriesResponse.parent) {
-                        let history: Category[] = [];
-                        try {
-                            const stored = localStorage.getItem("breadcrumbHistory");
-                            if (stored) history = JSON.parse(stored);
-                        } catch { }
-
-                        if (
-                            !history.length ||
-                            history[history.length - 1]._id !== categoriesResponse.parent._id
-                        ) {
-                            history = [categoriesResponse.parent];
-                        }
-                        setBreadcrumbHistory(history);
-                        localStorage.setItem("breadcrumbHistory", JSON.stringify(history));
-                    }
-                }
-
-                setAllProducts(productsData);
-                setProducts(productsData);
-            } catch (err) {
-                console.error("Error fetching data:", err);
-                setError(err instanceof Error ? err.message : "An error occurred while fetching data");
-            } finally {
-                setLoading(false);
+            if (
+              !history.length ||
+              history[history.length - 1]._id !== categoriesResponse.parent._id
+            ) {
+              history = [categoriesResponse.parent];
             }
-        };
-
-        if (categoryId) {
-            fetchData();
+            setBreadcrumbHistory(history);
+            localStorage.setItem("breadcrumbHistory", JSON.stringify(history));
+          }
         }
-    }, [categoryId]);
 
-    useEffect(() => {
-        if (categoryId) {
-            try {
-                setLoading(true);
-                let filteredProducts = [...allProducts];
-
-                // Filter by price range
-                const parsedPriceRange: [number, number] = [
-                    priceRange[0] ? Number(priceRange[0]) : 0,
-                    priceRange[1] ? Number(priceRange[1]) : 0,
-                ];
-
-                if (priceRange[0] || priceRange[1]) {
-                    filteredProducts = filteredProducts.filter((product) => {
-                        if (!product.variants || product.variants.length === 0) return false;
-                        return product.variants.some((variant) => {
-                            const price = variant.sellPrice || 0;
-                            const min = parsedPriceRange[0] > 0 ? parsedPriceRange[0] : undefined;
-                            const max = parsedPriceRange[1] > 0 ? parsedPriceRange[1] : undefined;
-                            if (min !== undefined && max !== undefined) {
-                                return price >= min && price <= max;
-                            } else if (min !== undefined) {
-                                return price >= min;
-                            } else if (max !== undefined) {
-                                return price <= max;
-                            }
-                            return true;
-                        });
-                    });
-                }
-
-                // Filter by attributes
-                if (selectedAttributes && Object.keys(selectedAttributes).length > 0) {
-                    filteredProducts = filteredProducts.filter((product) => {
-                        if (!product.variants || product.variants.length === 0) return false;
-                        return Object.entries(selectedAttributes).every(([attributeId, childIds]) => {
-                            if (childIds.length === 0) return true;
-                            return product.variants.some((variant) =>
-                                variant.attribute.some((attr) => {
-                                    const matchingChild = categories?.attributes
-                                        ?.find((a) => a._id === attributeId)
-                                        ?.children.find((c) => c._id === attr.toString());
-                                    return matchingChild && childIds.includes(attr.toString());
-                                })
-                            );
-                        });
-                    });
-                }
-
-                // Filter by rating
-                if (typeof selectedRating === "number") {
-                    filteredProducts = filteredProducts.filter((product) => {
-                        const avg = (product as any).averageRating;
-                        if (typeof avg !== "number") return false;
-                        if (selectedRating === 5) return avg === 5;
-                        return avg >= selectedRating && avg < selectedRating + 1;
-                    });
-                }
-
-                // Sort products
-                if (sortBy) {
-                    switch (sortBy) {
-                        case "price-low":
-                            filteredProducts.sort((a, b) => {
-                                const aMinPrice = Math.min(...a.variants.map((v) => v.sellPrice || 0));
-                                const bMinPrice = Math.min(...b.variants.map((v) => v.sellPrice || 0));
-                                return aMinPrice - bMinPrice;
-                            });
-                            break;
-                        case "price-high":
-                            filteredProducts.sort((a, b) => {
-                                const aMaxPrice = Math.max(...a.variants.map((v) => v.sellPrice || 0));
-                                const bMaxPrice = Math.max(...b.variants.map((v) => v.sellPrice || 0));
-                                return bMaxPrice - aMaxPrice;
-                            });
-                            break;
-                        case "newest":
-                            filteredProducts.sort((a, b) => {
-                                const aDate = new Date(a.createAt).getTime();
-                                const bDate = new Date(b.createAt).getTime();
-                                return bDate - aDate;
-                            });
-                            break;
-                    }
-                }
-
-                setProducts(filteredProducts);
-            } catch (err) {
-                console.error("Error filtering products:", err);
-                setError(err instanceof Error ? err.message : "An error occurred while filtering products");
-            } finally {
-                setLoading(false);
-            }
-        }
-    }, [priceRange, selectedAttributes, selectedRating, sortBy, allProducts, categoryId, categories?.attributes]);
-
-    useEffect(() => {
-        const fetchWishlist = async () => {
-            try {
-                const wishlistProducts = await wishlistApi.getWishlist();
-                if (wishlistProducts) {
-                    setWishlistItems(wishlistProducts.map((p: any) => p._id));
-                }
-            } catch (err) {
-                console.error("Error fetching wishlist:", err);
-            }
-        };
-        fetchWishlist();
-    }, []);
-
-    const handleToggleWishlist = async (e: React.MouseEvent, productId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        setWishlistLoading((prev) => ({ ...prev, [productId]: true }));
-        try {
-            if (wishlistItems.includes(productId)) {
-                await wishlistApi.removeFromWishlist(productId);
-                setWishlistItems((prev) => prev.filter((id) => id !== productId));
-            } else {
-                await wishlistApi.addToWishlist(productId);
-                setWishlistItems((prev) => [...prev, productId]);
-            }
-        } catch (err) {
-            console.error("Error toggling wishlist:", err);
-        } finally {
-            setWishlistLoading((prev) => ({ ...prev, [productId]: false }));
-        }
+        setAllProducts(productsData);
+        setProducts(productsData);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError(err instanceof Error ? err.message : "An error occurred while fetching data");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleAttributeChange = (attributeId: string, childId: string) => {
-        setSelectedAttributes((prev) => {
-            const currentValues = prev[attributeId] || [];
-            const newValues = currentValues.includes(childId)
-                ? currentValues.filter((v) => v !== childId)
-                : [...currentValues, childId];
+    if (categoryId) {
+      fetchData();
+    }
+  }, [categoryId]);
 
-            return {
-                ...prev,
-                [attributeId]: newValues,
-            };
+  useEffect(() => {
+    if (!categoryId) return;
+
+    try {
+      setLoading(true);
+      let filteredProducts = [...allProducts];
+
+      const parsedPriceRange: [number, number] = [
+        priceRange[0] ? Number(priceRange[0]) : 0,
+        priceRange[1] ? Number(priceRange[1]) : 0,
+      ];
+
+      if (priceRange[0] || priceRange[1]) {
+        filteredProducts = filteredProducts.filter((product) => {
+          if (!product.variants || product.variants.length === 0) return false;
+          return product.variants.some((variant) => {
+            const price = variant.sellPrice || 0;
+            const min = parsedPriceRange[0] > 0 ? parsedPriceRange[0] : undefined;
+            const max = parsedPriceRange[1] > 0 ? parsedPriceRange[1] : undefined;
+            if (min !== undefined && max !== undefined) {
+              return price >= min && price <= max;
+            }
+            if (min !== undefined) {
+              return price >= min;
+            }
+            if (max !== undefined) {
+              return price <= max;
+            }
+            return true;
+          });
         });
-    };
+      }
 
-    const resetFilters = () => {
-        setCurrentPage(1);
-        setSelectedAttributes({});
-        setSelectedRating(null);
-        setBrandSearch("");
-        setPriceRange(["", ""]);
-        setSortBy("relevance");
-    };
+      if (selectedAttributes && Object.keys(selectedAttributes).length > 0) {
+        filteredProducts = filteredProducts.filter((product) => {
+          if (!product.variants || product.variants.length === 0) return false;
+          return Object.entries(selectedAttributes).every(([attributeId, childIds]) => {
+            if (childIds.length === 0) return true;
+            return product.variants.some((variant) =>
+              (variant.attribute || []).some((attrId) => {
+                const matchingChild = categories?.attributes
+                  ?.find((a) => a._id === attributeId)
+                  ?.children.find((c) => c._id === attrId);
+                return Boolean(matchingChild && childIds.includes(attrId));
+              }),
+            );
+          });
+        });
+      }
 
-    return {
-        allProducts,
-        products,
-        loading,
-        error,
-        categories,
-        brandSearch,
-        setBrandSearch,
-        showMoreBrands,
-        setShowMoreBrands,
-        priceRange,
-        setPriceRange,
-        sortBy,
-        setSortBy,
-        selectedRating,
-        setSelectedRating,
-        selectedAttributes,
-        handleAttributeChange,
-        currentPage,
-        setCurrentPage,
-        breadcrumbHistory,
-        setBreadcrumbHistory,
-        wishlistItems,
-        wishlistLoading,
-        handleToggleWishlist,
-        resetFilters,
+      if (typeof selectedRating === "number") {
+        filteredProducts = filteredProducts.filter((product) => {
+          const avg = product.averageRating;
+          if (typeof avg !== "number") return false;
+          if (selectedRating === 5) return avg === 5;
+          return avg >= selectedRating && avg < selectedRating + 1;
+        });
+      }
+
+      if (sortBy) {
+        switch (sortBy) {
+          case "price-low":
+            filteredProducts.sort((a, b) => {
+              const aMinPrice = Math.min(...a.variants.map((v) => v.sellPrice || 0));
+              const bMinPrice = Math.min(...b.variants.map((v) => v.sellPrice || 0));
+              return aMinPrice - bMinPrice;
+            });
+            break;
+          case "price-high":
+            filteredProducts.sort((a, b) => {
+              const aMaxPrice = Math.max(...a.variants.map((v) => v.sellPrice || 0));
+              const bMaxPrice = Math.max(...b.variants.map((v) => v.sellPrice || 0));
+              return bMaxPrice - aMaxPrice;
+            });
+            break;
+          case "newest":
+            filteredProducts.sort((a, b) => {
+              const aDate = new Date(a.createAt).getTime();
+              const bDate = new Date(b.createAt).getTime();
+              return bDate - aDate;
+            });
+            break;
+          default:
+            break;
+        }
+      }
+
+      setProducts(filteredProducts);
+    } catch (err) {
+      console.error("Error filtering products:", err);
+      setError(err instanceof Error ? err.message : "An error occurred while filtering products");
+    } finally {
+      setLoading(false);
+    }
+  }, [priceRange, selectedAttributes, selectedRating, sortBy, allProducts, categoryId, categories?.attributes]);
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (!token) return;
+
+        const wishlistProducts = await wishlistApi.getWishlist();
+        if (wishlistProducts) {
+          setWishlistItems(wishlistProducts.map((p: { _id: string }) => p._id));
+        }
+      } catch {
+        // Bỏ qua để tránh spam 401 trên console khi token hết hạn
+      }
     };
+    fetchWishlist();
+  }, []);
+
+  const handleToggleWishlist = async (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setWishlistLoading((prev) => ({ ...prev, [productId]: true }));
+    try {
+      if (wishlistItems.includes(productId)) {
+        await wishlistApi.removeFromWishlist(productId);
+        setWishlistItems((prev) => prev.filter((id) => id !== productId));
+      } else {
+        await wishlistApi.addToWishlist(productId);
+        setWishlistItems((prev) => [...prev, productId]);
+      }
+    } catch (err) {
+      console.error("Error toggling wishlist:", err);
+    } finally {
+      setWishlistLoading((prev) => ({ ...prev, [productId]: false }));
+    }
+  };
+
+  const handleAttributeChange = (attributeId: string, childId: string) => {
+    setSelectedAttributes((prev) => {
+      const currentValues = prev[attributeId] || [];
+      const newValues = currentValues.includes(childId)
+        ? currentValues.filter((v) => v !== childId)
+        : [...currentValues, childId];
+
+      return {
+        ...prev,
+        [attributeId]: newValues,
+      };
+    });
+  };
+
+  const resetFilters = () => {
+    setCurrentPage(1);
+    setSelectedAttributes({});
+    setSelectedRating(null);
+    setBrandSearch("");
+    setPriceRange(["", ""]);
+    setSortBy("relevance");
+  };
+
+  return {
+    allProducts,
+    products,
+    loading,
+    error,
+    categories,
+    brandSearch,
+    setBrandSearch,
+    showMoreBrands,
+    setShowMoreBrands,
+    priceRange,
+    setPriceRange,
+    sortBy,
+    setSortBy,
+    selectedRating,
+    setSelectedRating,
+    selectedAttributes,
+    handleAttributeChange,
+    currentPage,
+    setCurrentPage,
+    breadcrumbHistory,
+    setBreadcrumbHistory,
+    wishlistItems,
+    wishlistLoading,
+    handleToggleWishlist,
+    resetFilters,
+  };
 }

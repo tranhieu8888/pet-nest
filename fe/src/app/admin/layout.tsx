@@ -21,7 +21,6 @@ import {
   ShoppingCart,
   Server,
   type LucideIcon,
-  MessageCircle,
   Calendar,
   LayoutDashboard,
   Star,
@@ -84,7 +83,11 @@ const menuGroups: MenuGroup[] = [
         children: [
           { title: "Quản lý sản phẩm", url: "/admin/product", icon: Gift },
           { title: "Quản lý danh mục", url: "/admin/category", icon: ListTree },
-          { title: "Quản lý thuộc tính", url: "/admin/attribute", icon: SlidersHorizontal },
+          {
+            title: "Quản lý thuộc tính",
+            url: "/admin/attribute",
+            icon: SlidersHorizontal,
+          },
         ],
       },
     ],
@@ -94,7 +97,11 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Dịch vụ Spa", url: "/admin/spa-services", icon: Server },
       { title: "Đặt lịch Spa", url: "/admin/spa-bookings", icon: Calendar },
-      { title: "Lịch làm việc nhân viên", url: "/admin/staff-schedule", icon: Workflow },
+      {
+        title: "Lịch làm việc nhân viên",
+        url: "/admin/staff-schedule",
+        icon: Workflow,
+      },
     ],
   },
   {
@@ -123,9 +130,10 @@ const menuGroups: MenuGroup[] = [
 
 function AdminSidebar({ adminId }: { adminId: string | null }) {
   const pathname = usePathname();
-  const [optimisticPathname, setOptimisticPathname] = useState<string | null>(null);
+  const [optimisticPathname, setOptimisticPathname] = useState<string | null>(
+    null,
+  );
 
-  // Clear optimistic path when actual pathname changes
   useEffect(() => {
     setOptimisticPathname(null);
   }, [pathname]);
@@ -145,9 +153,7 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
   const [productMenuOpen, setProductMenuOpen] = useState(isProductGroupActive);
 
   useEffect(() => {
-    if (isProductGroupActive) {
-      setProductMenuOpen(true);
-    }
+    if (isProductGroupActive) setProductMenuOpen(true);
   }, [isProductGroupActive]);
 
   const handleLogout = () => {
@@ -171,19 +177,17 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
             }`}
           >
             <div className="flex items-center gap-3.5">
-              <item.icon className={`size-[18px] transition-colors ${isGroupActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} />
+              <item.icon
+                className={`size-[18px] ${isGroupActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`}
+              />
               <span>{item.title}</span>
             </div>
             <ChevronDown
-              className={`size-3.5 transition-transform duration-200 ${
-                productMenuOpen ? "rotate-180" : ""
-              } ${isGroupActive ? "text-blue-600" : "text-slate-400"}`}
+              className={`size-3.5 transition-transform ${productMenuOpen ? "rotate-180" : ""}`}
             />
           </button>
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              productMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-            }`}
+            className={`${productMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"} overflow-hidden transition-all`}
           >
             <div className="bg-slate-50/30">
               {item.children.map((child) => {
@@ -193,10 +197,10 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
                     key={child.title}
                     asChild
                     isActive={isSubActive}
-                    className={`h-11 pl-12 pr-4 transition-all duration-150 rounded-none relative border-r-[3px] ${
+                    className={`h-11 pl-12 pr-4 rounded-none border-r-[3px] ${
                       isSubActive
                         ? "bg-blue-50/60 text-blue-600 font-bold border-blue-600"
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent font-medium"
+                        : "text-slate-500 hover:bg-slate-50 border-transparent"
                     }`}
                   >
                     <Link
@@ -221,10 +225,10 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
         <SidebarMenuButton
           asChild
           isActive={isActive}
-          className={`h-11 transition-all duration-150 rounded-none relative border-r-[3px] group/btn ${
+          className={`h-11 rounded-none border-r-[3px] ${
             isActive
               ? "bg-blue-50 text-blue-600 font-bold border-blue-600"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent font-medium"
+              : "text-slate-600 hover:bg-slate-50 border-transparent"
           }`}
         >
           <Link
@@ -232,7 +236,9 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
             onClick={() => setOptimisticPathname(item.url!)}
             className="flex items-center gap-3.5 px-5 py-2 text-[13.5px]"
           >
-            <item.icon className={`size-[18px] transition-colors ${isActive ? "text-blue-600" : "text-slate-400 group-hover/btn:text-slate-600"}`} />
+            <item.icon
+              className={`size-[18px] ${isActive ? "text-blue-600" : "text-slate-400"}`}
+            />
             <span>{item.title}</span>
           </Link>
         </SidebarMenuButton>
@@ -244,15 +250,17 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
     <Sidebar className="border-r border-slate-200 bg-white overflow-visible">
       <SidebarHeader className="h-16 border-b border-slate-100 bg-white p-0 overflow-visible">
         <div className="flex flex-row items-center justify-between h-full w-full px-5">
-          <Link href="/admin/dashboard" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+          <Link
+            href="/admin/dashboard"
+            className="flex items-center gap-2.5 hover:opacity-80"
+          >
             <div className="flex size-7.5 items-center justify-center rounded bg-slate-900 text-white shadow-sm">
               <TrendingUp className="size-4" />
             </div>
-            <span className="font-bold text-slate-800 text-[14px] tracking-tight antialiased">
+            <span className="font-bold text-slate-800 text-[14px]">
               PETNEST ADMIN
             </span>
           </Link>
-          
           <div className="shrink-0 flex items-center">
             <AdminNotificationBell adminId={adminId} />
           </div>
@@ -262,7 +270,7 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
       <SidebarContent className="py-2 custom-scrollbar">
         {menuGroups.map((group) => (
           <SidebarGroup key={group.label} className="p-0 mb-3 last:mb-0">
-            <SidebarGroupLabel className="text-slate-400 uppercase text-[10px] tracking-[0.08em] font-bold px-5 py-2.5 leading-none">
+            <SidebarGroupLabel className="text-slate-400 uppercase text-[10px] font-bold px-5 py-2.5">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -277,27 +285,45 @@ function AdminSidebar({ adminId }: { adminId: string | null }) {
       <SidebarFooter className="border-t border-slate-100 p-3 bg-white">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-md p-2 hover:bg-slate-50 transition-colors group">
-              <div className="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 border border-slate-200 group-hover:border-slate-300">
+            <button className="flex w-full items-center gap-3 rounded-md p-2 hover:bg-slate-50">
+              <div className="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 border border-slate-200">
                 <User className="size-4.5" />
               </div>
               <div className="flex flex-col text-left overflow-hidden">
-                <span className="font-semibold text-[13.5px] text-slate-900 truncate">Administrator</span>
-                <span className="text-[11px] text-slate-400 truncate font-medium">admin@gmail.com</span>
+                <span className="font-semibold text-[13.5px] text-slate-900 truncate">
+                  Administrator
+                </span>
+                <span className="text-[11px] text-slate-400 truncate font-medium">
+                  admin@gmail.com
+                </span>
               </div>
               <ChevronUp className="ml-auto size-3.5 text-slate-400" />
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="w-56 rounded-md shadow-xl border-slate-200 p-1" side="top" align="start">
+          <DropdownMenuContent
+            className="w-56 rounded-md shadow-xl border-slate-200 p-1"
+            side="top"
+            align="start"
+          >
             <div className="px-2.5 py-2 mb-1 border-b border-slate-50">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tài khoản</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Tài khoản
+              </p>
             </div>
-            <DropdownMenuItem className="rounded py-2 text-[13px] focus:bg-slate-50 cursor-pointer">
-              <User className="mr-2 h-4 w-4 text-slate-400" />
-              Hồ sơ của tôi
+            <DropdownMenuItem
+              asChild
+              className="rounded py-2 text-[13px] focus:bg-slate-50 cursor-pointer"
+            >
+              <Link href="/admin/profile" className="flex items-center">
+                <User className="mr-2 h-4 w-4 text-slate-400" />
+                Hồ sơ của tôi
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-500 rounded py-2 text-[13px] focus:bg-red-50 focus:text-red-600 cursor-pointer" onClick={handleLogout}>
+            <DropdownMenuItem
+              className="text-red-500 rounded py-2 text-[13px] focus:bg-red-50 focus:text-red-600 cursor-pointer"
+              onClick={handleLogout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Đăng xuất
             </DropdownMenuItem>
@@ -321,7 +347,6 @@ export default function AdminLayout({
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
-
     if (!token) {
       router.push("/login");
       return;
@@ -329,12 +354,10 @@ export default function AdminLayout({
 
     try {
       const decoded = JSON.parse(atob(token.split(".")[1]));
-
       if (decoded.role !== 0) {
         router.push("/");
         return;
       }
-
       setAdminId(decoded.id || decoded._id || null);
     } catch {
       router.push("/login");
@@ -344,7 +367,6 @@ export default function AdminLayout({
   return (
     <SidebarProvider>
       <AdminSidebar adminId={adminId} />
-
       <SidebarInset className="bg-gray-50 min-h-screen">
         <main className="p-4">{children}</main>
       </SidebarInset>

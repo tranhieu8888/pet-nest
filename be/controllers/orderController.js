@@ -33,15 +33,23 @@ exports.createOrder = async (req, res) => {
             ward: address.ward || '',
             district: address.district || '',
             province: address.province || '',
-            city: address.province || address.city || 'N/A',
+            city: address.city || '',
             state: address.state || '',
             postalCode: address.postalCode || '',
-            country: 'Vietnam'
+            country: address.country || 'Vietnam'
         };
 
-        // Lưu địa chỉ vào profile nếu người dùng chưa có địa chỉ nào
-        if (!user.address || user.address.length === 0) {
-            user.address = [orderAddress];
+        // Lưu địa chỉ mới vào profile nếu chưa tồn tại
+        if (!user.address) user.address = [];
+        
+        const addressExists = user.address.some(addr => 
+            addr.street === orderAddress.street && 
+            addr.ward === orderAddress.ward && 
+            addr.province === orderAddress.province
+        );
+
+        if (!addressExists) {
+            user.address.push(orderAddress);
             await user.save();
         }
 
