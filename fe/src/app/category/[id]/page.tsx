@@ -52,6 +52,7 @@ export default function ProductsPage() {
     setBreadcrumbHistory,
     wishlistItems,
     wishlistLoading,
+    isLoggedIn,
     handleToggleWishlist,
     resetFilters,
   } = useCategoryFilter(params.id as string);
@@ -178,6 +179,7 @@ export default function ProductsPage() {
               itemsPerPage={itemsPerPage}
               wishlistItems={wishlistItems}
               wishlistLoading={wishlistLoading}
+              isLoggedIn={isLoggedIn}
               handleToggleWishlist={handleToggleWishlist}
             />
 

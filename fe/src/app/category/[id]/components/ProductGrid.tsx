@@ -30,6 +30,7 @@ interface ProductGridProps {
   itemsPerPage: number;
   wishlistItems: string[];
   wishlistLoading: Record<string, boolean>;
+  isLoggedIn: boolean;
   handleToggleWishlist: (e: React.MouseEvent, productId: string) => void;
 }
 
@@ -39,6 +40,7 @@ export const ProductGrid = ({
   itemsPerPage,
   wishlistItems,
   wishlistLoading,
+  isLoggedIn,
   handleToggleWishlist,
 }: ProductGridProps) => {
   return (
@@ -52,23 +54,25 @@ export const ProductGrid = ({
               <Card className="group hover:shadow-xl transition-all duration-300 border border-gray-200 bg-white cursor-pointer h-full">
                 <CardContent className="p-4 flex flex-col h-full">
                   <div className="relative mb-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`absolute top-2 right-2 z-10 bg-white/80 hover:bg-white transition-all duration-200 ${
-                        wishlistItems.includes(product._id) ? "text-red-500" : "text-gray-600"
-                      }`}
-                      onClick={(e) => handleToggleWishlist(e, product._id)}
-                      disabled={wishlistLoading[product._id]}
-                    >
-                      {wishlistLoading[product._id] ? (
-                        <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Heart
-                          className={`w-4 h-4 ${wishlistItems.includes(product._id) ? "fill-red-500" : ""}`}
-                        />
-                      )}
-                    </Button>
+                    {isLoggedIn && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`absolute top-2 right-2 z-10 bg-white/80 hover:bg-white transition-all duration-200 ${
+                          wishlistItems.includes(product._id) ? "text-red-500" : "text-gray-600"
+                        }`}
+                        onClick={(e) => handleToggleWishlist(e, product._id)}
+                        disabled={wishlistLoading[product._id]}
+                      >
+                        {wishlistLoading[product._id] ? (
+                          <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Heart
+                            className={`w-4 h-4 ${wishlistItems.includes(product._id) ? "fill-red-500" : ""}`}
+                          />
+                        )}
+                      </Button>
+                    )}
                     <Image
                       src={product.variants?.[0]?.images?.[0]?.url || "/placeholder.svg"}
                       alt={product.name}

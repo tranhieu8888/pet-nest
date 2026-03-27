@@ -23,6 +23,7 @@ export function useCategoryFilter(categoryId: string) {
 
   const [wishlistItems, setWishlistItems] = useState<string[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState<Record<string, boolean>>({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -192,8 +193,17 @@ export function useCategoryFilter(categoryId: string) {
   useEffect(() => {
     const fetchWishlist = async () => {
       try {
-        const token = sessionStorage.getItem("token");
-        if (!token) return;
+        const token =
+          (typeof window !== "undefined" &&
+            (sessionStorage.getItem("token") || localStorage.getItem("token"))) ||
+          null;
+
+        const loggedIn = Boolean(token);
+        setIsLoggedIn(loggedIn);
+        if (!loggedIn) {
+          setWishlistItems([]);
+          return;
+        }
 
         const wishlistProducts = await wishlistApi.getWishlist();
         if (wishlistProducts) {
@@ -292,6 +302,7 @@ export function useCategoryFilter(categoryId: string) {
     setBreadcrumbHistory,
     wishlistItems,
     wishlistLoading,
+    isLoggedIn,
     handleToggleWishlist,
     resetFilters,
   };
