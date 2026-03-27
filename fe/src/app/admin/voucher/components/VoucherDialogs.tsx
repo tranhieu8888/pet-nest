@@ -86,7 +86,14 @@ export default function VoucherDialogs({
           </div>
 
           <div className="space-y-2">
-            <Label>Giảm tối đa</Label>
+            <div className="flex items-center justify-between">
+              <Label>Giảm tối đa</Label>
+              {formData.maxDiscountAmount && !isNaN(Number(formData.maxDiscountAmount)) && (
+                <span className="text-xs font-medium text-pink-600">
+                  {Number(formData.maxDiscountAmount).toLocaleString("vi-VN")}đ
+                </span>
+              )}
+            </div>
             <Input
               type="number"
               min={0}
@@ -98,7 +105,14 @@ export default function VoucherDialogs({
           </div>
 
           <div className="space-y-2">
-            <Label>Đơn tối thiểu</Label>
+            <div className="flex items-center justify-between">
+              <Label>Đơn tối thiểu</Label>
+              {formData.minOrderValue && !isNaN(Number(formData.minOrderValue)) && (
+                <span className="text-xs font-medium text-pink-600">
+                  {Number(formData.minOrderValue).toLocaleString("vi-VN")}đ
+                </span>
+              )}
+            </div>
             <Input
               type="number"
               min={0}

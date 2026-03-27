@@ -87,9 +87,10 @@ const getRoleBadge = (role: number) => {
 interface RoleSelectorProps {
     value: number;
     onChange: (value: number) => void;
+    isAdding?: boolean;
 }
 
-function RoleSelector({ value, onChange, config }: RoleSelectorProps & { config: any }) {
+function RoleSelector({ value, onChange, config, isAdding }: RoleSelectorProps & { config: any }) {
     const toggleRole = (roleValue: number) => {
         if (value === 0) {
             onChange(roleValue);
@@ -104,7 +105,9 @@ function RoleSelector({ value, onChange, config }: RoleSelectorProps & { config:
 
     return (
         <div className="flex flex-wrap gap-2">
-            {Object.entries(ROLES).map(([roleName, roleValue]) => (
+            {Object.entries(ROLES)
+                .filter(([roleName]) => isAdding ? roleName === 'STAFF' : roleName !== 'CUSTOMER')
+                .map(([roleName, roleValue]) => (
                 <Badge
                     key={roleName}
                     className={`cursor-pointer ${ROLE_COLORS[roleName as keyof typeof ROLE_COLORS]} ${isRoleActive(roleValue) ? 'ring-2 ring-offset-2 ring-primary' : ''
@@ -132,7 +135,7 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
         password: '',
         phone: '',
         dob: '',
-        role: 0,
+        role: user ? (user.role || 0) : (ROLES.STAFF || 0),
         verified: false,
         address: [{
             street: '',
@@ -171,7 +174,7 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
             password: '',
             phone: '',
             dob: '',
-            role: 0,
+            role: ROLES.STAFF || 0,
             verified: false,
             address: [{
                 street: '',
@@ -311,6 +314,7 @@ function UserForm({ user, onSubmit, isOpen, onClose, config }: UserFormProps & {
                             value={formData.role}
                             onChange={(value) => setFormData({ ...formData, role: value })}
                             config={config}
+                            isAdding={!user}
                         />
                     </div>
 
