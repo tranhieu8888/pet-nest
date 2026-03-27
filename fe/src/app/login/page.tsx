@@ -368,11 +368,19 @@ function LoginForm() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h3 className="text-lg font-bold text-slate-900">{text.notVerifiedTitle}</h3>
             <p className="mt-2 text-sm text-slate-600">{text.notVerifiedDescription}</p>
-             <div className="mt-5 flex gap-2">
-              <ButtonCore variantType="outline" onClick={() => setShowVerificationModal(false)} className="w-full">
+             <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <ButtonCore
+                variantType="outline"
+                onClick={() => setShowVerificationModal(false)}
+                className="w-full min-w-0"
+              >
                 {text.close}
               </ButtonCore>
-              <ButtonCore onClick={handleResendVerification} isLoading={resendLoading} className="w-full">
+              <ButtonCore
+                onClick={handleResendVerification}
+                isLoading={resendLoading}
+                className="w-full min-w-0"
+              >
                 {resendLoading ? text.resending : text.resendEmail}
               </ButtonCore>
             </div>
