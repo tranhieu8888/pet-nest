@@ -526,14 +526,6 @@ function UserDropdown({
             {config.user.wishlist}
           </Link>
         </DropdownMenuItem>
-        {userRole === 1 && (
-          <DropdownMenuItem asChild>
-            <Link href="/requestsupport" className="flex items-center">
-              <Package className="mr-2 h-4 w-4" />
-              {config.user.requestSupport}
-            </Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-red-500 hover:bg-red-50 focus:text-red-600" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
