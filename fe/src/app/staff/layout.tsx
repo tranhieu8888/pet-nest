@@ -6,7 +6,6 @@ import {
   Scissors,
   CalendarDays,
   ClipboardList,
-  PawPrint,
   LogOut,
   User,
   ChevronUp,
@@ -45,8 +44,6 @@ const menuItems = [
   { title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard },
   { title: "Lịch làm việc", url: "/staff/schedule", icon: CalendarDays },
   { title: "Đơn dịch vụ", url: "/staff/services", icon: ClipboardList },
-  { title: "Khách hàng thú cưng", url: "/staff/customers", icon: PawPrint },
-  { title: "Chăm sóc & cắt tỉa", url: "/staff/grooming", icon: Scissors },
   { title: "Lịch sử thanh toán", url: "/staff/payments", icon: CreditCard },
   { title: "Tin nhắn CSKH", url: "/staff/messages", icon: MessageCircle },
 ];
