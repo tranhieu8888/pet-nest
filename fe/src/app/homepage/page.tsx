@@ -57,6 +57,34 @@ interface Banner {
   buttonText: string;
 }
 
+function resolveBannerHref(rawLink?: string) {
+  if (!rawLink?.trim()) return "/";
+
+  const link = rawLink.trim();
+
+  // Link tương đối: giữ nguyên đúng theo admin config
+  if (link.startsWith("/")) {
+    return link;
+  }
+
+  // Link tuyệt đối
+  try {
+    const parsed = new URL(link);
+    const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+
+    // Cùng domain FE => đổi về internal path nhưng giữ nguyên path/query/hash
+    if (currentOrigin && parsed.origin === currentOrigin) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+
+    // Khác domain => giữ nguyên
+    return link;
+  } catch {
+    // Trường hợp dữ liệu lỗi format, fallback an toàn
+    return "/";
+  }
+}
+
 interface ProductVariant {
   _id: string;
   images: { url: string }[];
@@ -493,7 +521,7 @@ export default function HomePage() {
                   transition={{ duration: 0.5 }}
                   className="absolute inset-0"
                 >
-                  <Link href={banner.link} className="relative block h-full w-full">
+                  <Link href={resolveBannerHref(banner.link)} className="relative block h-full w-full">
                     <Image src={banner.imageUrl} alt={banner.title} fill className="object-cover" priority={index === 0} />
                     <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-transparent" />
                     <div className="absolute inset-0 flex items-end p-6 md:p-10">
