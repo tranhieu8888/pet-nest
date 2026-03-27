@@ -1159,6 +1159,113 @@ const getAllProducts = async (req, res) => {
     }
   };
 
+// Get all products with variants for public display
+const getAllProductsPublic = async (req, res) => {
+    try {
+        const products = await Product.find()
+            .populate('category', 'name description parentCategory')
+            .lean();
+
+        const productIds = products.map(p => p._id);
+
+        // Get variants
+        const variants = await ProductVariant.find({ product_id: { $in: productIds } }).lean();
+        const variantIds = variants.map(v => v._id);
+
+        // Calculate imported quantity per variant
+        const ImportBatch = require('../models/import_batches');
+        const importAgg = await ImportBatch.aggregate([
+            { $match: { variantId: { $in: variantIds } } },
+            { $group: { _id: '$variantId', importedQuantity: { $sum: '$quantity' } } }
+        ]);
+        const importMap = importAgg.reduce((map, item) => {
+            map[item._id.toString()] = item.importedQuantity;
+            return map;
+        }, {});
+
+        // Calculate ordered quantity per variant
+        const soldAgg = await Order.aggregate([
+            { $match: { status: { $in: ['completed', 'shipping', 'processing'] } } },
+            { $unwind: '$OrderItems' },
+            {
+                $lookup: {
+                    from: 'orderitems',
+                    localField: 'OrderItems',
+                    foreignField: '_id',
+                    as: 'orderItemDetail'
+                }
+            },
+            { $unwind: '$orderItemDetail' },
+            { $match: { 'orderItemDetail.productVariant': { $in: variantIds } } },
+            {
+                $group: {
+                    _id: '$orderItemDetail.productVariant',
+                    orderedQuantity: { $sum: '$orderItemDetail.quantity' }
+                }
+            }
+        ]);
+        const soldMap = soldAgg.reduce((map, item) => {
+            map[item._id.toString()] = item.orderedQuantity;
+            return map;
+        }, {});
+
+        // Get reviews
+        const Review = require('../models/reviewModel');
+        const reviewAgg = await Review.aggregate([
+            { $match: { productId: { $in: productIds } } },
+            {
+                $group: {
+                    _id: '$productId',
+                    averageRating: { $avg: '$rating' },
+                    totalReviews: { $sum: 1 }
+                }
+            }
+        ]);
+        const reviewMap = reviewAgg.reduce((map, item) => {
+            map[item._id.toString()] = { averageRating: item.averageRating, totalReviews: item.totalReviews };
+            return map;
+        }, {});
+
+        // Build variants with stock
+        const variantsWithStock = variants.map(variant => {
+            const imported = importMap[variant._id.toString()] || 0;
+            const ordered = soldMap[variant._id.toString()] || 0;
+            return {
+                _id: variant._id,
+                images: variant.images,
+                sellPrice: variant.sellPrice,
+                attribute: variant.attribute,
+                availableQuantity: imported - ordered
+            };
+        });
+
+        // Combine products with variants and reviews
+        const result = products.map(product => {
+            const pid = product._id.toString();
+            const productVariants = variantsWithStock.filter(v => v.availableQuantity > 0 && variants.find(vv => vv._id.toString() === v._id.toString() && vv.product_id.toString() === pid));
+            const review = reviewMap[pid] || { averageRating: 0, totalReviews: 0 };
+            return {
+                ...product,
+                variants: productVariants,
+                averageRating: review.averageRating,
+                totalReviews: review.totalReviews
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error('Error getting all products public:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting products',
+            error: error.message
+        });
+    }
+};
+
 
 // Update product
 const updateProduct = async (req, res) => {
@@ -2121,6 +2228,7 @@ module.exports = {
     getProductById,
     createProduct,
     getAllProducts,
+    getAllProductsPublic,
     updateProduct,
     deleteProduct,
     getProductVariantsByProductId,

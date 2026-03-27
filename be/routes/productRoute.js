@@ -4,6 +4,7 @@ const {
   getProductById2,
   getTopSellingProducts,
   getAllProducts,
+  getAllProductsPublic,
   getProductVariantsByProductId,
   getProductsBySearch,
   getAllBestSellingProducts,
@@ -40,6 +41,9 @@ router.get("/dashboard", verifyToken, authorizeRoles(8), getProductDashboardData
 
 // Search products by name
 router.get("/search/:search", getProductsBySearch);
+
+// Get all products (Public - anyone can view)
+router.get("/all", getAllProductsPublic);
 
 // Get all products (Requires staff/admin role)
 router.get("/", verifyToken, authorizeRoles(0), getAllProducts);
