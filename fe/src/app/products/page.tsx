@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Star,
@@ -63,10 +64,11 @@ const ProductSkeleton = () => (
 );
 
 export default function AllProductsPage() {
+  const searchParams = useSearchParams();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get("search") || "");
   const [sortBy, setSortBy] = useState("newest");
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[string, string]>(["", ""]);
@@ -80,6 +82,10 @@ export default function AllProductsPage() {
   const { lang } = useLanguage();
   const [wishlistItems, setWishlistItems] = useState<string[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setSearchTerm(searchParams.get("search") || "");
+  }, [searchParams]);
 
   const t = useMemo(() => {
     if (lang === "vi") return {

@@ -811,7 +811,7 @@ export default function Header({
     if (e) e.preventDefault();
     if (searchQuery.trim()) {
       setShowSearchDropdown(false);
-      router.push(`/products/search/${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
