@@ -40,6 +40,12 @@ const staffScheduleSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    overtimeHours: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 2,
+    },
 
     isDeleted: {
       type: Boolean,

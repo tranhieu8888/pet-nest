@@ -38,6 +38,7 @@ interface StaffSchedule {
   shiftEnd: string;
   isOff: boolean;
   note: string;
+  overtimeHours?: number;
 }
 
 interface ScheduleListResponse {
@@ -54,6 +55,7 @@ const defaultForm: StaffSchedule = {
   shiftEnd: "17:00",
   isOff: false,
   note: "",
+  overtimeHours: 0,
 };
 
 function getStaffIdValue(staffId: string | StaffRef | undefined) {
@@ -72,6 +74,7 @@ function normalizeScheduleForForm(editing: StaffSchedule): StaffSchedule {
     shiftEnd: editing.shiftEnd || "17:00",
     isOff: !!editing.isOff,
     note: editing.note || "",
+    overtimeHours: editing.overtimeHours || 0,
   };
 }
 
@@ -217,6 +220,7 @@ export default function StaffSchedulePage() {
                   <TableHead>Bắt đầu</TableHead>
                   <TableHead>Kết thúc</TableHead>
                   <TableHead>Nghỉ</TableHead>
+                  <TableHead>Làm thêm</TableHead>
                   <TableHead>Ghi chú</TableHead>
                   <TableHead>Hành động</TableHead>
                 </TableRow>
@@ -243,6 +247,9 @@ export default function StaffSchedulePage() {
                       <TableCell>{s.isOff ? "-" : s.shiftStart}</TableCell>
                       <TableCell>{s.isOff ? "-" : s.shiftEnd}</TableCell>
                       <TableCell>{s.isOff ? "Có" : "Không"}</TableCell>
+                      <TableCell>
+                        {s.overtimeHours ? `+${s.overtimeHours} giờ` : "-"}
+                      </TableCell>
                       <TableCell>{s.note || "-"}</TableCell>
                       <TableCell>
                         <Button
@@ -388,6 +395,7 @@ function StaffScheduleForm({
       shiftEnd: form.isOff ? "" : form.shiftEnd,
       isOff: form.isOff,
       note: form.note?.trim() || "",
+      overtimeHours: form.overtimeHours || 0,
     };
 
     try {
@@ -539,6 +547,42 @@ function StaffScheduleForm({
               />
             </div>
           </div>
+
+          {!form.isOff && (
+            <div>
+              <Label>Giờ làm thêm</Label>
+              <div className="flex gap-4 mt-2">
+                {[0, 1, 2].map((hours) => (
+                  <label
+                    key={hours}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="overtimeHours"
+                      value={hours}
+                      checked={form.overtimeHours === hours}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          overtimeHours: Number(e.target.value),
+                        }))
+                      }
+                    />
+                    <span className="text-sm">
+                      {hours === 0 ? "Không" : `+${hours} giờ`}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {form.overtimeHours! > 0 && (
+                <div className="text-xs text-amber-600 mt-1 italic">
+                  * Nhân viên sẽ thấy thông báo có thể làm thêm{" "}
+                  {form.overtimeHours} giờ cho ca này.
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <Label>Ghi chú</Label>
