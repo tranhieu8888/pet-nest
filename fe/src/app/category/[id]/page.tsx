@@ -34,6 +34,8 @@ export default function ProductsPage() {
     categories,
     brandSearch,
     setBrandSearch,
+    selectedBrands,
+    handleBrandChange,
     showMoreBrands,
     setShowMoreBrands,
     priceRange,
@@ -131,6 +133,8 @@ export default function ProductsPage() {
             brandSearch={brandSearch}
             setBrandSearch={setBrandSearch}
             displayedBrands={displayedBrands}
+            selectedBrands={selectedBrands}
+            handleBrandChange={handleBrandChange}
             filteredBrandsLength={filteredBrands.length}
             showMoreBrands={showMoreBrands}
             setShowMoreBrands={setShowMoreBrands}

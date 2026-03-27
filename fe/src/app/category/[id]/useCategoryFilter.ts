@@ -12,6 +12,7 @@ export function useCategoryFilter(categoryId: string) {
   const [categories, setCategories] = useState<CategoryResponse | null>(null);
 
   const [brandSearch, setBrandSearch] = useState("");
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [showMoreBrands, setShowMoreBrands] = useState(false);
   const [priceRange, setPriceRange] = useState<[string, string]>(["", ""]);
   const [sortBy, setSortBy] = useState("relevance");
@@ -106,6 +107,16 @@ export function useCategoryFilter(categoryId: string) {
         });
       }
 
+      if (selectedBrands.length > 0) {
+        filteredProducts = filteredProducts.filter((product) => {
+          if (!product.brand) return false;
+          return selectedBrands.some(
+            (selectedBrand) =>
+              selectedBrand.trim().toLowerCase() === product.brand.trim().toLowerCase(),
+          );
+        });
+      }
+
       if (selectedAttributes && Object.keys(selectedAttributes).length > 0) {
         filteredProducts = filteredProducts.filter((product) => {
           if (!product.variants || product.variants.length === 0) return false;
@@ -167,7 +178,16 @@ export function useCategoryFilter(categoryId: string) {
     } finally {
       setLoading(false);
     }
-  }, [priceRange, selectedAttributes, selectedRating, sortBy, allProducts, categoryId, categories?.attributes]);
+  }, [
+    priceRange,
+    selectedBrands,
+    selectedAttributes,
+    selectedRating,
+    sortBy,
+    allProducts,
+    categoryId,
+    categories?.attributes,
+  ]);
 
   useEffect(() => {
     const fetchWishlist = async () => {
@@ -206,6 +226,22 @@ export function useCategoryFilter(categoryId: string) {
     }
   };
 
+  const handleBrandChange = (brandName: string) => {
+    setSelectedBrands((prev) => {
+      const exists = prev.some(
+        (brand) => brand.trim().toLowerCase() === brandName.trim().toLowerCase(),
+      );
+
+      if (exists) {
+        return prev.filter(
+          (brand) => brand.trim().toLowerCase() !== brandName.trim().toLowerCase(),
+        );
+      }
+
+      return [...prev, brandName];
+    });
+  };
+
   const handleAttributeChange = (attributeId: string, childId: string) => {
     setSelectedAttributes((prev) => {
       const currentValues = prev[attributeId] || [];
@@ -223,6 +259,7 @@ export function useCategoryFilter(categoryId: string) {
   const resetFilters = () => {
     setCurrentPage(1);
     setSelectedAttributes({});
+    setSelectedBrands([]);
     setSelectedRating(null);
     setBrandSearch("");
     setPriceRange(["", ""]);
@@ -237,6 +274,8 @@ export function useCategoryFilter(categoryId: string) {
     categories,
     brandSearch,
     setBrandSearch,
+    selectedBrands,
+    handleBrandChange,
     showMoreBrands,
     setShowMoreBrands,
     priceRange,

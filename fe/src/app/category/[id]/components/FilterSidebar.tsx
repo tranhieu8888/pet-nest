@@ -13,6 +13,8 @@ interface FilterSidebarProps {
   brandSearch: string;
   setBrandSearch: (search: string) => void;
   displayedBrands: { name: string; count: number }[];
+  selectedBrands: string[];
+  handleBrandChange: (brandName: string) => void;
   filteredBrandsLength: number;
   showMoreBrands: boolean;
   setShowMoreBrands: (show: boolean) => void;
@@ -31,6 +33,8 @@ export const FilterSidebar = ({
   brandSearch,
   setBrandSearch,
   displayedBrands,
+  selectedBrands,
+  handleBrandChange,
   filteredBrandsLength,
   showMoreBrands,
   setShowMoreBrands,
@@ -138,7 +142,14 @@ export const FilterSidebar = ({
           {displayedBrands.map((brand) => (
             <div key={brand.name} className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Checkbox id={`brand-${brand.name}`} />
+                <Checkbox
+                  id={`brand-${brand.name}`}
+                  checked={selectedBrands.some(
+                    (selectedBrand) =>
+                      selectedBrand.trim().toLowerCase() === brand.name.trim().toLowerCase(),
+                  )}
+                  onChange={() => handleBrandChange(brand.name)}
+                />
                 <label
                   htmlFor={`brand-${brand.name}`}
                   className="text-sm cursor-pointer text-gray-700"
